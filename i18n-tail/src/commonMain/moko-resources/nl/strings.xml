@@ -302,6 +302,14 @@
   <string name="saved_searches_delete">Opgeslagen zoekopdrachten (Houd om te verwijderen)</string>
   <string name="pref_expand_related_animes">Suggesties uitbreiden</string>
   <string name="pref_expand_related_animes_summary">Suggesties zullen niet automatisch laden &amp; weergeven als ze zijn uitgeschakeld</string>
+  <string name="pref_speed_on_hold_gesture_title">
+  Speed on hold gesture
+  </string>
+
+  <string name="pref_speed_on_hold_gesture_summary">
+  Playback speed while long-pressing video
+  </string>
+
   <string name="put_related_animes_in_overflow">Suggesties in overflow</string>
   <string name="put_related_animes_in_overflow_summary">Plaats de Suggestie knop in het overloop menu in plaats van op de item pagina</string>
   <string name="pref_show_home_on_related_animes">Huis van Suggesties</string>

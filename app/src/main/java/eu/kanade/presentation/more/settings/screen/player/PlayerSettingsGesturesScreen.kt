@@ -50,24 +50,37 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
     }
 
     @Composable
-    private fun getSlidersGroup(gesturePreferences: GesturePreferences): Preference.PreferenceGroup {
-        val enableVolumeBrightnessGestures = gesturePreferences.gestureVolumeBrightness()
-        val swapVol = gesturePreferences.swapVolumeBrightness()
+	private fun getSlidersGroup(
+  	  gesturePreferences: GesturePreferences,
+	): Preference.PreferenceGroup {
+ 	   val enableVolumeBrightnessGestures = gesturePreferences.gestureVolumeBrightness()
+	    val swapVol = gesturePreferences.swapVolumeBrightness()
+ 	   val holdSpeedPref = gesturePreferences.longPressSpeed()
 
-        return Preference.PreferenceGroup(
-            title = stringResource(AYMR.strings.pref_category_player_sliders),
-            preferenceItems = persistentListOf(
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = enableVolumeBrightnessGestures,
-                    title = stringResource(AYMR.strings.enable_volume_brightness_gestures),
-                ),
-                Preference.PreferenceItem.SwitchPreference(
-                    preference = swapVol,
-                    title = stringResource(AYMR.strings.pref_controls_swap_vol_brightness),
-                ),
-            ),
-        )
-    }
+	    return Preference.PreferenceGroup(
+	        title = stringResource(AYMR.strings.pref_category_player_sliders),
+  	      preferenceItems = persistentListOf(
+  	          Preference.PreferenceItem.SwitchPreference(
+  	              preference = enableVolumeBrightnessGestures,
+      	          title = stringResource(AYMR.strings.enable_volume_brightness_gestures),
+      	      ),
+      	      Preference.PreferenceItem.SwitchPreference(
+       	         preference = swapVol,
+     	           title = stringResource(AYMR.strings.pref_controls_swap_vol_brightness),
+     	       ),
+	
+    	        // ✅ Speed on hold gesture (NEW)
+      	      Preference.PreferenceItem.SliderPreference(
+         	       preference = holdSpeedPref,
+        	        valueRange = 1f..4f,
+       	         steps = 5,
+         	       title = stringResource(AYMR.strings.pref_speed_on_hold_gesture_title),
+       	         subtitle = stringResource(AYMR.strings.pref_speed_on_hold_gesture_summary),
+     	       ),
+   	     ),
+ 	   )
+	}
+
 
     @Composable
     private fun getSeekingGroup(gesturePreferences: GesturePreferences): Preference.PreferenceGroup {

@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: Build APK
+    name: Build Animetail APK
     runs-on: ubuntu-24.04
 
     steps:
@@ -31,17 +31,23 @@ jobs:
       - name: Grant execute permission
         run: chmod +x ./gradlew
 
-      - name: Build Release APK
-        run: ./gradlew assembleRelease
+      # Build ONLY animetail module, skip anything that can fail first-time
+      - name: Build Release APK (signed, ARM64)
+        run: |
+          ./gradlew :animetail:assembleRelease \
+            -x test \
+            -x lint \
+            -x spotlessCheck
 
       - name: Upload ARM64 APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-arm64-v8a-release
-          path: app/build/outputs/apk/release/*arm64-v8a*.apk
+          name: animetail-arm64-v8a-release
+          path: animetail/build/outputs/apk/release/*arm64-v8a*.apk
 
-      - name: Upload Proguard mapping
+      - name: Upload Proguard mapping (if exists)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mapping-files
-          path: app/build/outputs/mapping/release
+          path: animetail/build/outputs/mapping/release

@@ -208,7 +208,7 @@
             android:name=".ui.player.PlayerActivity"
             android:autoRemoveFromRecents="true"
             android:configChanges="orientation|screenLayout|screenSize|smallestScreenSize|keyboardHidden|keyboard|uiMode"
-            android:exported="false"
+            android:exported="true"
             android:launchMode="singleTask"
             android:resizeableActivity="true"
             android:supportsPictureInPicture="true"
@@ -219,6 +219,23 @@
 
             <meta-data android:name="com.samsung.android.support.REMOTE_ACTION"
                 android:resource="@xml/s_pen_actions"/>
+
+            <!-- VIDEO: show in "Open with" -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                
+             <!-- IMAGE support -->
+             <intent-filter>
+                 <action android:name="android.intent.action.VIEW" />
+
+                 <category android:name="android.intent.category.DEFAULT" />
+                 <category android:name="android.intent.category.BROWSABLE" />
+
+                 <data android:mimeType="image/*" />
+             </intent-filter>
         </activity>
 
 

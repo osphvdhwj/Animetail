@@ -1,0 +1,37 @@
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # --- INSERT THE VERIFICATION STEP HERE ---
+      - name: Verify Signing Credentials
+        run: |
+          echo -n "${{ secrets.SIGNING_KEY }}" | tr -d '[:space:]' | base64 -d > verify.jks
+          
+          if [ ! -s verify.jks ]; then
+            echo "❌ ERROR: Decoded keystore is empty. Check your SIGNING_KEY secret."
+            exit 1
+          fi
+
+          echo "Verifying Keystore integrity and Alias..."
+          if keytool -list -v \
+            -keystore verify.jks \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -alias "${{ secrets.ALIAS }}" > /dev/null 2>&1; then
+            echo "✅ SUCCESS: Keystore, Password, and Alias are correct!"
+          else
+            echo "❌ ERROR: Incorrect Password or Alias for this Keystore."
+            exit 1
+          fi
+
+      # After verification, you can proceed to build safely
+      - name: Build with Gradle
+        run: ./gradlew assembleRelease

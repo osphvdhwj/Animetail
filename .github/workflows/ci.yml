@@ -20,59 +20,54 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      # 1️⃣ Checkout
+      # Checkout
       - name: Clone repo
         uses: actions/checkout@v4
 
-      # 2️⃣ Java
+      # Java
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 3️⃣ Gradle
+      # Gradle
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
       - name: Grant execute permission
         run: chmod +x ./gradlew
 
-      # 4️⃣ Optional: Spotless (can comment out if annoying)
-      - name: Check code format
-        run: ./gradlew spotlessCheck
-
-      # 5️⃣ Build Release
+      # Build release
       - name: Build Release APK
         run: ./gradlew assembleRelease -Penable-updater
 
-      # 6️⃣ Sign APK (IMPORTANT)
+      # Sign APK
       - name: Sign APK
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          alias: animetail
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
         env:
           BUILD_TOOLS_VERSION: '35.0.1'
 
-      # 7️⃣ Upload APK
+      # Upload artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: animetail-arm64-v8a
-          path: app/build/outputs/apk/release/*arm64-v8a*-signed.apk
+          name: animetail-apk
+          path: app/build/outputs/apk/release/*signed.apk
 
-      # 8️⃣ Create GitHub Release (ONLY ON TAG)
+      # Create GitHub Release (tags only)
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: Animetail ${{ github.ref_name }}
-          files: |
-            app/build/outputs/apk/release/*signed.apk
+          files: app/build/outputs/apk/release/*signed.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

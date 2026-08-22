@@ -14,6 +14,7 @@ import eu.kanade.tachiyomi.data.track.DeletableAnimeTracker
 import eu.kanade.tachiyomi.data.track.DeletableMangaTracker
 import eu.kanade.tachiyomi.data.track.MangaTracker
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
+import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchItem
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
@@ -399,5 +400,17 @@ class Anilist(id: Long) :
 
     override suspend fun fetchCastByTitle(title: String?): List<Credit>? {
         return api.fetchCastByTitle(title)
+    }
+
+    suspend fun getProfileStats(): eu.kanade.tachiyomi.data.track.anilist.dto.ALUserStats {
+        return api.getProfileStats(getUsername().toInt())
+    }
+
+    suspend fun getTrendingAnime(page: Int): List<eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch> {
+        return api.getTrendingAnime(page).map { it.toALAnime().toTrack() }
+    }
+
+    suspend fun getTrendingManga(page: Int): List<eu.kanade.tachiyomi.data.track.model.MangaTrackSearch> {
+        return api.getTrendingManga(page).map { it.toALManga().toTrack() }
     }
 }

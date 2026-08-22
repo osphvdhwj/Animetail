@@ -359,12 +359,28 @@ object SettingsAppearanceScreen : SearchableSettings {
             stringResource(TLMR.strings.pref_category_navbar),
             preferenceItems = persistentListOf(
                 Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.showNavAnime,
+                    title = "Show Anime library button",
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.showNavManga,
+                    title = "Show Manga library button",
+                ),
+                Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.showNavUpdates,
                     title = stringResource(TLMR.strings.pref_hide_updates_button),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.showNavHistory,
                     title = stringResource(TLMR.strings.pref_hide_history_button),
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.showNavDiscover,
+                    title = "Show Tracking/Discover button",
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.showNavBrowse,
+                    title = "Show Browse button",
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.bottomBarLabels,

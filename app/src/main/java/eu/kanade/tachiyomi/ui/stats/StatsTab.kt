@@ -17,6 +17,7 @@ import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenModel
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.stats.anime.animeStatsTab
 import eu.kanade.tachiyomi.ui.stats.manga.mangaStatsTab
+import eu.kanade.tachiyomi.ui.stats.profile.profileStatsTab
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -42,6 +43,7 @@ data object StatsTab : Tab {
         val tabs = persistentListOf(
             animeStatsTab(),
             mangaStatsTab(),
+            profileStatsTab(),
         )
         val state = rememberPagerState { tabs.size }
         // KMK -->

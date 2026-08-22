@@ -9,6 +9,7 @@ import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.animesource.online.ParsedAnimeHttpSource
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.ui.player.controls.components.sheets.HosterState
+import eu.kanade.tachiyomi.util.storage.DiskUtil
 import kotlinx.coroutines.CancellationException
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.items.episode.model.Episode
@@ -32,8 +33,16 @@ class EpisodeLoader {
          */
         suspend fun getHosters(episode: Episode, anime: Anime, source: AnimeSource): List<Hoster> {
             val isDownloaded = isDownload(episode, anime)
+            val externalFile = if (!isDownloaded) getExternalDownloadFile(anime.title, episode.name) else null
             return when {
                 isDownloaded -> getHostersOnDownloaded(episode, anime, source)
+                externalFile != null -> {
+                    val video = Video(
+                        externalFile.toURI().toString(),
+                        "Local external source: ${externalFile.name}",
+                    )
+                    listOf(video).toHosterList()
+                }
                 source is AnimeHttpSource -> getHostersOnHttp(episode, source)
                 source is LocalAnimeSource -> getHostersOnLocal(episode)
                 else -> error("source not supported")
@@ -47,8 +56,8 @@ class EpisodeLoader {
          * @param anime the anime of the episode.
          */
         fun isDownload(episode: Episode, anime: Anime): Boolean {
-            val downloadManager: AnimeDownloadManager = Injekt.get()
-            return downloadManager.isEpisodeDownloaded(
+            val downloadManager: eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager = Injekt.get()
+            val isInternal = downloadManager.isEpisodeDownloaded(
                 episode.name,
                 episode.scanlator,
                 episode.url,
@@ -56,6 +65,37 @@ class EpisodeLoader {
                 anime.source,
                 skipCache = true,
             )
+            return isInternal || getExternalDownloadFile(anime.title, episode.name) != null
+        }
+
+        private fun getExternalDownloadFile(animeTitle: String, episodeName: String): java.io.File? {
+            val cleanAnimeTitle = DiskUtil.buildValidFilename(animeTitle)
+            val cleanEpisodeName = DiskUtil.buildValidFilename(episodeName)
+            val possibleNames = listOf(
+                "$cleanAnimeTitle - $cleanEpisodeName.mkv",
+                "$cleanAnimeTitle - $cleanEpisodeName.mp4",
+                "$cleanEpisodeName.mkv",
+                "$cleanEpisodeName.mp4"
+            )
+            val possibleDirs = listOf(
+                "/storage/emulated/0/Download/1DM",
+                "/storage/emulated/0/Download/ADM",
+                "/storage/emulated/0/Download",
+                "/storage/emulated/0/1DM",
+                "/storage/emulated/0/ADM"
+            )
+            for (dirPath in possibleDirs) {
+                val dir = java.io.File(dirPath)
+                if (dir.exists() && dir.isDirectory) {
+                    for (name in possibleNames) {
+                        val file = java.io.File(dir, name)
+                        if (file.exists() && file.isFile && file.length() > 1024 * 1024) {
+                            return file
+                        }
+                    }
+                }
+            }
+            return null
         }
 
         private fun checkHasHosters(source: AnimeHttpSource): Boolean {

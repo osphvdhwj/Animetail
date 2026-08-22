@@ -203,8 +203,8 @@ class AnimeDownloader(
                             it.status.value <= AnimeDownload.State.DOWNLOADING.value
                         } // Ignore completed downloads, leave them in the queue
                         .groupBy { it.source }
-                        .toList().take(3) // Concurrently download from 5 different sources
-                        .map { (_, downloads) -> downloads.first() }
+                        .toList().take(3) // Concurrently download from up to 3 different sources
+                        .flatMap { (_, downloads) -> downloads.take(preferences.numberOfDownloads.get()) }
                     emit(activeDownloads)
 
                     if (activeDownloads.isEmpty()) break
@@ -248,10 +248,10 @@ class AnimeDownloader(
         try {
             downloadEpisode(download)
 
-            // Remove successful download from queue
-            if (download.status == AnimeDownload.State.DOWNLOADED) {
-                removeFromQueue(download)
-            }
+            // Do not remove successful download from queue, keep it for the UI
+            // if (download.status == AnimeDownload.State.DOWNLOADED) {
+            //    removeFromQueue(download)
+            // }
         } catch (e: Throwable) {
             if (e is CancellationException) throw e
             logcat(LogPriority.ERROR, e)
@@ -581,6 +581,17 @@ class AnimeDownloader(
             if (duration != 0L && outTime > 0) {
                 download.progress = (100 * outTime / duration).toInt()
             }
+
+            if (s.bitrate > 0) {
+                val speedKbps = s.bitrate / 8.0 / 1000.0
+                download.speed = if (speedKbps > 1000) {
+                    String.format(java.util.Locale.US, "%.2f MB/s", speedKbps / 1000.0)
+                } else {
+                    String.format(java.util.Locale.US, "%.0f KB/s", speedKbps)
+                }
+            } else {
+                download.speed = ""
+            }
         }
 
         duration = getDuration(ffprobeCommand(video.videoUrl, headerOptions))?.toLong() ?: 0L
@@ -612,6 +623,7 @@ class AnimeDownloader(
             buildList {
                 if (it.url.startsWith("http")) {
                     add(headerOptions)
+                    add("-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 5")
                 }
                 add("-i")
                 add("\"${it.url}\"")
@@ -644,6 +656,7 @@ class AnimeDownloader(
         val videoInput = buildList {
             if (video.videoUrl.startsWith("http")) {
                 add(headerOptions)
+                add("-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 5")
             }
             add(sourceStreamOptions)
             add("-i")
@@ -723,7 +736,10 @@ class AnimeDownloader(
                             data = video.videoUrl.toUri()
 
                             putExtra("extra_filename", "$filename.mkv")
+                            putExtra("extra_path", tmpDir.filePath!!.substringBeforeLast("_"))
+                            putExtra("download_path", tmpDir.filePath!!.substringBeforeLast("_"))
                             putExtra("extra_headers", bundle)
+                            putExtra("force_editor", true)
                         }
                     }
 
@@ -755,11 +771,10 @@ class AnimeDownloader(
                         tmpDir.delete()
                         queueState.value.find { anime -> anime.video == video }?.let { download ->
                             download.status = AnimeDownload.State.DOWNLOADED
-                            // Delete successful downloads from queue
-                            if (download.status == AnimeDownload.State.DOWNLOADED) {
-                                // Remove downloaded episode from queue
-                                removeFromQueue(download)
-                            }
+                            // Do not delete successful downloads from queue
+                            // if (download.status == AnimeDownload.State.DOWNLOADED) {
+                            //    removeFromQueue(download)
+                            // }
                             if (areAllAnimeDownloadsFinished()) {
                                 stop()
                             }
@@ -890,6 +905,14 @@ class AnimeDownloader(
             store.clear()
             emptyList()
         }
+    }
+
+    fun clearCompletedDownloads() {
+        removeFromQueueIf { it.status == AnimeDownload.State.DOWNLOADED }
+    }
+
+    fun clearErrorDownloads() {
+        removeFromQueueIf { it.status == AnimeDownload.State.ERROR }
     }
 
     fun updateQueue(downloads: List<AnimeDownload>) {

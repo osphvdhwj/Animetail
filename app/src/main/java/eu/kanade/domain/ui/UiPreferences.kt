@@ -52,8 +52,13 @@ class UiPreferences(
     val navStyle: Preference<NavStyle> = preferenceStore.getEnum("bottom_rail_nav_style", NavStyle.MOVE_HISTORY_TO_MORE)
 
     // SY -->
+    val showNavAnime: Preference<Boolean> = preferenceStore.getBoolean("pref_show_anime_button", true)
+    val showNavManga: Preference<Boolean> = preferenceStore.getBoolean("pref_show_manga_button", true)
     val showNavUpdates: Preference<Boolean> = preferenceStore.getBoolean("pref_show_updates_button", true)
     val showNavHistory: Preference<Boolean> = preferenceStore.getBoolean("pref_show_history_button", true)
+    val showNavDiscover: Preference<Boolean> = preferenceStore.getBoolean("pref_show_discover_button", true)
+    val showNavBrowse: Preference<Boolean> = preferenceStore.getBoolean("pref_show_browse_button", true)
+    
     val bottomBarLabels: Preference<Boolean> = preferenceStore.getBoolean("pref_show_bottom_bar_labels", true)
     val hideFeedTab: Preference<Boolean> = preferenceStore.getBoolean("hide_latest_tab", false)
     val feedTabInFront: Preference<Boolean> = preferenceStore.getBoolean("latest_tab_position", false)

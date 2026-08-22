@@ -313,18 +313,11 @@ fun PlayerControls(
                         linkTo(parent.top, parent.bottom, bias = 0.2f)
                     },
                 ) {
-                    when (currentPlayerUpdate) {
-                        // is PlayerUpdates.DoubleSpeed -> DoubleSpeedPlayerUpdate()
+                    when (val update = currentPlayerUpdate) {
+                        is PlayerUpdates.DoubleSpeed -> TextPlayerUpdate(">> ${update.speed}x")
                         is PlayerUpdates.AspectRatio -> TextPlayerUpdate(stringResource(aspectRatio.titleRes))
-
-                        is PlayerUpdates.ShowText -> TextPlayerUpdate(
-                            (currentPlayerUpdate as PlayerUpdates.ShowText).value,
-                        )
-
-                        is PlayerUpdates.ShowTextResource -> TextPlayerUpdate(
-                            stringResource((currentPlayerUpdate as PlayerUpdates.ShowTextResource).textResource),
-                        )
-
+                        is PlayerUpdates.ShowText -> TextPlayerUpdate(update.value)
+                        is PlayerUpdates.ShowTextResource -> TextPlayerUpdate(stringResource(update.textResource))
                         else -> {}
                     }
                 }

@@ -26,11 +26,28 @@ class ExtensionInstallerPreference(
         }
     }
 
-    override fun defaultValue() = if (context.hasMiuiPackageInstaller) {
-        ExtensionInstaller.LEGACY
-    } else {
-        ExtensionInstaller.PACKAGEINSTALLER
+    override fun defaultValue(): ExtensionInstaller {
+        return when {
+            isRootAvailable -> ExtensionInstaller.ROOT
+            context.hasMiuiPackageInstaller -> ExtensionInstaller.LEGACY
+            else -> ExtensionInstaller.PACKAGEINSTALLER
+        }
     }
+
+    private val isRootAvailable: Boolean
+        get() {
+            val paths = System.getenv("PATH")?.split(":") ?: emptyList()
+            for (path in paths) {
+                if (java.io.File(path, "su").exists()) {
+                    return true
+                }
+            }
+            return java.io.File("/sbin/su").exists() ||
+                   java.io.File("/system/bin/su").exists() ||
+                   java.io.File("/system/xbin/su").exists() ||
+                   java.io.File("/data/local/xbin/su").exists() ||
+                   java.io.File("/data/local/bin/su").exists()
+        }
 
     private fun check(value: ExtensionInstaller): ExtensionInstaller {
         when (value) {

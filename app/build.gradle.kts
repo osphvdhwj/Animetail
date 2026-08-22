@@ -17,7 +17,7 @@ android {
     namespace = "eu.kanade.tachiyomi"
 
     defaultConfig {
-        applicationId = "com.dark.animetailv2"
+        applicationId = "com.dark.animetailv2.custom"
 
         versionCode = 136
         versionName = "0.19.9.1"
@@ -81,9 +81,9 @@ android {
     splits {
         abi {
             isEnable = true
-            isUniversalApk = true
+            isUniversalApk = false
             reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            include("arm64-v8a")
         }
     }
 

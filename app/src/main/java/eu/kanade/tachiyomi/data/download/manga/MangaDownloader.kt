@@ -257,9 +257,9 @@ class MangaDownloader(
             downloadChapter(download)
 
             // Remove successful download from queue
-            if (download.status == MangaDownload.State.DOWNLOADED) {
-                removeFromQueue(download)
-            }
+            // if (download.status == MangaDownload.State.DOWNLOADED) {
+            //    removeFromQueue(download)
+            // }
             if (areAllDownloadsFinished()) {
                 stop()
             }
@@ -757,6 +757,14 @@ class MangaDownloader(
             store.clear()
             emptyList()
         }
+    }
+
+    fun clearCompletedDownloads() {
+        removeFromQueueIf { it.status == MangaDownload.State.DOWNLOADED }
+    }
+
+    fun clearErrorDownloads() {
+        removeFromQueueIf { it.status == MangaDownload.State.ERROR }
     }
 
     fun updateQueue(downloads: List<MangaDownload>) {

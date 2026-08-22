@@ -3,6 +3,7 @@ package eu.kanade.tachiyomi.ui.main
 import android.animation.ValueAnimator
 import android.app.Activity
 import android.app.Application
+import android.net.Uri
 import android.app.SearchManager
 import android.app.assist.AssistContent
 import android.content.Context
@@ -170,6 +171,7 @@ class MainActivity : BaseActivity() {
     var ready = false
 
     private var navigator: Navigator? = null
+    private var pendingVideoUri by mutableStateOf<Uri?>(null)
 
     // AM (CONNECTIONS) -->
     private val connectionsPreferences: ConnectionsPreferences by injectLazy()
@@ -360,6 +362,39 @@ class MainActivity : BaseActivity() {
                             Text(text = stringResource(MR.strings.action_ok))
                         }
                     },
+                )
+            }
+
+            val videoUriToImport = pendingVideoUri
+            if (videoUriToImport != null) {
+                val filename = remember(videoUriToImport) { getFileName(context, videoUriToImport) }
+                AlertDialog(
+                    onDismissRequest = { pendingVideoUri = null },
+                    title = { Text(text = "🎬 Add this to Animetail?") },
+                    text = {
+                        Column {
+                            Text(text = filename, style = MaterialTheme.typography.bodyMedium)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "This will link the video file into Animetail's local anime directory.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { pendingVideoUri = null }) {
+                            Text(text = "NO")
+                        }
+                    },
+                    confirmButton = {
+                        Button(onClick = {
+                            injectToAnimetail(context, videoUriToImport, filename)
+                            pendingVideoUri = null
+                        }) {
+                            Text(text = "YES")
+                        }
+                    }
                 )
             }
         }
@@ -631,6 +666,24 @@ class MainActivity : BaseActivity() {
     }
 
     private fun handleIntentAction(intent: Intent, navigator: Navigator): Boolean {
+        if (intent.type?.startsWith("video/") == true) {
+            val videoUri = if (intent.action == Intent.ACTION_SEND) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                }
+            } else {
+                intent.data
+            }
+            if (videoUri != null) {
+                pendingVideoUri = videoUri
+                ready = true
+                return true
+            }
+        }
+
         val notificationId = intent.getIntExtra("notificationId", -1)
         if (notificationId > -1) {
             NotificationReceiver.dismissNotification(
@@ -820,6 +873,61 @@ class MainActivity : BaseActivity() {
                         videoIndex,
                     ),
                 )
+            }
+        }
+    }
+
+    private fun getFileName(context: Context, uri: Uri): String {
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                if (idx >= 0) return cursor.getString(idx)
+            }
+        }
+        return uri.lastPathSegment ?: "Unknown file"
+    }
+
+    private fun injectToAnimetail(context: Context, uri: Uri, filename: String) {
+        val name = filename.substringBeforeLast(".")
+        val path = uri.path ?: uri.toString()
+        val localDir = "/storage/emulated/0/Animetail/local/anime/$name"
+        
+        try {
+            Runtime.getRuntime().exec(arrayOf("su", "-c", "find /storage/emulated/0/Animetail/local/anime/ -type l -mtime +1 -delete && find /storage/emulated/0/Animetail/local/anime/ -type d -empty -delete")).waitFor()
+        } catch (_: Exception) {}
+
+        try {
+            val process = Runtime.getRuntime().exec(arrayOf("su", "-c", "mkdir -p \"$localDir\" && ln -sf \"$path\" \"$localDir/$filename\""))
+            val exitCode = process.waitFor()
+            if (exitCode == 0) {
+                context.toast("Added to Library!")
+            } else {
+                copyFileNatively(context, uri, localDir, filename)
+            }
+        } catch (e: Exception) {
+            copyFileNatively(context, uri, localDir, filename)
+        }
+    }
+
+    private fun copyFileNatively(context: Context, uri: Uri, destDir: String, filename: String) {
+        lifecycleScope.launchIO {
+            try {
+                val dir = java.io.File(destDir)
+                if (!dir.exists()) dir.mkdirs()
+                val destFile = java.io.File(dir, filename)
+                
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    java.io.FileOutputStream(destFile).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                withUIContext {
+                    context.toast("Added to Library (Copied)!")
+                }
+            } catch (e: Exception) {
+                withUIContext {
+                    context.toast("Failed to add: ${e.message}")
+                }
             }
         }
     }

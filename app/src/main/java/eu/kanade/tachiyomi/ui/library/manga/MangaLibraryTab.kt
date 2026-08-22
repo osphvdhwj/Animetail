@@ -1,4 +1,6 @@
 package eu.kanade.tachiyomi.ui.library.manga
+import uy.kohesive.injekt.api.get
+import eu.kanade.core.preference.asState
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
@@ -87,6 +89,16 @@ data object MangaLibraryTab : Tab {
                 icon = rememberAnimatedVectorPainter(image, isSelected),
             )
         }
+
+    // SY -->
+    @Composable
+    override fun isEnabled(): Boolean {
+        val scope = rememberCoroutineScope()
+        return remember {
+            uy.kohesive.injekt.Injekt.get<eu.kanade.domain.ui.UiPreferences>().showNavManga.asState(scope)
+        }.value
+    }
+    // SY <--
 
     override suspend fun onReselect(navigator: Navigator) {
         requestOpenSettingsSheet()

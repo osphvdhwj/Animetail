@@ -100,6 +100,20 @@ class AnimeDownloadManager(
     }
 
     /**
+     * Clears downloaded episodes from the queue.
+     */
+    fun clearCompletedDownloads() {
+        downloader.clearCompletedDownloads()
+    }
+
+    /**
+     * Clears error episodes from the queue.
+     */
+    fun clearErrorDownloads() {
+        downloader.clearErrorDownloads()
+    }
+
+    /**
      * Returns the download from queue if the episode is queued for download
      * else it will return null which means that the episode is not queued for download
      *

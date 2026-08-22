@@ -8,9 +8,12 @@ import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALAddEntryResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALAnimeMetadata
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALCurrentUserResult
+import eu.kanade.tachiyomi.data.track.anilist.dto.ALProfileStatsResult
+import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserStats
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALMangaMetadata
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
+import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchItem
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
@@ -352,6 +355,122 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .parseAs<ALSearchResult>()
                     .data.page.media
                     .map { it.toALAnime().toTrack() }
+            }
+        }
+    }
+
+    suspend fun getTrendingAnime(page: Int): List<ALSearchItem> {
+        return withIOContext {
+            val query = """
+            |query TrendingAnime(${'$'}page: Int) {
+                |Page (page: ${'$'}page, perPage: 20) {
+                    |media(type: ANIME, sort: [TRENDING_DESC, POPULARITY_DESC]) {
+                        |id
+                        |studios {
+                            |edges {
+                                |isMain
+                                |node {
+                                    |name
+                                |}
+                            |}
+                        |}
+                        |title {
+                            |userPreferred
+                        |}
+                        |coverImage {
+                            |large
+                        |}
+                        |format
+                        |status
+                        |episodes
+                        |description
+                        |startDate {
+                            |year
+                            |month
+                            |day
+                        |}
+                        |averageScore
+                    |}
+                |}
+            |}
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("page", page)
+                }
+            }
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<ALSearchResult>()
+                    .data.page.media
+            }
+        }
+    }
+
+    suspend fun getTrendingManga(page: Int): List<ALSearchItem> {
+        return withIOContext {
+            val query = $$"""
+            |query TrendingManga($page: Int) {
+                |Page (page: $page, perPage: 20) {
+                    |media(type: MANGA, format_not_in: [NOVEL], sort: [TRENDING_DESC, POPULARITY_DESC]) {
+                        |id
+                        |staff {
+                            |edges {
+                                |role
+                                |id
+                                |node {
+                                    |name {
+                                        |full
+                                        |userPreferred
+                                        |native
+                                    |}
+                                }
+                            |}
+                        |}
+                        |title {
+                            |userPreferred
+                        |}
+                        |coverImage {
+                            |large
+                        |}
+                        |format
+                        |countryOfOrigin
+                        |status
+                        |chapters
+                        |description
+                        |startDate {
+                            |year
+                            |month
+                            |day
+                        |}
+                        |averageScore
+                    |}
+                |}
+            |}
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("page", page)
+                }
+            }
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<ALSearchResult>()
+                    .data.page.media
             }
         }
     }
@@ -829,6 +948,54 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                 }
             } catch (_: Exception) {
                 null
+            }
+        }
+    }
+
+    suspend fun getProfileStats(userId: Int): ALUserStats {
+        return withIOContext {
+            val query = """
+            |query (${'$'}userId: Int) {
+                |User(id: ${'$'}userId) {
+                    |id
+                    |name
+                    |avatar {
+                        |large
+                    |}
+                    |bannerImage
+                    |statistics {
+                        |anime {
+                            |count
+                            |episodesWatched
+                            |minutesWatched
+                            |meanScore
+                        |}
+                        |manga {
+                            |count
+                            |chaptersRead
+                            |volumesRead
+                            |meanScore
+                        |}
+                    |}
+                |}
+            |}
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("userId", userId)
+                }
+            }
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<ALProfileStatsResult>()
+                    .data.user
             }
         }
     }

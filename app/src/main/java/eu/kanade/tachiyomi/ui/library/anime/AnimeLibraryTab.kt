@@ -1,4 +1,6 @@
 package eu.kanade.tachiyomi.ui.library.anime
+import uy.kohesive.injekt.api.get
+import eu.kanade.core.preference.asState
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
@@ -94,6 +96,16 @@ data object AnimeLibraryTab : Tab {
     override suspend fun onReselect(navigator: Navigator) {
         requestOpenSettingsSheet()
     }
+
+    // SY -->
+    @Composable
+    override fun isEnabled(): Boolean {
+        val scope = rememberCoroutineScope()
+        return remember {
+            uy.kohesive.injekt.Injekt.get<eu.kanade.domain.ui.UiPreferences>().showNavAnime.asState(scope)
+        }.value
+    }
+    // SY <--
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable

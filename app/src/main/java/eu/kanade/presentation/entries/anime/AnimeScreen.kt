@@ -414,10 +414,8 @@ private fun AnimeScreenSmallImpl(
 
     var toolbarHeight by remember { mutableIntStateOf(0) }
 
-    val isAnySelected by remember {
-        derivedStateOf {
-            episodes.fastAny { it.selected }
-        }
+    val isAnySelected = remember(episodes) {
+        episodes.fastAny { it.selected }
     }
 
     BackHandler(onBack = {
@@ -872,10 +870,8 @@ fun AnimeScreenLargeImpl(
     val episodes = remember(state) { state.processedEpisodes }
     val listItem = remember(state) { state.episodeListItems }
 
-    val isAnySelected by remember {
-        derivedStateOf {
-            episodes.fastAny { it.selected }
-        }
+    val isAnySelected = remember(episodes) {
+        episodes.fastAny { it.selected }
     }
 
     val insetPadding = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal).asPaddingValues()

@@ -55,6 +55,16 @@ class BackupCreateJob(private val context: Context, workerParams: WorkerParamete
             if (!isAutoBackup) {
                 notifier.showBackupComplete(UniFile.fromUri(context, location.toUri())!!)
             }
+            
+            try {
+                val syncPreferences = Injekt.get<eu.kanade.domain.sync.SyncPreferences>()
+                if (syncPreferences.googleDriveRefreshToken().get().isNotEmpty()) {
+                    val service = eu.kanade.tachiyomi.data.sync.service.GoogleDriveSyncService(context)
+                    service.uploadBackupFile(location.toUri())
+                }
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, e) { "Failed to mirror backup to Google Drive" }
+            }
             Result.success()
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e)

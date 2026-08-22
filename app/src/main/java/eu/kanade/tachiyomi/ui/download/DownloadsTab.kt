@@ -1,5 +1,19 @@
 package eu.kanade.tachiyomi.ui.download
+import androidx.compose.material.icons.outlined.Delete
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.text.font.FontWeight
+import android.os.Environment
+import android.os.StatFs
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -103,6 +117,8 @@ data object DownloadsTab : Tab {
         val mangaDownloadCount by remember {
             derivedStateOf { mangaDownloadList.sumOf { it.subItems.size } }
         }
+        val animeIsRunning by animeScreenModel.isDownloaderRunning.collectAsState()
+        val mangaIsRunning by mangaScreenModel.isDownloaderRunning.collectAsState()
 
         val state = rememberPagerState { 2 }
         val snackbarHostState = remember { SnackbarHostState() }
@@ -131,34 +147,92 @@ data object DownloadsTab : Tab {
             }
         }
 
+        val animeSelected by animeScreenModel.selectedItems.collectAsState()
+        val mangaSelected by mangaScreenModel.selectedItems.collectAsState()
+
+        val actionModeCounter = when (state.currentPage) {
+            0 -> animeSelected.size
+            1 -> mangaSelected.size
+            else -> 0
+        }
+
+        val onCancelActionMode = {
+            when (state.currentPage) {
+                0 -> animeScreenModel.clearSelection()
+                1 -> mangaScreenModel.clearSelection()
+            }
+        }
+
         Scaffold(
             topBar = {
                 AppBar(
+                    isActionMode = actionModeCounter > 0,
+                    onCancelActionMode = onCancelActionMode,
                     titleContent = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = stringResource(MR.strings.label_download_queue),
-                                maxLines = 1,
-                                modifier = Modifier.weight(1f, false),
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            if (animeDownloadCount > 0) {
-                                val pillAlpha = if (isSystemInDarkTheme()) 0.12f else 0.08f
-                                Pill(
-                                    text = "$animeDownloadCount",
-                                    modifier = Modifier.padding(start = 4.dp),
-                                    color = MaterialTheme.colorScheme.onBackground
-                                        .copy(alpha = pillAlpha),
-                                    fontSize = 14.sp,
+                        if (actionModeCounter > 0) {
+                            eu.kanade.presentation.components.AppBarTitle(title = "", count = actionModeCounter)
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = stringResource(MR.strings.label_download_queue),
+                                    maxLines = 1,
+                                    modifier = Modifier.weight(1f, false),
+                                    overflow = TextOverflow.Ellipsis,
                                 )
+                                if (animeDownloadCount > 0) {
+                                    val pillAlpha = if (isSystemInDarkTheme()) 0.12f else 0.08f
+                                    Pill(
+                                        text = "$animeDownloadCount",
+                                        modifier = Modifier.padding(start = 4.dp),
+                                        color = MaterialTheme.colorScheme.onBackground
+                                            .copy(alpha = pillAlpha),
+                                        fontSize = 14.sp,
+                                    )
+                                }
                             }
                         }
                     },
                     navigateUp = navigator::pop,
                     actions = {
-                        when (state.currentPage) {
-                            0 -> AnimeActions(animeScreenModel, animeDownloadList)
-                            1 -> MangaActions(mangaScreenModel, mangaDownloadList)
+                        if (actionModeCounter > 0) {
+                            androidx.compose.material3.IconButton(onClick = {
+                                when (state.currentPage) {
+                                    0 -> animeScreenModel.startSelected()
+                                    1 -> mangaScreenModel.startSelected()
+                                }
+                            }) {
+                                androidx.compose.material3.Icon(
+                                    imageVector = androidx.compose.material.icons.Icons.Filled.PlayArrow,
+                                    contentDescription = "Start"
+                                )
+                            }
+                            androidx.compose.material3.IconButton(onClick = {
+                                when (state.currentPage) {
+                                    0 -> animeScreenModel.pauseSelected()
+                                    1 -> mangaScreenModel.pauseSelected()
+                                }
+                            }) {
+                                androidx.compose.material3.Icon(
+                                    imageVector = androidx.compose.material.icons.Icons.Outlined.Pause,
+                                    contentDescription = "Pause"
+                                )
+                            }
+                            androidx.compose.material3.IconButton(onClick = {
+                                when (state.currentPage) {
+                                    0 -> animeScreenModel.deleteSelected()
+                                    1 -> mangaScreenModel.deleteSelected()
+                                }
+                            }) {
+                                androidx.compose.material3.Icon(
+                                    imageVector = androidx.compose.material.icons.Icons.Outlined.Delete,
+                                    contentDescription = "Delete"
+                                )
+                            }
+                        } else {
+                            when (state.currentPage) {
+                                0 -> AnimeActions(animeScreenModel, animeDownloadList)
+                                1 -> MangaActions(mangaScreenModel, mangaDownloadList)
+                            }
                         }
                     },
                     scrollBehavior = scrollBehavior,
@@ -174,8 +248,6 @@ data object DownloadsTab : Tab {
                     enter = fadeIn(),
                     exit = fadeOut(),
                 ) {
-                    val animeIsRunning by animeScreenModel.isDownloaderRunning.collectAsState()
-                    val mangaIsRunning by mangaScreenModel.isDownloaderRunning.collectAsState()
                     ExtendedFloatingActionButton(
                         text = {
                             val id = when (state.currentPage) {
@@ -240,6 +312,63 @@ data object DownloadsTab : Tab {
                     end = contentPadding.calculateEndPadding(LocalLayoutDirection.current),
                 ),
             ) {
+                // Modern Stats HUD
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Device Storage",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = getFreeStorageSpace(),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(32.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant)
+                        )
+
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "Active Downloads",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            val totalCount = animeDownloadCount + mangaDownloadCount
+                            val statusText = if (animeIsRunning || mangaIsRunning) "Downloading" else "Paused"
+                            Text(
+                                text = "$totalCount items ($statusText)",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (animeIsRunning || mangaIsRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
                 PrimaryTabRow(
                     selectedTabIndex = state.currentPage,
                     modifier = Modifier.zIndex(1f),
@@ -385,6 +514,14 @@ data object DownloadsTab : Tab {
                         title = stringResource(MR.strings.action_cancel_all),
                         onClick = { animeScreenModel.clearQueue() },
                     ),
+                    AppBar.OverflowAction(
+                        title = "Clear completed",
+                        onClick = { animeScreenModel.clearCompletedDownloads() },
+                    ),
+                    AppBar.OverflowAction(
+                        title = "Clear errors",
+                        onClick = { animeScreenModel.clearErrorDownloads() },
+                    ),
                 ),
             )
         }
@@ -479,8 +616,28 @@ data object DownloadsTab : Tab {
                         title = stringResource(MR.strings.action_cancel_all),
                         onClick = { mangaScreenModel.clearQueue() },
                     ),
+                    AppBar.OverflowAction(
+                        title = "Clear completed",
+                        onClick = { mangaScreenModel.clearCompletedDownloads() },
+                    ),
+                    AppBar.OverflowAction(
+                        title = "Clear errors",
+                        onClick = { mangaScreenModel.clearErrorDownloads() },
+                    ),
                 ),
             )
+        }
+    }
+
+    private fun getFreeStorageSpace(): String {
+        return try {
+            val path = Environment.getExternalStorageDirectory()
+            val stat = StatFs(path.path)
+            val bytesAvailable = stat.blockSizeLong * stat.availableBlocksLong
+            val gigabytes = bytesAvailable / (1024.0 * 1024.0 * 1024.0)
+            String.format(java.util.Locale.US, "%.1f GB Free", gigabytes)
+        } catch (e: Exception) {
+            "Unknown Free"
         }
     }
 }

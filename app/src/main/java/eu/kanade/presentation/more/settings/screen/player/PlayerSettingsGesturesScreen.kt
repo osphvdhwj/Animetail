@@ -67,6 +67,30 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                     preference = swapVol,
                     title = stringResource(AYMR.strings.pref_controls_swap_vol_brightness),
                 ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = gesturePreferences.horizontalDragSensitivity(),
+                    entries = persistentMapOf(
+                        50 to "50%",
+                        75 to "75%",
+                        100 to "100%",
+                        125 to "125%",
+                        150 to "150%",
+                        200 to "200%"
+                    ),
+                    title = "Horizontal Drag Sensitivity"
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = gesturePreferences.verticalDragSensitivity(),
+                    entries = persistentMapOf(
+                        50 to "50%",
+                        75 to "75%",
+                        100 to "100%",
+                        125 to "125%",
+                        150 to "150%",
+                        200 to "200%"
+                    ),
+                    title = "Vertical Drag Sensitivity"
+                ),
             ),
         )
     }
@@ -125,6 +149,18 @@ object PlayerSettingsGesturesScreen : SearchableSettings {
                     preference = playerSmoothSeek,
                     title = stringResource(AYMR.strings.pref_player_smooth_seek),
                     subtitle = stringResource(AYMR.strings.pref_player_smooth_seek_summary),
+                ),
+                Preference.PreferenceItem.ListPreference(
+                    preference = gesturePreferences.defaultHoldSpeed(),
+                    entries = persistentMapOf(
+                        1.25f to "1.25x",
+                        1.5f to "1.5x",
+                        1.75f to "1.75x",
+                        2.0f to "2.0x",
+                        2.5f to "2.5x",
+                        3.0f to "3.0x"
+                    ),
+                    title = "Hold to Speed"
                 ),
             ),
         )

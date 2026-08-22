@@ -1,5 +1,7 @@
 package eu.kanade.tachiyomi.ui.stats.anime
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,6 +18,7 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 @Composable
 fun Screen.animeStatsTab(): TabContent {
     val navigator = LocalNavigator.currentOrThrow
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val screenModel = rememberScreenModel { AnimeStatsScreenModel() }
     val state by screenModel.state.collectAsState()
@@ -26,6 +29,13 @@ fun Screen.animeStatsTab(): TabContent {
 
     return TabContent(
         titleRes = AYMR.strings.label_anime,
+        actions = kotlinx.collections.immutable.persistentListOf(
+            eu.kanade.presentation.components.AppBar.Action(
+                title = "Export CSV",
+                icon = androidx.compose.material.icons.Icons.Default.Share,
+                onClick = { screenModel.exportToCsv(context) },
+            ),
+        ),
         content = { contentPadding, _ ->
 
             if (state is StatsScreenState.Loading) {

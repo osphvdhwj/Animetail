@@ -247,6 +247,49 @@ class GoogleDriveSyncService(context: Context, json: Json, syncPreferences: Sync
             }
         }
     }
+
+    suspend fun uploadBackupFile(uri: Uri): Boolean {
+        return withIOContext {
+            try {
+                val drive = googleDriveService.driveService ?: return@withIOContext false
+                googleDriveService.refreshToken()
+
+                val folderId = getOrCreateBackupFolder(drive)
+                val format = java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm", java.util.Locale.getDefault())
+                val dateStr = format.format(java.util.Date())
+                val filename = "Animetail_Backup_$dateStr.tachibk"
+
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    val mediaContent = InputStreamContent("application/octet-stream", inputStream)
+                    val fileMetadata = File().apply {
+                        name = filename
+                        parents = listOf(folderId)
+                    }
+                    drive.files().create(fileMetadata, mediaContent).execute()
+                }
+                logcat(LogPriority.INFO, "SyncService") { "Auto-backup uploaded to Google Drive folder 'Animetail Backups'" }
+                true
+            } catch (e: Exception) {
+                logcat(LogPriority.ERROR, "SyncService") { "Failed to upload backup to Google Drive: ${e.message}" }
+                false
+            }
+        }
+    }
+
+    private fun getOrCreateBackupFolder(drive: Drive): String {
+        val query = "mimeType='application/vnd.google-apps.folder' and name = 'Animetail Backups' and trashed = false"
+        val folderList = drive.files().list().setQ(query).setFields("files(id)").execute().files
+        if (!folderList.isNullOrEmpty()) {
+            return folderList[0].id
+        }
+
+        val folderMetadata = File().apply {
+            name = "Animetail Backups"
+            mimeType = "application/vnd.google-apps.folder"
+        }
+        val folder = drive.files().create(folderMetadata).setFields("id").execute()
+        return folder.id
+    }
 }
 
 class GoogleDriveService(private val context: Context) {

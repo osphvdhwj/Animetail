@@ -36,6 +36,7 @@ class BasePreferences(
         PACKAGEINSTALLER(MR.strings.ext_installer_packageinstaller, true),
         SHIZUKU(MR.strings.ext_installer_shizuku, false),
         PRIVATE(MR.strings.ext_installer_private, false),
+        ROOT(MR.strings.ext_installer_root, false),
     }
 
     val displayProfile: Preference<String> = preferenceStore.getString("pref_display_profile_key", "")

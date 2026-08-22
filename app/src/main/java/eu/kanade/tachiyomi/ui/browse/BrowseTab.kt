@@ -64,6 +64,16 @@ data object BrowseTab : Tab {
         navigator.push(GlobalAnimeSearchScreen())
     }
 
+    // SY -->
+    @Composable
+    override fun isEnabled(): Boolean {
+        val scope = rememberCoroutineScope()
+        return remember {
+            uy.kohesive.injekt.Injekt.get<eu.kanade.domain.ui.UiPreferences>().showNavBrowse.asState(scope)
+        }.value
+    }
+    // SY <--
+
     private enum class ExtensionTabTarget {
         ANIME,
         MANGA,

@@ -21,7 +21,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import kotlin.math.log2
+import kotlin.math.pow
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
@@ -119,7 +122,6 @@ fun GestureHandler(
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.safeGestures)
             .pointerInput(Unit) {
-                val originalSpeed = viewModel.playbackSpeed.value
                 detectTapGestures(
                     onTap = {
                         if (controlsShown) viewModel.hideControls() else viewModel.showControls()
@@ -139,6 +141,7 @@ fun GestureHandler(
                         }
                     },
                     onPress = {
+                        val originalSpeed = viewModel.playbackSpeed.value
                         if (panelShown != Panels.None && !allowGesturesInPanels) {
                             viewModel.panelShown.update { Panels.None }
                         }
@@ -172,8 +175,9 @@ fun GestureHandler(
                         if (!isLongPressing) {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             isLongPressing = true
-                            viewModel.pause()
-                            viewModel.sheetShown.update { Sheets.Screenshot }
+                            val holdSpeed = gesturePreferences.defaultHoldSpeed().get()
+                            viewModel.mpv.setPropertyDouble("speed", holdSpeed.toDouble())
+                            viewModel.playerUpdate.update { PlayerUpdates.DoubleSpeed(holdSpeed.toDouble()) }
                         }
                     },
                 )
@@ -183,33 +187,64 @@ fun GestureHandler(
                 var startingPosition = position.toInt()
                 var startingX = 0f
                 var wasPlayerAlreadyPause = false
+                var startingSpeedIndex = 0
+                val speedList = listOf(0.25f, 0.5f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
                 detectHorizontalDragGestures(
                     onDragStart = {
-                        startingPosition = position.toInt()
-                        startingX = it.x
-                        wasPlayerAlreadyPause = viewModel.paused.value
-                        viewModel.pause()
+                        if (isLongPressing) {
+                            startingX = it.x
+                            val currentSpeed = viewModel.mpv.getPropertyDouble("speed")?.toFloat() ?: 1.0f
+                            startingSpeedIndex = speedList.indices.minByOrNull { idx -> kotlin.math.abs(speedList[idx] - currentSpeed) } ?: 2
+                        } else {
+                            startingPosition = position.toInt()
+                            startingX = it.x
+                            wasPlayerAlreadyPause = viewModel.paused.value
+                            viewModel.pause()
+                        }
                     },
                     onDragEnd = {
-                        viewModel.gestureSeekAmount.update { null }
-                        viewModel.hideSeekBar()
-                        if (!wasPlayerAlreadyPause) viewModel.unpause()
+                        if (isLongPressing) {
+                            // Do nothing
+                        } else {
+                            viewModel.gestureSeekAmount.update { null }
+                            viewModel.hideSeekBar()
+                            if (!wasPlayerAlreadyPause) viewModel.unpause()
+                        }
+                    },
+                    onDragCancel = {
+                        if (isLongPressing) {
+                            // Do nothing
+                        } else {
+                            viewModel.gestureSeekAmount.update { null }
+                            viewModel.hideSeekBar()
+                            if (!wasPlayerAlreadyPause) viewModel.unpause()
+                        }
                     },
                 ) { change, dragAmount ->
-                    if (position <= 0f && dragAmount < 0) return@detectHorizontalDragGestures
-                    if (position >= duration && dragAmount > 0) return@detectHorizontalDragGestures
-                    calculateNewHorizontalGestureValue(startingPosition, startingX, change.position.x, 0.15f).let {
-                        viewModel.gestureSeekAmount.update { _ ->
-                            Pair(
-                                startingPosition,
-                                (it - startingPosition)
-                                    .coerceIn(0 - startingPosition, (duration - startingPosition).toInt()),
-                            )
+                    if (isLongPressing) {
+                        val dx = change.position.x - startingX
+                        val indexShift = (dx / 100f).toInt()
+                        val newIndex = (startingSpeedIndex + indexShift).coerceIn(0, speedList.lastIndex)
+                        val speed = speedList[newIndex]
+                        viewModel.mpv.setPropertyDouble("speed", speed.toDouble())
+                        viewModel.playerUpdate.update { PlayerUpdates.DoubleSpeed(speed.toDouble()) }
+                    } else {
+                        if (position <= 0f && dragAmount < 0) return@detectHorizontalDragGestures
+                        if (position >= duration && dragAmount > 0) return@detectHorizontalDragGestures
+                        val sensModifier = gesturePreferences.horizontalDragSensitivity().get() / 100f
+                        calculateNewHorizontalGestureValue(startingPosition, startingX, change.position.x, 0.15f * sensModifier).let {
+                            viewModel.gestureSeekAmount.update { _ ->
+                                Pair(
+                                    startingPosition,
+                                    (it - startingPosition)
+                                        .coerceIn(0 - startingPosition, (duration - startingPosition).toInt()),
+                                )
+                            }
+                            viewModel.seekTo(it.coerceIn(0, duration.toInt()), preciseSeeking)
                         }
-                        viewModel.seekTo(it.coerceIn(0, duration.toInt()), preciseSeeking)
-                    }
 
-                    if (showSeekbar) viewModel.showSeekBar()
+                        if (showSeekbar) viewModel.showSeekBar()
+                    }
                 }
             }
             .pointerInput(areControlsLocked) {
@@ -219,9 +254,10 @@ fun GestureHandler(
                 var originalVolume = currentVolume
                 var originalMPVVolume = currentMPVVolume
                 var originalBrightness = currentBrightness
-                val brightnessGestureSens = 0.001f
-                val volumeGestureSens = 0.001f * viewModel.maxVolume
-                val mpvVolumeGestureSens = 0.001f * volumeBoostingCap
+                val vertSensModifier = gesturePreferences.verticalDragSensitivity().get() / 100f
+                val brightnessGestureSens = 0.001f * vertSensModifier
+                val volumeGestureSens = 0.001f * viewModel.maxVolume * vertSensModifier
+                val mpvVolumeGestureSens = 0.001f * volumeBoostingCap * vertSensModifier
                 val isIncreasingVolumeBoost: (Float) -> Boolean = {
                     volumeBoostingCap > 0 &&
                         currentVolume == viewModel.maxVolume &&
@@ -294,6 +330,16 @@ fun GestureHandler(
                     } else {
                         if (change.position.x < size.width / 2) changeBrightness() else changeVolume()
                     }
+                }
+            }
+            .pointerInput(areControlsLocked) {
+                if (areControlsLocked) return@pointerInput
+                detectTransformGestures { _, _, zoom, _ ->
+                    if (zoom == 1f) return@detectTransformGestures
+                    val currentZoomLog = viewModel.mpv.getPropertyDouble("video-zoom") ?: 0.0
+                    val currentScale = 2.0.pow(currentZoomLog)
+                    val newScale = (currentScale * zoom).coerceIn(0.25, 4.0)
+                    viewModel.mpv.setPropertyDouble("video-zoom", log2(newScale))
                 }
             },
     )

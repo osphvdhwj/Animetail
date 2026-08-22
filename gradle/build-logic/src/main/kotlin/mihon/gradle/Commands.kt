@@ -9,13 +9,13 @@ import java.time.format.DateTimeFormatter
 // Git is needed in your system PATH for these commands to work.
 // If it's not installed, you can return a random value as a workaround
 fun Project.getLatestCommitCount(): String {
-    return exec("git rev-list --count HEAD")
-    // return "1"
+    val count = try { exec("git rev-list --count HEAD") } catch (e: Exception) { "" }
+    return count.ifBlank { "136" }
 }
 
 fun Project.getLatestCommitSha(): String {
-    return exec("git rev-parse --short HEAD")
-    // return "1"
+    val sha = try { exec("git rev-parse --short HEAD") } catch (e: Exception) { "" }
+    return sha.ifBlank { "custom" }
 }
 
 private val BUILD_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
@@ -26,20 +26,28 @@ private val BUILD_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:
  * @return A formatted string representing the build time. The format used is defined by [BUILD_TIME_FORMATTER].
  */
 fun Project.getBuildTime(useLatestCommitTime: Boolean): String {
-    return if (useLatestCommitTime) {
-        val epoch = exec("git log -1 --format=%ct").toLong()
-        Instant.ofEpochSecond(epoch).atOffset(ZoneOffset.UTC).format(BUILD_TIME_FORMATTER)
-    } else {
-        LocalDateTime.now(ZoneOffset.UTC).format(BUILD_TIME_FORMATTER)
+    if (useLatestCommitTime) {
+        val epochStr = try { exec("git log -1 --format=%ct") } catch (e: Exception) { "" }
+        if (epochStr.isNotBlank()) {
+            val epoch = epochStr.toLongOrNull()
+            if (epoch != null) {
+                return Instant.ofEpochSecond(epoch).atOffset(ZoneOffset.UTC).format(BUILD_TIME_FORMATTER)
+            }
+        }
     }
+    return LocalDateTime.now(ZoneOffset.UTC).format(BUILD_TIME_FORMATTER)
 }
 
 fun Project.exec(command: String): String {
-    return providers.exec {
-        commandLine = command.split(" ")
+    return try {
+        providers.exec {
+            commandLine = command.split(" ")
+        }
+            .standardOutput
+            .asText
+            .get()
+            .trim()
+    } catch (e: Exception) {
+        ""
     }
-        .standardOutput
-        .asText
-        .get()
-        .trim()
 }

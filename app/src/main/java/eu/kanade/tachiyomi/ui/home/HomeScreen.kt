@@ -51,6 +51,7 @@ import eu.kanade.tachiyomi.ui.browse.BrowseTab
 import eu.kanade.tachiyomi.ui.download.DownloadsTab
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
+import eu.kanade.tachiyomi.ui.discover.DiscoverTab
 import eu.kanade.tachiyomi.ui.history.HistoriesTab
 import eu.kanade.tachiyomi.ui.library.anime.AnimeLibraryTab
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibraryTab
@@ -226,6 +227,8 @@ object HomeScreen : Screen() {
                             is Tab.Updates -> UpdatesTab
 
                             is Tab.History -> HistoriesTab
+
+                            is Tab.Discover -> DiscoverTab
 
                             is Tab.Browse -> {
                                 if (it.toExtensions) {
@@ -403,6 +406,7 @@ object HomeScreen : Screen() {
         data class Library(val mangaIdToOpen: Long? = null) : Tab
         data object Updates : Tab
         data object History : Tab
+        data object Discover : Tab
         data class Browse(val toExtensions: Boolean = false, val anime: Boolean = false) : Tab
         data class More(val toDownloads: Boolean) : Tab
     }

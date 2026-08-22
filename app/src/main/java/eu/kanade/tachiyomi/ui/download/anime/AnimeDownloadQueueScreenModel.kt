@@ -25,6 +25,9 @@ class AnimeDownloadQueueScreenModel(
     private val _state = MutableStateFlow(emptyList<AnimeDownloadHeaderItem>())
     val state = _state.asStateFlow()
 
+    private val _selectedItems = MutableStateFlow(emptyList<AnimeDownload>())
+    val selectedItems = _selectedItems.asStateFlow()
+
     lateinit var controllerBinding: DownloadListBinding
 
     /**
@@ -110,6 +113,67 @@ class AnimeDownloadQueueScreenModel(
                 }
             }
         }
+
+        override fun onItemClick(view: android.view.View?, position: Int): Boolean {
+            val adapter = adapter ?: return false
+            if (adapter.selectedItemCount > 0) {
+                adapter.toggleSelection(position)
+                updateSelection()
+                return true
+            }
+            return false
+        }
+
+        override fun onItemLongClick(position: Int) {
+            val adapter = adapter ?: return
+            adapter.toggleSelection(position)
+            updateSelection()
+        }
+    }
+
+    private fun updateSelection() {
+        val adapter = adapter ?: return
+        _selectedItems.value = adapter.selectedPositions.mapNotNull {
+            (adapter.getItem(it) as? AnimeDownloadItem)?.download
+        }
+    }
+
+    fun clearSelection() {
+        adapter?.clearSelection()
+        updateSelection()
+    }
+
+    fun deleteSelected() {
+        cancel(selectedItems.value)
+        clearSelection()
+    }
+
+    fun startSelected() {
+        // Find episodes by id and add them to download manager queue
+        val selected = selectedItems.value
+        if (selected.isEmpty()) return
+        
+        // AnimeDownloadManager has `addDownloadsToStartOfQueue` but the downloads are already in the queue.
+        // We just need to change their state back to QUEUE. Wait, if they are ERROR or STOPPED, they are still in queue.
+        selected.forEach { download ->
+            if (download.status != AnimeDownload.State.DOWNLOADING) {
+                download.status = AnimeDownload.State.QUEUE
+            }
+        }
+        downloadManager.startDownloads()
+        clearSelection()
+    }
+    
+    fun pauseSelected() {
+        val selected = selectedItems.value
+        if (selected.isEmpty()) return
+        
+        selected.forEach { download ->
+            if (download.status == AnimeDownload.State.DOWNLOADING || download.status == AnimeDownload.State.QUEUE) {
+                download.status = AnimeDownload.State.ERROR
+            }
+        }
+        clearSelection()
     }
 
     init {
@@ -117,9 +181,10 @@ class AnimeDownloadQueueScreenModel(
             downloadManager.queueState
                 .map { downloads ->
                     downloads
-                        .groupBy { it.source }
+                        .groupBy { it.status }
                         .map { entry ->
-                            AnimeDownloadHeaderItem(entry.key.id, entry.key.name, entry.value.size).apply {
+                            val statusName = entry.key.name.lowercase().replaceFirstChar { it.uppercase() }
+                            AnimeDownloadHeaderItem(entry.key.value.toLong(), statusName, entry.value.size).apply {
                                 addSubItems(0, entry.value.map { AnimeDownloadItem(it, this) })
                             }
                         }
@@ -152,6 +217,14 @@ class AnimeDownloadQueueScreenModel(
 
     fun clearQueue() {
         downloadManager.clearQueue()
+    }
+
+    fun clearCompletedDownloads() {
+        downloadManager.clearCompletedDownloads()
+    }
+
+    fun clearErrorDownloads() {
+        downloadManager.clearErrorDownloads()
     }
 
     fun reorder(downloads: List<AnimeDownload>) {

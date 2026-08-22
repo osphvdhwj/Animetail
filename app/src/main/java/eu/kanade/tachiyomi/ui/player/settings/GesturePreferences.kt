@@ -13,6 +13,9 @@ class GesturePreferences(
         true,
     )
     fun swapVolumeBrightness() = preferenceStore.getBoolean("pref_swap_volume_and_brightness", false)
+    fun horizontalDragSensitivity() = preferenceStore.getInt("pref_horizontal_drag_sensitivity", 100)
+    fun verticalDragSensitivity() = preferenceStore.getInt("pref_vertical_drag_sensitivity", 100)
+    fun defaultHoldSpeed() = preferenceStore.getFloat("pref_default_hold_speed", 2.0f)
 
     // Seeking
 

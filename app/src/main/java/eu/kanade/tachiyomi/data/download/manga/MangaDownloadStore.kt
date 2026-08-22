@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.data.download.manga
 
 import android.content.Context
 import androidx.core.content.edit
+import kotlinx.coroutines.runBlocking
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.serialization.Serializable
@@ -62,13 +63,21 @@ class MangaDownloadStore(
         val downloads = mutableListOf<MangaDownload>()
         if (objs.isNotEmpty()) {
             val cachedManga = mutableMapOf<Long, Manga?>()
-            for ((mangaId, chapterId) in objs) {
-                val manga = cachedManga.getOrPut(mangaId) {
-                    getManga.await(mangaId)
+            for (obj in objs) {
+                val manga = cachedManga.getOrPut(obj.mangaId) {
+                    runBlocking { getManga.await(obj.mangaId) }
                 } ?: continue
                 val source = sourceManager.get(manga.source) as? HttpSource ?: continue
-                val chapter = getChapter.await(chapterId) ?: continue
-                downloads.add(MangaDownload(source, manga, chapter))
+                val chapter = runBlocking { getChapter.await(obj.chapterId) } ?: continue
+                
+                val download = MangaDownload(source, manga, chapter)
+                
+                val restoredStatus = MangaDownload.State.entries.find { it.value == obj.status }
+                if (restoredStatus != null) {
+                    download.status = restoredStatus
+                }
+                
+                downloads.add(download)
             }
         }
 
@@ -77,13 +86,13 @@ class MangaDownloadStore(
     }
 
     private fun serialize(download: MangaDownload): String {
-        val obj = DownloadObject(download.manga.id, download.chapter.id, counter++)
+        val obj = MangaDownloadObject(download.manga.id, download.chapter.id, counter++, download.status.value)
         return json.encodeToString(obj)
     }
 
-    private fun deserialize(string: String): DownloadObject? {
+    private fun deserialize(string: String): MangaDownloadObject? {
         return try {
-            json.decodeFromString<DownloadObject>(string)
+            json.decodeFromString<MangaDownloadObject>(string)
         } catch (e: Exception) {
             null
         }
@@ -91,4 +100,4 @@ class MangaDownloadStore(
 }
 
 @Serializable
-private data class DownloadObject(val mangaId: Long, val chapterId: Long, val order: Int)
+private data class MangaDownloadObject(val mangaId: Long, val chapterId: Long, val order: Int, val status: Int = 0)

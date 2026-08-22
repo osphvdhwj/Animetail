@@ -20,7 +20,7 @@ class AnimeDownloadAdapter(val downloadItemListener: DownloadItemListener) : Fle
         return getHeaderOf(getItem(fromPosition)) == getHeaderOf(getItem(toPosition))
     }
 
-    interface DownloadItemListener {
+    interface DownloadItemListener : FlexibleAdapter.OnItemClickListener, FlexibleAdapter.OnItemLongClickListener {
         fun onItemReleased(position: Int)
         fun onMenuItemClick(position: Int, menuItem: MenuItem)
     }

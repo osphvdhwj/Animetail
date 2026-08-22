@@ -67,12 +67,28 @@ class MangaDownloadManager(
 
     fun pauseDownloads() {
         downloader.pause()
-        downloader.stop()
     }
 
+    /**
+     * Empties the download queue.
+     */
     fun clearQueue() {
         downloader.clearQueue()
         downloader.stop()
+    }
+
+    /**
+     * Clears downloaded chapters from the queue.
+     */
+    fun clearCompletedDownloads() {
+        downloader.clearCompletedDownloads()
+    }
+
+    /**
+     * Clears error chapters from the queue.
+     */
+    fun clearErrorDownloads() {
+        downloader.clearErrorDownloads()
     }
 
     fun getQueuedDownloadOrNull(chapterId: Long): MangaDownload? {

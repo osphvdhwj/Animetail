@@ -98,13 +98,24 @@ class AnimeDownloadStore(
         val downloads = mutableListOf<AnimeDownload>()
         if (objs.isNotEmpty()) {
             val cachedAnime = mutableMapOf<Long, Anime?>()
-            for ((animeId, episodeId) in objs) {
-                val anime = cachedAnime.getOrPut(animeId) {
-                    runBlocking { getAnime.await(animeId) }
+            for (obj in objs) {
+                val anime = cachedAnime.getOrPut(obj.animeId) {
+                    runBlocking { getAnime.await(obj.animeId) }
                 } ?: continue
                 val source = sourceManager.get(anime.source) as? AnimeHttpSource ?: continue
-                val episode = runBlocking { getEpisode.await(episodeId) } ?: continue
-                downloads.add(AnimeDownload(source, anime, episode))
+                val episode = runBlocking { getEpisode.await(obj.episodeId) } ?: continue
+                
+                val download = AnimeDownload(source, anime, episode)
+                
+                // If it was DOWNLOADING, ERROR, etc, we restore its state
+                // However, downloading will be reset to STOPPED or QUEUE by Downloader anyway.
+                // But we should restore DOWNLOADED, ERROR, etc.
+                val restoredStatus = AnimeDownload.State.entries.find { it.value == obj.status }
+                if (restoredStatus != null) {
+                    download.status = restoredStatus
+                }
+                
+                downloads.add(download)
             }
         }
 
@@ -119,7 +130,7 @@ class AnimeDownloadStore(
      * @param download the download to serialize.
      */
     private fun serialize(download: AnimeDownload): String {
-        val obj = AnimeDownloadObject(download.anime.id, download.episode.id, counter++)
+        val obj = AnimeDownloadObject(download.anime.id, download.episode.id, counter++, download.status.value)
         return json.encodeToString(obj)
     }
 
@@ -145,4 +156,4 @@ class AnimeDownloadStore(
  * @param order the order of the download in the queue.
  */
 @Serializable
-private data class AnimeDownloadObject(val animeId: Long, val episodeId: Long, val order: Int)
+private data class AnimeDownloadObject(val animeId: Long, val episodeId: Long, val order: Int, val status: Int = 0)

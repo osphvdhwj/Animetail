@@ -141,6 +141,19 @@ class PlayerActivity : BaseActivity() {
 
     private var pipReceiver: BroadcastReceiver? = null
 
+    // Hold for 2X State
+    private var isHolding = false
+    private var initialDragX = 0f
+    private var initialDragY = 0f
+    private var startingSpeedIndex = -1
+    private var savedSpeed = 1.0
+    private var lastTapTime = 0L
+    private val uiHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var longPressRunnable: Runnable? = null
+    private var collapseRunnable: Runnable? = null
+    private var glassPill: android.widget.LinearLayout? = null
+    private var pillText: android.widget.TextView? = null
+
     private val noisyReceiver = object : BroadcastReceiver() {
         var initialized = false
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -267,6 +280,7 @@ class PlayerActivity : BaseActivity() {
         setupPlayerAudio()
         setupMediaSession()
         setupPlayerOrientation()
+        createGlassUI()
 
         Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
             runOnUiThread {
@@ -1442,4 +1456,177 @@ class PlayerActivity : BaseActivity() {
             }
         }
     }
+
+    private fun createGlassUI() {
+        uiHandler.post {
+            val root = window.decorView as android.view.ViewGroup
+            val margin = 15
+            glassPill = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER
+                visibility = View.GONE
+                alpha = 0f
+                val shape = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                    cornerRadius = 100f
+                    setColor(android.graphics.Color.parseColor("#88000000"))
+                    setStroke(3, android.graphics.Color.parseColor("#55FFFFFF"))
+                }
+                background = shape
+                setPadding(60, 20, 60, 20)
+                
+                var cutoutHeight = 0
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    cutoutHeight = window.decorView.rootWindowInsets?.displayCutout?.safeInsetTop ?: 0
+                }
+                elevation = 10f
+                layoutParams = android.widget.FrameLayout.LayoutParams(-2, -2).apply {
+                    gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
+                    topMargin = margin + cutoutHeight
+                }
+                val icon = android.widget.ImageView(this@PlayerActivity).apply {
+                    setImageResource(android.R.drawable.ic_media_ff)
+                    setColorFilter(android.graphics.Color.WHITE)
+                    layoutParams = android.widget.LinearLayout.LayoutParams(50, 50).apply {
+                        rightMargin = 20
+                    }
+                }
+                addView(icon)
+                pillText = android.widget.TextView(this@PlayerActivity).apply {
+                    setTextColor(android.graphics.Color.WHITE)
+                    textSize = 17f
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                }
+                addView(pillText)
+            }
+            root.addView(glassPill)
+        }
+    }
+
+    private fun showSpeedOverlay(text: String) {
+        uiHandler.post {
+            pillText?.text = text
+            glassPill?.apply {
+                visibility = View.VISIBLE
+                scaleX = 1f
+                scaleY = 1f
+                if (text.contains("  ")) {
+                    animate().alpha(1f).scaleX(1.25f).scaleY(1.1f).setInterpolator(android.view.animation.OvershootInterpolator()).setDuration(250).start()
+                } else {
+                    animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(200).start()
+                }
+                bringToFront()
+            }
+        }
+    }
+
+    private fun hideSpeedOverlay() {
+        uiHandler.post {
+            glassPill?.animate()?.alpha(0f)?.scaleX(0.8f)?.scaleY(0.8f)?.setDuration(400)?.withEndAction {
+                glassPill?.visibility = View.GONE
+            }?.start()
+        }
+    }
+
+    private fun startCollapseTimer(speed: Double) {
+        collapseRunnable?.let { uiHandler.removeCallbacks(it) }
+        collapseRunnable = Runnable { showSpeedOverlay("${speed}x") }
+        uiHandler.postDelayed(collapseRunnable!!, 750) 
+    }
+
+    override fun dispatchTouchEvent(event: android.view.MotionEvent?): Boolean {
+        if (event == null) return super.dispatchTouchEvent(event)
+        
+        if (isInPictureInPictureMode) {
+            if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
+                val now = System.currentTimeMillis()
+                if (now - lastTapTime < 300) {
+                    mpv.command("cycle", "pause")
+                    lastTapTime = 0L
+                    return true
+                }
+                lastTapTime = now
+            }
+            return super.dispatchTouchEvent(event)
+        } else {
+            val decorView = window.decorView
+            val height = decorView.height
+            if (height > 0) {
+                if (event.y < height * 0.15f || event.y > height * 0.80f) {
+                    return super.dispatchTouchEvent(event)
+                }
+            }
+        }
+
+        val cachedSpeeds = listOf(0.1, 0.5, 1.0, 2.0, 3.5, 4.0, 6.0, 10.0)
+        
+        when (event.actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN -> {
+                longPressRunnable?.let { uiHandler.removeCallbacks(it) }
+                initialDragX = event.x
+                initialDragY = event.y
+                if (mpv.getPropertyBoolean("pause") == false) {
+                    longPressRunnable = Runnable {
+                        isHolding = true
+                        savedSpeed = viewModel.playbackSpeed.value.toDouble()
+                        val holdSpeed = 2.0
+                        mpv.setPropertyDouble("speed", holdSpeed)
+                        startingSpeedIndex = cachedSpeeds.indices.minByOrNull { Math.abs(cachedSpeeds[it] - holdSpeed) } ?: 0
+                        initialDragX = event.x
+                        initialDragY = event.y
+                        showSpeedOverlay("${holdSpeed}x")
+                        
+                        val cancelEvent = android.view.MotionEvent.obtain(event)
+                        cancelEvent.action = android.view.MotionEvent.ACTION_CANCEL
+                        super.dispatchTouchEvent(cancelEvent)
+                        cancelEvent.recycle()
+                    }
+                    uiHandler.postDelayed(longPressRunnable!!, 400L)
+                }
+            }
+            android.view.MotionEvent.ACTION_MOVE -> {
+                if (!isHolding) {
+                    if (Math.abs(event.x - initialDragX) > 60 || Math.abs(event.y - initialDragY) > 60) {
+                        longPressRunnable?.let { uiHandler.removeCallbacks(it) }
+                    }
+                    return super.dispatchTouchEvent(event)
+                }
+                val dx = event.x - initialDragX
+                val dy = event.y - initialDragY
+                val mainDelta = dx
+                val crossDelta = dy
+                if (Math.abs(mainDelta) < 50 || Math.abs(crossDelta) * 2.5 > Math.abs(mainDelta)) return true
+                val indexShift = (mainDelta / 100.0).toInt()
+                val newIndex = (startingSpeedIndex + indexShift).coerceIn(0, cachedSpeeds.size - 1)
+                val currentSpeed = viewModel.playbackSpeed.value.toDouble()
+                if (Math.abs(cachedSpeeds[newIndex] - currentSpeed) > 0.01) {
+                    mpv.setPropertyDouble("speed", cachedSpeeds[newIndex])
+                    
+                    val idx = newIndex
+                    val sb = java.lang.StringBuilder()
+                    if (idx > 1) sb.append(".. ")
+                    if (idx > 0) sb.append("${cachedSpeeds[idx-1]}  ")
+                    sb.append(cachedSpeeds[idx]).append("x")
+                    if (idx < cachedSpeeds.size - 1) sb.append("  ${cachedSpeeds[idx+1]}")
+                    if (idx < cachedSpeeds.size - 2) sb.append(" ..")
+                    
+                    showSpeedOverlay(sb.toString())
+                    startCollapseTimer(cachedSpeeds[newIndex]) 
+                }
+                return true
+            }
+            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                longPressRunnable?.let { uiHandler.removeCallbacks(it) }
+                collapseRunnable?.let { uiHandler.removeCallbacks(it) }
+                if (isHolding) {
+                    isHolding = false
+                    mpv.setPropertyDouble("speed", savedSpeed)
+                    hideSpeedOverlay()
+                    return true
+                }
+            }
+        }
+        return super.dispatchTouchEvent(event)
+    }
 }
+

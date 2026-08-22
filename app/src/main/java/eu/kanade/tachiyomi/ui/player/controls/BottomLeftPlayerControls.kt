@@ -66,7 +66,10 @@ fun BottomLeftPlayerControls(
         ControlsButton(
             text = stringResource(AYMR.strings.player_speed, playbackSpeed),
             onClick = {
-                val newSpeed = if (playbackSpeed >= 2) 0.25f else playbackSpeed + 0.25f
+                val speedList = listOf(0.25f, 0.5f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
+                var idx = speedList.indices.minByOrNull { kotlin.math.abs(speedList[it] - playbackSpeed) } ?: 0
+                idx = (idx + 1) % speedList.size
+                val newSpeed = speedList[idx]
                 onPlaybackSpeedChange(newSpeed)
                 playerPreferences.playerSpeed().set(newSpeed)
             },

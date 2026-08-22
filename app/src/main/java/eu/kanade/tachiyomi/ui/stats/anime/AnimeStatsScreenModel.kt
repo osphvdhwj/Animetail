@@ -10,6 +10,7 @@ import eu.kanade.core.util.fastFilterNot
 import eu.kanade.presentation.more.stats.StatsScreenState
 import eu.kanade.presentation.more.stats.data.StatsData
 import eu.kanade.tachiyomi.animesource.model.SAnime
+import eu.kanade.tachiyomi.util.system.toast
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.track.AnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
@@ -162,5 +163,76 @@ class AnimeStatsScreenModel(
     private fun get10PointScore(track: AnimeTrack): Double {
         val service = trackerManager.get(track.trackerId)!!
         return service.animeService.get10PointScore(track)
+    }
+
+    fun exportToCsv(context: android.content.Context) {
+        screenModelScope.launchIO {
+            try {
+                val animelibAnime = getAnimelibAnime.await()
+                val distinctLibraryAnime = animelibAnime.fastDistinctBy { it.id }
+
+                val csvBuilder = StringBuilder()
+                csvBuilder.append("Title,Status,Episodes Seen,Total Episodes,Time Watched (Minutes),Last Watched\n")
+
+                distinctLibraryAnime.forEach { libAnime ->
+                    val title = libAnime.anime.title.replace("\"", "\"\"")
+                    val status = when (libAnime.anime.status.toInt()) {
+                        SAnime.COMPLETED -> "Completed"
+                        SAnime.ONGOING -> "Ongoing"
+                        else -> "Unknown"
+                    }
+                    val seen = libAnime.seenCount
+                    val total = libAnime.totalCount
+
+                    var watchTimeSeconds = 0L
+                    getEpisodesByAnimeId.await(libAnime.anime.id).forEach { episode ->
+                        watchTimeSeconds += if (episode.seen) {
+                            episode.totalSeconds
+                        } else {
+                            episode.lastSecondSeen
+                        }
+                    }
+                    val watchTimeMinutes = watchTimeSeconds / 60
+
+                    val lastWatched = if (libAnime.lastSeen > 0) {
+                        val date = java.util.Date(libAnime.lastSeen)
+                        val format = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+                        format.format(date)
+                    } else {
+                        "Never"
+                    }
+
+                    csvBuilder.append("\"$title\",$status,$seen,$total,$watchTimeMinutes,$lastWatched\n")
+                }
+
+                val filename = "Animetail_Watch_Stats_${System.currentTimeMillis()}.csv"
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    val resolver = context.contentResolver
+                    val contentValues = android.content.ContentValues().apply {
+                        put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                        put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "text/csv")
+                        put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
+                    }
+                    val uri = resolver.insert(android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                    if (uri != null) {
+                        resolver.openOutputStream(uri)?.use { outputStream ->
+                            outputStream.write(csvBuilder.toString().toByteArray())
+                        }
+                    }
+                } else {
+                    val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                    val file = java.io.File(downloadsDir, filename)
+                    file.writeBytes(csvBuilder.toString().toByteArray())
+                }
+
+                tachiyomi.core.common.util.lang.withUIContext {
+                    context.toast("Stats exported to Downloads folder!")
+                }
+            } catch (e: Exception) {
+                tachiyomi.core.common.util.lang.withUIContext {
+                    context.toast("Failed to export stats: ${e.message}")
+                }
+            }
+        }
     }
 }

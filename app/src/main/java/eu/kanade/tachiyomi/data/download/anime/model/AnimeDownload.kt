@@ -43,6 +43,9 @@ data class AnimeDownload(
             progressStateFlow.value = value
         }
 
+    @Transient
+    var speed: String = ""
+
     /**
      * Updates the status of the download
      *

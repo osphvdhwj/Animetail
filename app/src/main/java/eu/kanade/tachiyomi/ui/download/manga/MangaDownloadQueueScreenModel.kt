@@ -31,6 +31,9 @@ class MangaDownloadQueueScreenModel(
     private val _state = MutableStateFlow(emptyList<MangaDownloadHeaderItem>())
     val state = _state.asStateFlow()
 
+    private val _selectedItems = MutableStateFlow(emptyList<MangaDownload>())
+    val selectedItems = _selectedItems.asStateFlow()
+
     lateinit var controllerBinding: DownloadListBinding
 
     /**
@@ -116,6 +119,64 @@ class MangaDownloadQueueScreenModel(
                 }
             }
         }
+
+        override fun onItemClick(view: android.view.View?, position: Int): Boolean {
+            val adapter = adapter ?: return false
+            if (adapter.selectedItemCount > 0) {
+                adapter.toggleSelection(position)
+                updateSelection()
+                return true
+            }
+            return false
+        }
+
+        override fun onItemLongClick(position: Int) {
+            val adapter = adapter ?: return
+            adapter.toggleSelection(position)
+            updateSelection()
+        }
+    }
+
+    private fun updateSelection() {
+        val adapter = adapter ?: return
+        _selectedItems.value = adapter.selectedPositions.mapNotNull {
+            (adapter.getItem(it) as? MangaDownloadItem)?.download
+        }
+    }
+
+    fun clearSelection() {
+        adapter?.clearSelection()
+        updateSelection()
+    }
+
+    fun deleteSelected() {
+        cancel(selectedItems.value)
+        clearSelection()
+    }
+
+    fun startSelected() {
+        val selected = selectedItems.value
+        if (selected.isEmpty()) return
+        
+        selected.forEach { download ->
+            if (download.status != MangaDownload.State.DOWNLOADING) {
+                download.status = MangaDownload.State.QUEUE
+            }
+        }
+        downloadManager.startDownloads()
+        clearSelection()
+    }
+    
+    fun pauseSelected() {
+        val selected = selectedItems.value
+        if (selected.isEmpty()) return
+        
+        selected.forEach { download ->
+            if (download.status == MangaDownload.State.DOWNLOADING || download.status == MangaDownload.State.QUEUE) {
+                download.status = MangaDownload.State.ERROR
+            }
+        }
+        clearSelection()
     }
 
     init {
@@ -123,9 +184,10 @@ class MangaDownloadQueueScreenModel(
             downloadManager.queueState
                 .map { downloads ->
                     downloads
-                        .groupBy { it.source }
+                        .groupBy { it.status }
                         .map { entry ->
-                            MangaDownloadHeaderItem(entry.key.id, entry.key.name, entry.value.size).apply {
+                            val statusName = entry.key.name.lowercase().replaceFirstChar { it.uppercase() }
+                            MangaDownloadHeaderItem(entry.key.value.toLong(), statusName, entry.value.size).apply {
                                 addSubItems(0, entry.value.map { MangaDownloadItem(it, this) })
                             }
                         }
@@ -158,6 +220,14 @@ class MangaDownloadQueueScreenModel(
 
     fun clearQueue() {
         downloadManager.clearQueue()
+    }
+
+    fun clearCompletedDownloads() {
+        downloadManager.clearCompletedDownloads()
+    }
+
+    fun clearErrorDownloads() {
+        downloadManager.clearErrorDownloads()
     }
 
     fun reorder(downloads: List<MangaDownload>) {

@@ -1,5 +1,6 @@
 package eu.kanade.domain.track.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.track.anime.model.toDbTrack
 import eu.kanade.domain.track.anime.model.toDomainTrack
@@ -11,6 +12,7 @@ import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
 import eu.kanade.tachiyomi.data.track.Tracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.util.lang.convertEpochMillisZone
+import kotlinx.datetime.TimeZone
 import logcat.LogPriority
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.lang.withNonCancellableContext
@@ -22,10 +24,8 @@ import tachiyomi.domain.items.episode.interactor.GetEpisodesByAnimeId
 import tachiyomi.domain.items.season.interactor.GetAnimeSeasonsByParentId
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.track.anime.interactor.InsertAnimeTrack
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import java.time.ZoneOffset
 
+@Inject
 class AddAnimeTracks(
     private val insertTrack: InsertAnimeTrack,
     private val syncChapterProgressWithTrack: SyncEpisodeProgressWithTrack,
@@ -34,6 +34,9 @@ class AddAnimeTracks(
     // AM -->
     private val getAnimeSeasonsByParentId: GetAnimeSeasonsByParentId,
     private val sourceManager: AnimeSourceManager,
+    private val updateAnime: UpdateAnime,
+    private val getAnime: GetAnime,
+    private val getAnimeHistory: GetAnimeHistory,
     // <-- AM
 ) {
 
@@ -52,8 +55,6 @@ class AddAnimeTracks(
 
             // After successfully inserting the track, try to fetch cast from the tracker if available and persist it
             try {
-                val updateAnime: UpdateAnime = Injekt.get()
-                val getAnime: GetAnime = Injekt.get()
                 val localAnime = getAnime.await(anime.id)
                 val titleForLookup = localAnime?.title
 
@@ -98,15 +99,15 @@ class AddAnimeTracks(
                         }
 
                         if (track.startDate <= 0) {
-                            val firstReadChapterDate = Injekt.get<GetAnimeHistory>().await(anime.id)
+                            val firstReadChapterDate = getAnimeHistory.await(anime.id)
                                 .sortedBy { it.seenAt }
                                 .firstOrNull()
                                 ?.seenAt
 
                             firstReadChapterDate?.let {
                                 val startDate = firstReadChapterDate.time.convertEpochMillisZone(
-                                    ZoneOffset.systemDefault(),
-                                    ZoneOffset.UTC,
+                                    TimeZone.currentSystemDefault(),
+                                    TimeZone.UTC,
                                 )
                                 track = track.copy(
                                     startDate = startDate,
@@ -171,7 +172,7 @@ class AddAnimeTracks(
                                     if (service is AnimeTracker) {
                                         val cast = (service as AnimeTracker).fetchCastByTitle(anime.title)
                                         if (!cast.isNullOrEmpty()) {
-                                            Injekt.get<UpdateAnime>().await(
+                                            updateAnime.await(
                                                 tachiyomi.domain.entries.anime.model.AnimeUpdate(
                                                     id = anime.id,
                                                     cast = cast,

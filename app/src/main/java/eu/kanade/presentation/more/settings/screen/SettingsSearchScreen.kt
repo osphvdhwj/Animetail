@@ -32,6 +32,7 @@ import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -56,6 +57,7 @@ import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsDecoderS
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsGesturesScreen
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsPlayerScreen
 import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsSubtitleScreen
+import eu.kanade.presentation.more.settings.screen.player.PlayerSettingsTorrentScreen
 import eu.kanade.presentation.util.Screen
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -234,7 +236,6 @@ private fun SearchResult(
             }
             .take(10) // Just take top 10 result for quicker result
             .toList()
-            .distinctBy { "${it.route::class.java.name}-${it.title}-${it.breadcrumbs}" }
     }
 
     Crossfade(
@@ -257,9 +258,7 @@ private fun SearchResult(
                 ) {
                     items(
                         items = it,
-                        key = { i ->
-                            "${i.route::class.java.name}-${i.title.ifEmpty { "_" }}-${i.breadcrumbs.ifEmpty { "_" }}"
-                        },
+                        key = { i -> i.hashCode() },
                     ) { item ->
                         Column(
                             modifier = Modifier
@@ -322,16 +321,17 @@ private fun getLocalizedBreadcrumb(nodes: List<String>, isLtr: Boolean): String 
     }
 }
 
-private val playerSettingScreens = listOf(
+private val playerSettingScreens: List<SearchableSettings> = listOf(
     PlayerSettingsPlayerScreen,
     PlayerSettingsGesturesScreen,
     PlayerSettingsDecoderScreen,
     PlayerSettingsSubtitleScreen,
     PlayerSettingsAudioScreen,
+    PlayerSettingsTorrentScreen,
     PlayerSettingsAdvancedScreen,
 )
 
-private val settingScreens = listOf(
+private val settingScreens: List<SearchableSettings> = listOf(
     SettingsAppearanceScreen,
     SettingsLibraryScreen,
     SettingsReaderScreen,

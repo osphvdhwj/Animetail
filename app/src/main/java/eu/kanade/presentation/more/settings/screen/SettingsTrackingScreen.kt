@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
@@ -41,14 +42,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.track.model.AutoTrackState
-import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
 import eu.kanade.tachiyomi.data.track.EnhancedMangaTracker
 import eu.kanade.tachiyomi.data.track.Tracker
-import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.anilist.AnilistApi
 import eu.kanade.tachiyomi.data.track.bangumi.BangumiApi
+import eu.kanade.tachiyomi.data.track.hikka.HikkaApi
+import eu.kanade.tachiyomi.data.track.mangabaka.MangaBakaApi
 import eu.kanade.tachiyomi.data.track.myanimelist.MyAnimeListApi
 import eu.kanade.tachiyomi.data.track.shikimori.ShikimoriApi
 import eu.kanade.tachiyomi.data.track.simkl.SimklApi
@@ -58,6 +59,7 @@ import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toPersistentMap
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
@@ -67,8 +69,6 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object SettingsTrackingScreen : SearchableSettings {
 
@@ -81,7 +81,7 @@ object SettingsTrackingScreen : SearchableSettings {
         val uriHandler = LocalUriHandler.current
         IconButton(onClick = { uriHandler.openUri("https://aniyomi.org/help/guides/tracking/") }) {
             Icon(
-                imageVector = Icons.Outlined.HelpOutline,
+                imageVector = Icons.AutoMirrored.Outlined.HelpOutline,
                 contentDescription = stringResource(MR.strings.tracking_guide),
             )
         }
@@ -91,11 +91,10 @@ object SettingsTrackingScreen : SearchableSettings {
     override fun getPreferences(): List<Preference> {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
-        val trackPreferences = remember { Injekt.get<TrackPreferences>() }
-        val trackerManager = remember { Injekt.get<TrackerManager>() }
-        val mangaSourceManager = remember { Injekt.get<MangaSourceManager>() }
-        val animeSourceManager = remember { Injekt.get<AnimeSourceManager>() }
-        val autoTrackStatePref = trackPreferences.autoUpdateTrackOnMarkRead
+        val trackPreferences = remember { context.appGraph.trackPreferences }
+        val trackerManager = remember { context.appGraph.trackerManager }
+        val mangaSourceManager = remember { context.appGraph.mangaSourceManager }
+        val animeSourceManager = remember { context.appGraph.animeSourceManager }
 
         var dialog by remember { mutableStateOf<Any?>(null) }
         dialog?.run {
@@ -134,7 +133,7 @@ object SettingsTrackingScreen : SearchableSettings {
             .filter { it is EnhancedAnimeTracker }
             .partition { service ->
                 val acceptedAnimeSources = (service as EnhancedAnimeTracker).getAcceptedSources()
-                animeSourceManager.getCatalogueSources().any { it::class.qualifiedName in acceptedAnimeSources }
+                animeSourceManager.getAll().any { it::class.qualifiedName in acceptedAnimeSources }
             }
 
         var enhancedTrackerInfo = stringResource(MR.strings.enhanced_tracking_info)
@@ -163,7 +162,7 @@ object SettingsTrackingScreen : SearchableSettings {
                 preference = trackPreferences.autoUpdateTrackOnMarkRead,
                 entries = AutoTrackState.entries
                     .associateWith { stringResource(it.titleRes) }
-                    .toPersistentMap(),
+                    .toMap(),
                 title = stringResource(AYMR.strings.pref_auto_update_manga_on_mark_read),
             ),
             // AM -->
@@ -179,7 +178,12 @@ object SettingsTrackingScreen : SearchableSettings {
             // <-- AM
             Preference.PreferenceGroup(
                 title = stringResource(MR.strings.services),
-                preferenceItems = persistentListOf(
+                preferenceItems = listOf(
+                    Preference.PreferenceItem.TrackerPreference(
+                        tracker = trackerManager.mangaBaka,
+                        login = { context.openInBrowser(MangaBakaApi.authUrl(), forceDefaultBrowser = true) },
+                        logout = { dialog = LogoutDialog(trackerManager.mangaBaka) },
+                    ),
                     Preference.PreferenceItem.TrackerPreference(
                         tracker = trackerManager.myAnimeList,
                         login = {
@@ -231,19 +235,8 @@ object SettingsTrackingScreen : SearchableSettings {
                         logout = { dialog = LogoutDialog(trackerManager.simkl) },
                     ),
                     Preference.PreferenceItem.TrackerPreference(
-                        tracker = trackerManager.bangumi,
-                        login = {
-                            context.openInBrowser(
-                                BangumiApi.authUrl(),
-                                forceDefaultBrowser = true,
-                            )
-                        },
-                        logout = { dialog = LogoutDialog(trackerManager.bangumi) },
-                    ),
-                    Preference.PreferenceItem.TrackerPreference(
                         tracker = trackerManager.tmdb,
                         login = {
-                            // If API key not set, ask user to provide it first
                             val currentApiKey = trackPreferences.trackApiKey(trackerManager.tmdb).get()
                             if (currentApiKey.isBlank()) {
                                 dialog = ApiKeyDialog(trackerManager.tmdb)
@@ -253,7 +246,10 @@ object SettingsTrackingScreen : SearchableSettings {
                                         val url = trackerManager.tmdb.getAuthUrl()
                                         context.openInBrowser(url, forceDefaultBrowser = true)
                                     } catch (e: Exception) {
-                                        withUIContext { context.toast(e.message ?: "TMDB auth error") }
+                                        withUIContext {
+                                            context.toast(e.message ?: "TMDB auth error")
+                                            dialog = ApiKeyDialog(trackerManager.tmdb)
+                                        }
                                     }
                                 }
                             }
@@ -269,6 +265,11 @@ object SettingsTrackingScreen : SearchableSettings {
                             )
                         },
                         logout = { dialog = LogoutDialog(trackerManager.trakt) },
+                    ),
+                    Preference.PreferenceItem.TrackerPreference(
+                        tracker = trackerManager.hikka,
+                        login = { context.openInBrowser(HikkaApi.authUrl(), forceDefaultBrowser = true) },
+                        logout = { dialog = LogoutDialog(trackerManager.hikka) },
                     ),
                     Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.tracking_info)),
                 ),
@@ -291,7 +292,8 @@ object SettingsTrackingScreen : SearchableSettings {
                                     login = { (service as EnhancedAnimeTracker).loginNoop() },
                                     logout = service::logout,
                                 )
-                            } + listOf(Preference.PreferenceItem.InfoPreference(enhancedTrackerInfo))
+                            } +
+                        listOf(Preference.PreferenceItem.InfoPreference(enhancedTrackerInfo))
                     ).toImmutableList(),
             ),
         )
@@ -463,8 +465,8 @@ private fun TrackingApiKeyDialog(
     onDismissRequest: () -> Unit,
 ) {
     val context = LocalContext.current
-    val trackPreferences = remember { Injekt.get<TrackPreferences>() }
-    val networkHelper = remember { Injekt.get<eu.kanade.tachiyomi.network.NetworkHelper>() }
+    val trackPreferences = remember { context.appGraph.trackPreferences }
+    val networkHelper = remember { context.appGraph.networkHelper }
     val scope = rememberCoroutineScope()
 
     var apiKey by remember { mutableStateOf(TextFieldValue(trackPreferences.trackApiKey(tracker).get())) }
@@ -502,11 +504,12 @@ private fun TrackingApiKeyDialog(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !processing && apiKey.text.isNotBlank(),
                 onClick = {
+                    val keyText = apiKey.text
                     scope.launchIO {
                         processing = true
                         try {
                             // Validate API key by requesting /3/configuration
-                            val url = "https://api.themoviedb.org/3/configuration?api_key=${apiKey.text}"
+                            val url = "https://api.themoviedb.org/3/configuration?api_key=$keyText"
                             val req = okhttp3.Request.Builder().url(url).get().build()
                             val resp = networkHelper.client.newCall(req).execute()
                             val ok = try {
@@ -516,7 +519,7 @@ private fun TrackingApiKeyDialog(
                             }
 
                             if (ok) {
-                                trackPreferences.setApiKey(tracker, apiKey.text)
+                                trackPreferences.setApiKey(tracker, keyText)
                                 withUIContext {
                                     onDismissRequest()
                                     context.toast(MR.strings.login_success)
@@ -532,8 +535,24 @@ private fun TrackingApiKeyDialog(
                     }
                 },
             ) {
-                val id = if (processing) MR.strings.loading else TLMR.strings.save
-                Text(text = stringResource(id))
+                Text(text = if (processing) stringResource(MR.strings.loading) else stringResource(TLMR.strings.save))
+            }
+        },
+        dismissButton = {
+            if (trackPreferences.trackApiKey(tracker).get().isNotBlank()) {
+                TextButton(
+                    onClick = {
+                        trackPreferences.trackApiKey(tracker).set("")
+                        tracker.logout()
+                        onDismissRequest()
+                        context.toast(MR.strings.logout_success)
+                    },
+                ) {
+                    Text(
+                        text = stringResource(MR.strings.action_delete),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         },
     )

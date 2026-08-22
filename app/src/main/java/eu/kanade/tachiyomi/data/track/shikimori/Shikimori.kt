@@ -15,8 +15,6 @@ import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.data.track.shikimori.dto.SMOAuth
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -44,7 +42,8 @@ class Shikimori(id: Long) :
 
         private val SCORE_LIST = IntRange(0, 10)
             .map(Int::toString)
-            .toImmutableList()
+
+        private const val SEARCH_ID_PREFIX = "id:"
     }
 
     private val json: Json by injectLazy()
@@ -53,7 +52,7 @@ class Shikimori(id: Long) :
 
     private val api by lazy { ShikimoriApi(id, client, interceptor) }
 
-    override fun getScoreList(): ImmutableList<String> = SCORE_LIST
+    override fun getScoreList(): List<String> = SCORE_LIST
 
     override fun indexToScore(index: Int): Double {
         return index.toDouble()
@@ -86,7 +85,7 @@ class Shikimori(id: Long) :
             }
         }
 
-        return api.updateLibManga(track, getUsername())
+        return api.updateLibManga(track)
     }
 
     override suspend fun update(track: AnimeTrack, didWatchEpisode: Boolean): AnimeTrack {
@@ -100,7 +99,7 @@ class Shikimori(id: Long) :
             }
         }
 
-        return api.updateLibAnime(track, getUsername())
+        return api.updateLibAnime(track)
     }
 
     override suspend fun delete(track: DomainMangaTrack) {
@@ -112,7 +111,7 @@ class Shikimori(id: Long) :
     }
 
     override suspend fun bind(track: MangaTrack, hasReadChapters: Boolean): MangaTrack {
-        val remoteTrack = api.findLibManga(track, getUsername())
+        val remoteTrack = api.findLibManga(track)
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack)
             track.library_id = remoteTrack.library_id
@@ -132,7 +131,7 @@ class Shikimori(id: Long) :
     }
 
     override suspend fun bind(track: AnimeTrack, hasSeenEpisodes: Boolean): AnimeTrack {
-        val remoteTrack = api.findLibAnime(track, getUsername())
+        val remoteTrack = api.findLibAnime(track)
         return if (remoteTrack != null) {
             track.copyPersonalFrom(remoteTrack)
             track.library_id = remoteTrack.library_id
@@ -152,34 +151,45 @@ class Shikimori(id: Long) :
     }
 
     override suspend fun searchManga(query: String): List<MangaTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+                return api.getMangaDetails(id)?.let { listOf(it) } ?: emptyList()
+            }
+        }
+
         return api.search(query)
     }
 
     override suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+                return api.getAnimeDetails(id)?.let { listOf(it) } ?: emptyList()
+            }
+        }
+
         return api.searchAnime(query)
     }
 
     override suspend fun refresh(track: MangaTrack): MangaTrack {
-        api.findLibManga(track, getUsername())?.let { remoteTrack ->
-            track.library_id = remoteTrack.library_id
-            track.copyPersonalFrom(remoteTrack)
-            track.total_chapters = remoteTrack.total_chapters
-        } ?: throw Exception("Could not find manga")
+        val remoteTrack = api.findLibManga(track) ?: throw Exception("Could not find manga")
+        track.library_id = remoteTrack.library_id
+        track.copyPersonalFrom(remoteTrack)
+        track.total_chapters = remoteTrack.total_chapters
         return track
     }
 
     override suspend fun refresh(track: AnimeTrack): AnimeTrack {
-        api.findLibAnime(track, getUsername())?.let { remoteTrack ->
-            track.library_id = remoteTrack.library_id
-            track.copyPersonalFrom(remoteTrack)
-            track.total_episodes = remoteTrack.total_episodes
-        } ?: throw Exception("Could not find anime")
+        val remoteTrack = api.findLibAnime(track) ?: throw Exception("Could not find anime")
+        track.library_id = remoteTrack.library_id
+        track.copyPersonalFrom(remoteTrack)
+        track.total_episodes = remoteTrack.total_episodes
         return track
     }
 
     override suspend fun getMangaMetadata(track: DomainMangaTrack): TrackMangaMetadata? {
         return api.getMangaMetadata(track)
     }
+
     override suspend fun getAnimeMetadata(track: DomainAnimeTrack): TrackAnimeMetadata? {
         return api.getAnimeMetadata(track)
     }
@@ -233,7 +243,8 @@ class Shikimori(id: Long) :
             val oauth = api.accessToken(code)
             interceptor.newAuth(oauth)
             val user = api.getCurrentUser()
-            saveCredentials(user.toString(), oauth.accessToken)
+            saveDisplayUsername(user.nickname)
+            saveCredentials(user.id, oauth.accessToken)
         } catch (e: Throwable) {
             logout()
         }

@@ -1,22 +1,23 @@
 package eu.kanade.tachiyomi.data.backup.create.creators
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.backup.create.BackupOptions
 import eu.kanade.tachiyomi.data.backup.models.BackupAnime
 import eu.kanade.tachiyomi.data.backup.models.BackupAnimeHistory
 import eu.kanade.tachiyomi.data.backup.models.BackupEpisode
 import eu.kanade.tachiyomi.data.backup.models.backupAnimeTrackMapper
 import eu.kanade.tachiyomi.data.backup.models.backupEpisodeMapper
+import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.history.anime.interactor.GetAnimeHistory
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
 class AnimeBackupCreator(
-    private val handler: AnimeDatabaseHandler = Injekt.get(),
-    private val getCategories: GetAnimeCategories = Injekt.get(),
-    private val getHistory: GetAnimeHistory = Injekt.get(),
+    private val handler: AnimeDatabaseHandler,
+    private val getCategories: GetAnimeCategories,
+    private val getHistory: GetAnimeHistory,
 ) {
 
     suspend operator fun invoke(animes: List<Anime>, options: BackupOptions): List<BackupAnime> {
@@ -99,4 +100,5 @@ private fun Anime.toBackupAnime() =
         seasonFlags = this.seasonFlags,
         seasonNumber = this.seasonNumber,
         seasonSourceOrder = this.seasonSourceOrder,
+        memo = MemoColumnAdapter.encode(this.memo),
     )

@@ -1,10 +1,12 @@
 package tachiyomi.domain.updates.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.Instant
 import tachiyomi.domain.updates.manga.model.MangaUpdatesWithRelations
 import tachiyomi.domain.updates.manga.repository.MangaUpdatesRepository
-import java.time.Instant
 
+@Inject
 class GetMangaUpdates(
     private val repository: MangaUpdatesRepository,
 ) {
@@ -19,14 +21,18 @@ class GetMangaUpdates(
         started: Boolean? = null,
         bookmarked: Boolean? = null,
         hideExcludedScanlators: Boolean = false,
+        includedCategories: List<Long>,
+        excludedCategories: List<Long>,
     ): Flow<List<MangaUpdatesWithRelations>> {
         return repository.subscribeAllMangaUpdates(
-            instant.toEpochMilli(),
+            instant.toEpochMilliseconds(),
             limit = 500,
             unread = unread,
             started = started,
             bookmarked = bookmarked,
             hideExcludedScanlators = hideExcludedScanlators,
+            includedCategories = includedCategories,
+            excludedCategories = excludedCategories,
         )
     }
 

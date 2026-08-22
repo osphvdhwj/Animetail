@@ -14,6 +14,7 @@ import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.transformations
 import coil3.transform.CircleCropTransformation
+import dev.zacsweers.metro.Inject
 import eu.kanade.presentation.util.formatChapterNumber
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.core.common.Constants
@@ -29,26 +30,26 @@ import eu.kanade.tachiyomi.util.system.cancelNotification
 import eu.kanade.tachiyomi.util.system.getBitmapOrNull
 import eu.kanade.tachiyomi.util.system.notificationBuilder
 import eu.kanade.tachiyomi.util.system.notify
-import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.math.RoundingMode
 import java.text.NumberFormat
 
-@OptIn(DelicateCoroutinesApi::class)
+@Inject
 class MangaLibraryUpdateNotifier(
     private val context: Context,
-
-    private val securityPreferences: SecurityPreferences = Injekt.get(),
-    private val sourceManager: MangaSourceManager = Injekt.get(),
+    private val securityPreferences: SecurityPreferences,
+    private val sourceManager: MangaSourceManager,
 ) {
+
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     private val percentFormatter = NumberFormat.getPercentInstance().apply {
         roundingMode = RoundingMode.DOWN
@@ -215,7 +216,7 @@ class MangaLibraryUpdateNotifier(
 
         // Per-manga notification
         if (!securityPreferences.hideNotificationContent.get()) {
-            launchUI {
+            scope.launch {
                 context.notify(
                     updates.map { (manga, chapters) ->
                         NotificationManagerCompat.NotificationWithIdAndTag(

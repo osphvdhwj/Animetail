@@ -9,6 +9,7 @@ plugins {
     alias(mihonx.plugins.compose)
     alias(mihonx.plugins.spotless)
 
+    alias(libs.plugins.metro)
     alias(libs.plugins.aboutLibraries)
     alias(libs.plugins.kotlin.serialization)
 }
@@ -19,13 +20,14 @@ android {
     defaultConfig {
         applicationId = "com.dark.animetailv2.custom"
 
-        versionCode = 136
-        versionName = "0.19.9.1"
+        versionCode = 143
+        versionName = "0.20.4.0"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getLatestCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getLatestCommitSha()}\"")
         buildConfigField("String", "BUILD_TIME", "\"${getBuildTime(useLatestCommitTime = false)}\"")
         buildConfigField("boolean", "UPDATER_ENABLED", "${Config.enableUpdater}")
+        buildConfigField("Long", "DISCORD_APP_ID", "1173423931865170070L")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -36,9 +38,9 @@ android {
             versionNameSuffix = "-${getLatestCommitCount()}"
             isPseudoLocalesEnabled = true
         }
-        val release by getting {
-            isMinifyEnabled = Config.enableCodeShrink
-            isShrinkResources = Config.enableCodeShrink
+        val release = getByName("release") {
+            isMinifyEnabled = true
+            isShrinkResources = true
 
             proguardFiles("proguard-android-optimize.txt", "proguard-rules.pro")
 
@@ -47,7 +49,7 @@ android {
 
         val commonMatchingFallbacks = listOf(release.name)
 
-        create("preview") {
+        create("nightly") {
             initWith(release)
 
             applicationIdSuffix = ".debug"
@@ -74,8 +76,8 @@ android {
     }
 
     sourceSets {
-        getByName("preview").res.srcDirs("src/debug/res")
-        getByName("benchmark").res.srcDirs("src/debug/res")
+        getByName("nightly").res.directories.add("src/debug/res")
+        getByName("benchmark").res.directories.add("src/debug/res")
     }
 
     splits {
@@ -99,9 +101,11 @@ android {
                 "libavutil",
                 "libconscrypt_jni",
                 "libc++_shared",
+                "libdiscord_partner_sdk",
                 "libffmpegkit_abidetect",
                 "libffmpegkit",
                 "libimagedecoder",
+                "liblibrary",
                 "libmpv",
                 "libplayer",
                 "libpostproc",
@@ -109,6 +113,7 @@ android {
                 "libsqlite3x",
                 "libswresample",
                 "libswscale",
+                "libtorrserver",
                 "libxml2",
             )
                 .map { "**/$it.so" }
@@ -121,6 +126,7 @@ android {
                 "META-INF/**/LICENSE.txt",
                 "META-INF/*.properties",
                 "META-INF/*.version",
+                "META-INF/**/*.MF",
                 "META-INF/DEPENDENCIES",
                 "META-INF/LICENSE",
                 "META-INF/NOTICE",
@@ -139,10 +145,13 @@ android {
         viewBinding = true
         buildConfig = true
         aidl = true
+        prefab = true
+    }
 
-        // Disable some unused things
-        renderScript = false
-        shaders = false
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+        }
     }
 
     lint {
@@ -166,7 +175,6 @@ kotlin {
             "-opt-in=kotlinx.coroutines.FlowPreview",
             "-opt-in=kotlinx.coroutines.InternalCoroutinesApi",
             "-opt-in=kotlinx.serialization.ExperimentalSerializationApi",
-            "-Xannotation-default-target=param-property",
         )
     }
 }
@@ -179,6 +187,7 @@ dependencies {
     // TAIL
     implementation(projects.core.archive)
     implementation(projects.core.common)
+    implementation(projects.core.metro)
     implementation(projects.coreMetadata)
     implementation(projects.sourceApi)
     implementation(projects.sourceLocal)
@@ -207,9 +216,12 @@ dependencies {
     implementation(libs.androidx.sqlite.bundled)
 
     implementation(libs.kotlin.reflect)
-    implementation(libs.kotlinx.collections.immutable)
 
     implementation(libs.bundles.kotlinx.coroutines)
+
+    implementation(libs.sqldelight.async)
+
+    implementation(libs.kotlinx.datetime)
 
     // AndroidX libraries
     implementation(libs.androidx.annotation)
@@ -244,6 +256,9 @@ dependencies {
     implementation(libs.jsoup)
     implementation(libs.re2j)
 
+    // String similarity (used in smart search / migration)
+    implementation(libs.stringSimilarity)
+
     // Disk
     implementation(libs.diskLruCache)
     implementation(libs.unifile)
@@ -257,9 +272,9 @@ dependencies {
 
     // Dependency injection
     implementation(libs.injekt)
-    // SY -->
-    implementation(libs.zip4j)
-    // SY <--
+    implementation(libs.metro.runtime)
+    implementation(libs.metrox.viewmodel)
+    implementation(libs.metrox.viewmodel.compose)
 
     // Image loading
     implementation(libs.bundles.coil)
@@ -267,6 +282,9 @@ dependencies {
         exclude(module = "image-decoder")
     }
     implementation(libs.image.decoder)
+
+    implementation(libs.webgpuviewer)
+    implementation(libs.kim)
 
     // UI libraries
     implementation(libs.material)
@@ -312,6 +330,8 @@ dependencies {
     // FFmpeg-kit
     implementation(aniyomilibs.ffmpeg.kit)
     implementation(aniyomilibs.arthenica.smartexceptions)
+    // TorrServer
+    implementation(aniyomilibs.torrserver)
     // seeker seek bar
     implementation(aniyomilibs.seeker)
     // true type parser
@@ -322,6 +342,8 @@ dependencies {
     implementation(libs.bundles.cast)
     // nanohttpd server
     implementation(libs.nanohttpd)
+    // Discord Partner SDK
+    implementation(files("libs/discord_partner_sdk.aar"))
 }
 
 androidComponents {
@@ -351,11 +373,5 @@ androidComponents {
         // Layout Inspector's Compose tree
         it.packaging.resources.excludes.add("META-INF/*.version")
         it.packaging.resources.excludes.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
-    }
-}
-
-buildscript {
-    dependencies {
-        classpath(libs.kotlin.gradle)
     }
 }

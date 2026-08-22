@@ -242,6 +242,11 @@ fun GestureHandler(
                             }
                             viewModel.seekTo(it.coerceIn(0, duration.toInt()), preciseSeeking)
                         }
+<<<<<<< HEAD
+=======
+                        viewModel.updateSeekPos(it.toFloat().coerceIn(0f, duration))
+                    }
+>>>>>>> d5b5c39181e570abe6f0a394f7b50098807acc0d
 
                         if (showSeekbar) viewModel.showSeekBar()
                     }
@@ -415,3 +420,4 @@ fun calculateNewHorizontalGestureValue(originalValue: Int, startingX: Float, new
 fun calculateNewHorizontalGestureValue(originalValue: Float, startingX: Float, newX: Float, sensitivity: Float): Float {
     return originalValue + ((newX - startingX) * sensitivity)
 }
+

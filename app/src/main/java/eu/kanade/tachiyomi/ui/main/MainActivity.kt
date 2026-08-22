@@ -76,6 +76,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.NavigatorDisposeBehavior
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.domain.source.anime.interactor.GetAnimeIncognitoState
@@ -85,21 +86,23 @@ import eu.kanade.presentation.components.AppStateBanners
 import eu.kanade.presentation.components.DownloadedOnlyBannerBackgroundColor
 import eu.kanade.presentation.components.IncognitoModeBannerBackgroundColor
 import eu.kanade.presentation.components.IndexingBannerBackgroundColor
-import eu.kanade.presentation.more.settings.screen.browse.AnimeExtensionReposScreen
-import eu.kanade.presentation.more.settings.screen.browse.MangaExtensionReposScreen
+import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.presentation.more.settings.screen.data.RestoreBackupScreen
 import eu.kanade.presentation.util.AssistContentScreen
 import eu.kanade.presentation.util.DefaultNavigatorScreenTransition
 import eu.kanade.tachiyomi.BuildConfig
 import eu.kanade.tachiyomi.animesource.model.Hoster
 import eu.kanade.tachiyomi.animesource.model.Video
+import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
+import eu.kanade.tachiyomi.data.connections.discord.DiscordRpcManager
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadCache
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
+import eu.kanade.tachiyomi.data.player.service.HttpServerService
 import eu.kanade.tachiyomi.data.updater.AppUpdateChecker
 import eu.kanade.tachiyomi.data.updater.RELEASE_URL
 import eu.kanade.tachiyomi.extension.anime.api.AnimeExtensionApi
@@ -130,42 +133,59 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import logcat.LogPriority
+import mihon.app.di.AppGraph
+import mihon.app.di.appGraph
+import mihon.core.metro.metroGraph
 import mihon.core.migration.Migrator
 import mihon.feature.support.SupportUsScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.release.interactor.GetApplicationRelease
+import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 import kotlin.time.times
 
 class MainActivity : BaseActivity() {
 
-    private val libraryPreferences: LibraryPreferences by injectLazy()
-    private val preferences: BasePreferences by injectLazy()
+    private val graph: AppGraph by lazy { metroGraph() }
 
-    private val animeDownloadCache: AnimeDownloadCache by injectLazy()
-    private val downloadCache: MangaDownloadCache by injectLazy()
-    private val chapterCache: ChapterCache by injectLazy()
+    @Inject lateinit var libraryPreferences: LibraryPreferences
 
-    private val getAnimeIncognitoState: GetAnimeIncognitoState by injectLazy()
-    private val getMangaIncognitoState: GetMangaIncognitoState by injectLazy()
+    @Inject lateinit var preferences: BasePreferences
+
+    @Inject lateinit var animeDownloadCache: AnimeDownloadCache
+
+    @Inject lateinit var downloadCache: MangaDownloadCache
+
+    @Inject lateinit var chapterCache: ChapterCache
+
+    @Inject lateinit var getAnimeIncognitoState: GetAnimeIncognitoState
+
+    @Inject lateinit var getMangaIncognitoState: GetMangaIncognitoState
+
+    @Inject lateinit var animeExtensionApi: AnimeExtensionApi
+
+    @Inject lateinit var mangaExtensionApi: MangaExtensionApi
 
     // To be checked by splash screen. If true then splash screen will be removed.
     var ready = false
@@ -174,24 +194,26 @@ class MainActivity : BaseActivity() {
     private var pendingVideoUri by mutableStateOf<Uri?>(null)
 
     // AM (CONNECTIONS) -->
-    private val connectionsPreferences: ConnectionsPreferences by injectLazy()
+    @Inject lateinit var connectionsPreferences: ConnectionsPreferences
     // <-- AM (CONNECTIONS)
 
     // AM -->
-    private val mpvConfig: MpvConfig by injectLazy()
+    @Inject lateinit var mpvConfig: MpvConfig
     // <-- AM
 
-    init {
-        registerSecureActivity(this)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
+        registerSecureActivity(this)
+        graph.inject(this)
         val isLaunch = savedInstanceState == null
 
         // Prevent splash screen showing up on configuration changes
         val splashScreen = if (isLaunch) installSplashScreen() else null
 
         super.onCreate(savedInstanceState)
+
+        try {
+            com.discord.socialsdk.DiscordSocialSdkInit.setEngineActivity(this)
+        } catch (_: Exception) {}
 
         val didMigration = Migrator.awaitAndRelease()
 
@@ -200,6 +222,11 @@ class MainActivity : BaseActivity() {
             finish()
             return
         }
+
+        // AM (DISCORD) -->
+        // Initialize Discord RPC Manager early so native library is loaded
+        DiscordRpcManager.init(applicationContext)
+        // <-- AM (DISCORD)
 
         setComposeContent {
             val context = LocalContext.current
@@ -338,7 +365,9 @@ class MainActivity : BaseActivity() {
 
                 HandleOnNewIntent(context = context, navigator = navigator)
 
-                CheckForUpdates()
+                if (isLaunch) {
+                    CheckForUpdates()
+                }
                 ShowOnboarding()
                 ShowDonationCampaign()
             }
@@ -461,7 +490,7 @@ class MainActivity : BaseActivity() {
         LaunchedEffect(Unit) {
             if (updaterEnabled) {
                 try {
-                    val result = AppUpdateChecker().checkForUpdate(context)
+                    val result = context.appGraph.updateChecker.checkForUpdate()
                     if (result is GetApplicationRelease.Result.NewUpdate) {
                         val updateScreen = NewUpdateScreen(
                             versionName = result.release.version,
@@ -480,8 +509,8 @@ class MainActivity : BaseActivity() {
         // Extensions updates
         LaunchedEffect(Unit) {
             try {
-                AnimeExtensionApi().checkForUpdates(context)
-                MangaExtensionApi().checkForUpdates(context)
+                animeExtensionApi.checkForUpdates(context)
+                mangaExtensionApi.checkForUpdates(context)
             } catch (e: Exception) {
                 logcat(LogPriority.ERROR, e)
             }
@@ -508,7 +537,6 @@ class MainActivity : BaseActivity() {
             val uriHandler = LocalUriHandler.current
             val dismissSupportMessage = {
                 preferences.donationCampaignShown.set(true)
-                @Suppress("AssignedValueIsNeverRead")
                 showCampaign = false
             }
             AdaptiveSheet(
@@ -614,7 +642,6 @@ class MainActivity : BaseActivity() {
             try {
                 val firstInstallTime = packageManager.getPackageInfo(packageName, 0).firstInstallTime
                 val eligibleTime = Instant.fromEpochMilliseconds(firstInstallTime).plus(6 * 30.days)
-                @Suppress("AssignedValueIsNeverRead")
                 showCampaign = (Clock.System.now() >= eligibleTime && !preferences.donationCampaignShown.get())
             } catch (_: PackageManager.NameNotFoundException) {
             }
@@ -786,17 +813,18 @@ class MainActivity : BaseActivity() {
                     navigator.popUntilRoot()
                     navigator.push(RestoreBackupScreen(intent.data.toString()))
                 }
-                // Deep link to add anime extension repo
-                else if (intent.scheme == "animetail" && intent.data?.host == "add-repo") {
+                // Deep link to add manga extension store
+                else if (intent.isAddMangaExtensionStoreIntent()) {
                     intent.data?.getQueryParameter("url")?.let { repoUrl ->
                         navigator.popUntilRoot()
-                        navigator.push(AnimeExtensionReposScreen(repoUrl))
+                        navigator.push(ExtensionStoresScreen(isManga = true, url = repoUrl))
                     }
-                } // Deep link to add extension repo
-                else if (intent.scheme == "tachiyomi" && intent.data?.host == "add-repo") {
+                }
+                // Deep link to add anime extension store
+                else if (intent.isAddAnimeExtensionStoreIntent()) {
                     intent.data?.getQueryParameter("url")?.let { repoUrl ->
                         navigator.popUntilRoot()
-                        navigator.push(MangaExtensionReposScreen(repoUrl))
+                        navigator.push(ExtensionStoresScreen(isManga = false, url = repoUrl))
                     }
                 }
                 null
@@ -829,8 +857,24 @@ class MainActivity : BaseActivity() {
         super.onResume()
         mpvConfig.copyFiles()
     }
+    override fun onDestroy() {
+        try {
+            com.discord.socialsdk.DiscordSocialSdkInit.setEngineActivity(null)
+        } catch (_: Exception) {}
+        super.onDestroy()
+    }
+
     // <-- AM
 
+    private fun Intent.isAddMangaExtensionStoreIntent(): Boolean {
+        return (scheme == "tachiyomi" && data?.host == "add-repo") ||
+            (scheme == "mihon" && data?.host == "extension-store")
+    }
+
+    private fun Intent.isAddAnimeExtensionStoreIntent(): Boolean {
+        return (scheme == "animetail" && data?.host == "add-repo") ||
+            (scheme == "animetail" && data?.host == "extension-store")
+    }
     companion object {
         const val INTENT_SEARCH = "eu.kanade.tachiyomi.SEARCH"
         const val INTENT_ANIMESEARCH = "eu.kanade.tachiyomi.ANIMESEARCH"
@@ -848,17 +892,28 @@ class MainActivity : BaseActivity() {
             animeId: Long,
             episodeId: Long,
             extPlayer: Boolean,
+            sourceId: Long? = null,
             video: Video? = null,
             hosterIndex: Int = -1,
             videoIndex: Int = -1,
             hosterList: List<Hoster>? = null,
         ) {
             if (extPlayer) {
+                var extVideo = video
+                if (extVideo != null && extVideo.usesHttpServer()) {
+                    val sourceId = sourceId ?: (context.appGraph.getAnime.await(animeId)?.source ?: -1L)
+                    val (success, port) = startHttpServerService(context, sourceId)
+                    if (!success) {
+                        withUIContext { context.toast(AYMR.strings.http_server_start_failure) }
+                        return
+                    }
+                    extVideo = extVideo.copyHttpServer(port)
+                }
                 val intent = try {
-                    ExternalIntents.newIntent(context, animeId, episodeId, video)
+                    ExternalIntents.newIntent(context, animeId, episodeId, extVideo)
                 } catch (e: Exception) {
                     logcat(LogPriority.ERROR, e)
-                    withUIContext { Injekt.get<Application>().toast(e.message) }
+                    withUIContext { context.toast(e.message) }
                     null
                 } ?: return
                 externalPlayerResult?.launch(intent) ?: return
@@ -874,6 +929,30 @@ class MainActivity : BaseActivity() {
                     ),
                 )
             }
+        }
+
+        suspend fun startHttpServerService(
+            context: Context,
+            sourceId: Long,
+            timeout: Duration = 5.seconds,
+        ): Pair<Boolean, Int> {
+            val sourceManager = context.appGraph.animeSourceManager
+            val source = sourceManager.get(sourceId) as? AnimeHttpSource
+            if (source?.createHttpServer() == null) {
+                return Pair(false, 0)
+            }
+
+            HttpServerService.resetIsRunning()
+            context.startService(
+                Intent(context, HttpServerService::class.java)
+                    .putExtra(HttpServerService.EXTRA_SOURCE_ID, sourceId),
+            )
+
+            val ready = withTimeoutOrNull(timeout) {
+                HttpServerService.isRunning.first { it }
+            }
+
+            return Pair(ready == true, HttpServerService.port)
         }
     }
 

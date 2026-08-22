@@ -1,6 +1,7 @@
 package eu.kanade.tachiyomi.ui.player
 
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
@@ -14,12 +15,11 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
 import com.google.android.gms.cast.MediaQueueItem
+import com.google.android.gms.cast.MediaSeekOptions
 import com.google.android.gms.cast.TextTrackStyle
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.media.RemoteMediaClient
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
 import eu.kanade.tachiyomi.ui.player.cast.CastMediaBuilder
 import eu.kanade.tachiyomi.ui.player.cast.CastSessionListener
 import eu.kanade.tachiyomi.ui.player.cast.components.BorderStyle
@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.system.logcat
@@ -46,8 +47,8 @@ import java.util.LinkedList
 import kotlin.coroutines.resume
 
 class CastManager(
-    private val activity: ComponentActivity,
-    private val preferenceStore: PreferenceStore,
+    val activity: ComponentActivity,
+    val preferenceStore: PreferenceStore,
 ) {
     enum class CastState {
         CONNECTED,
@@ -72,8 +73,7 @@ class CastManager(
     private val viewModel by lazy {
         when (activity) {
             is PlayerActivity -> {
-                val factory = PlayerViewModelProviderFactory(activity)
-                activity.viewModels<PlayerViewModel> { factory }.value
+                activity.viewModels<PlayerViewModel> { activity.appGraph.viewModelFactory }.value
             }
 
             else -> null
@@ -104,7 +104,14 @@ class CastManager(
     private var mediaRouterCallback: androidx.mediarouter.media.MediaRouter.Callback? = null
 
     private val isCastApiAvailable: Boolean
-        get() = GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS
+        get() = try {
+            context.packageManager
+                .getPackageInfo("com.google.android.gms", PackageManager.GET_META_DATA)
+                .applicationInfo
+                ?.enabled == true
+        } catch (e: PackageManager.NameNotFoundException) {
+            false
+        }
 
     private val mediaQueue = LinkedList<MediaQueueItem>()
     private var isLoadingMedia = false
@@ -575,7 +582,11 @@ class CastManager(
     fun seekRelative(offset: Int) {
         castSession?.remoteMediaClient?.let { client ->
             val newPosition = client.approximateStreamPosition + (offset * 1000)
-            client.seek(newPosition)
+            client.seek(
+                MediaSeekOptions.Builder()
+                    .setPosition(newPosition)
+                    .build(),
+            )
         }
     }
 

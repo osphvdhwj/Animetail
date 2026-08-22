@@ -1,14 +1,15 @@
 package tachiyomi.domain.category.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.domain.category.manga.repository.MangaCategoryRepository
 import tachiyomi.domain.category.model.Category
-import tachiyomi.domain.category.model.CategoryUpdate
 import tachiyomi.domain.library.manga.model.MangaLibraryGroup
 import tachiyomi.domain.library.manga.model.MangaLibrarySort
 import tachiyomi.domain.library.model.plus
 import tachiyomi.domain.library.service.LibraryPreferences
 import kotlin.random.Random
 
+@Inject
 class SetSortModeForMangaCategory(
     private val preferences: LibraryPreferences,
     private val categoryRepository: MangaCategoryRepository,
@@ -31,12 +32,7 @@ class SetSortModeForMangaCategory(
             preferences.randomMangaSortSeed.set(Random.nextInt())
         }
         if (category != null && preferences.categorizedDisplaySettings.get()) {
-            categoryRepository.updatePartialMangaCategory(
-                CategoryUpdate(
-                    id = category.id,
-                    flags = flags,
-                ),
-            )
+            categoryRepository.updateMangaCategoryFlags(categoryId = category.id, flags = flags)
         } else {
             preferences.mangaSortingMode.set(MangaLibrarySort(type, direction))
             categoryRepository.updateAllMangaCategoryFlags(flags)

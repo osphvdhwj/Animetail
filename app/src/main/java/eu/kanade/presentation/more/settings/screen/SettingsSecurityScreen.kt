@@ -10,15 +10,12 @@ import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.tachiyomi.core.security.SecurityPreferences
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.authenticate
 import eu.kanade.tachiyomi.util.system.AuthenticatorUtil.isAuthenticationSupported
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableMap
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object SettingsSecurityScreen : SearchableSettings {
 
@@ -29,10 +26,10 @@ object SettingsSecurityScreen : SearchableSettings {
     @Composable
     override fun getPreferences(): List<Preference> {
         val context = LocalContext.current
-        val securityPreferences = remember { Injekt.get<SecurityPreferences>() }
+        val securityPreferences = remember { context.appGraph.securityPreferences }
         val authSupported = remember { context.isAuthenticationSupported() }
 
-        val useAuthPref = securityPreferences.useAuthenticator()
+        val useAuthPref = securityPreferences.useAuthenticator
         val useAuth by useAuthPref.collectAsState()
 
         return listOf(
@@ -62,7 +59,7 @@ object SettingsSecurityScreen : SearchableSettings {
                             )
                         }
                     }
-                    .toImmutableMap(),
+                    .toMap(),
                 title = stringResource(MR.strings.lock_when_idle),
                 enabled = authSupported && useAuth,
                 onValueChanged = {
@@ -79,7 +76,7 @@ object SettingsSecurityScreen : SearchableSettings {
                 preference = securityPreferences.secureScreen(),
                 entries = SecurityPreferences.SecureScreenMode.entries
                     .associateWith { stringResource(it.titleRes) }
-                    .toImmutableMap(),
+                    .toMap(),
                 title = stringResource(MR.strings.secure_screen),
             ),
             Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.secure_screen_summary)),
@@ -87,7 +84,7 @@ object SettingsSecurityScreen : SearchableSettings {
     }
 }
 
-private val LockAfterValues = persistentListOf(
+private val LockAfterValues = listOf(
     0, // Always
     1,
     2,

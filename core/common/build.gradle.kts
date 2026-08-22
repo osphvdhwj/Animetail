@@ -2,6 +2,7 @@ plugins {
     alias(mihonx.plugins.android.library)
     alias(mihonx.plugins.spotless)
 
+    alias(libs.plugins.metro)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -22,6 +23,7 @@ kotlin {
 }
 
 dependencies {
+    implementation(projects.core.metro)
     implementation(projects.i18n)
     // TAIL -->
     implementation(projects.i18nTail)
@@ -33,6 +35,7 @@ dependencies {
     api(libs.okhttp.core)
     api(libs.okhttp.logging)
     api(libs.okhttp.brotli)
+    api(libs.okhttp.zstd)
     api(libs.okhttp.dnsOverHttps)
     api(libs.okio)
 
@@ -46,6 +49,7 @@ dependencies {
     api(libs.kotlinx.serialization.jsonOkio)
 
     api(libs.androidx.preference)
+    implementation(libs.androidx.webkit)
 
     implementation(libs.jsoup)
     implementation(libs.re2j)
@@ -66,10 +70,12 @@ dependencies {
     // TLMR <--
     implementation(libs.exifinterface)
     // SY <--
-
-    // TAIL
-    implementation(libs.torrentserver)
+    // TorrServer
+    implementation(aniyomilibs.torrserver)
 
     // Tests
     testImplementation(libs.bundles.test)
+    testRuntimeOnly(libs.junit.platform.launcher)
+
+    implementation(libs.metro.runtime)
 }

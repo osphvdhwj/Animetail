@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.net.toUri
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.core.common.Constants
 import eu.kanade.tachiyomi.data.backup.restore.BackupRestoreJob
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
@@ -13,7 +14,6 @@ import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateJob
 import eu.kanade.tachiyomi.data.sync.SyncDataJob
-import eu.kanade.tachiyomi.data.updater.AppUpdateDownloadJob
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
@@ -22,8 +22,12 @@ import eu.kanade.tachiyomi.util.system.getParcelableExtraCompat
 import eu.kanade.tachiyomi.util.system.notificationManager
 import eu.kanade.tachiyomi.util.system.toShareIntent
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.coroutines.DelicateCoroutinesApi
+import eu.kanade.tachiyomi.util.system.workManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
+import mihon.app.di.appGraph
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.domain.download.service.DownloadPreferences
@@ -41,9 +45,6 @@ import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.items.episode.model.toEpisodeUpdate
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import eu.kanade.tachiyomi.BuildConfig.APPLICATION_ID as ID
 
 /**
@@ -51,19 +52,33 @@ import eu.kanade.tachiyomi.BuildConfig.APPLICATION_ID as ID
  * Pending Broadcasts should be made from here.
  * NOTE: Use local broadcasts if possible.
  */
-@OptIn(DelicateCoroutinesApi::class)
 class NotificationReceiver : BroadcastReceiver() {
 
-    private val getManga: GetManga by injectLazy()
-    private val getAnime: GetAnime by injectLazy()
-    private val getChapter: GetChapter by injectLazy()
-    private val getEpisode: GetEpisode by injectLazy()
-    private val updateChapter: UpdateChapter by injectLazy()
-    private val updateEpisode: UpdateEpisode by injectLazy()
-    private val mangaDownloadManager: MangaDownloadManager by injectLazy()
-    private val animeDownloadManager: AnimeDownloadManager by injectLazy()
+    @Inject private lateinit var getManga: GetManga
+
+    @Inject private lateinit var getAnime: GetAnime
+
+    @Inject private lateinit var getChapter: GetChapter
+
+    @Inject private lateinit var getEpisode: GetEpisode
+
+    @Inject private lateinit var updateChapter: UpdateChapter
+
+    @Inject private lateinit var updateEpisode: UpdateEpisode
+
+    @Inject private lateinit var mangaDownloadManager: MangaDownloadManager
+
+    @Inject private lateinit var animeDownloadManager: AnimeDownloadManager
+
+    @Inject private lateinit var downloadPreferences: DownloadPreferences
+
+    @Inject private lateinit var mangaSourceManager: MangaSourceManager
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onReceive(context: Context, intent: Intent) {
+        context.appGraph.inject(this)
+
         when (intent.action) {
             // Dismiss notification
             ACTION_DISMISS_NOTIFICATION -> dismissNotification(context, intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1))
@@ -107,12 +122,6 @@ class NotificationReceiver : BroadcastReceiver() {
 
             ACTION_CANCEL_SYNC -> cancelSync(context)
 
-            // Start downloading app update
-            ACTION_START_APP_UPDATE -> startDownloadAppUpdate(context, intent)
-
-            // Cancel downloading app update
-            ACTION_CANCEL_APP_UPDATE_DOWNLOAD -> cancelDownloadAppUpdate(context)
-
             // Open reader activity
             ACTION_OPEN_CHAPTER -> {
                 openChapter(
@@ -124,7 +133,7 @@ class NotificationReceiver : BroadcastReceiver() {
 
             ACTION_OPEN_EPISODE -> {
                 val pendingResult = goAsync()
-                launchIO {
+                scope.launchIO {
                     try {
                         openEpisode(
                             context,
@@ -259,7 +268,7 @@ class NotificationReceiver : BroadcastReceiver() {
      * @param context context of application
      */
     private fun cancelRestore(context: Context) {
-        BackupRestoreJob.stop(context)
+        BackupRestoreJob.stop(context.workManager)
     }
 
     /**
@@ -279,15 +288,6 @@ class NotificationReceiver : BroadcastReceiver() {
         SyncDataJob.stop(context)
     }
 
-    private fun startDownloadAppUpdate(context: Context, intent: Intent) {
-        val url = intent.getStringExtra(AppUpdateDownloadJob.EXTRA_DOWNLOAD_URL) ?: return
-        AppUpdateDownloadJob.start(context, url)
-    }
-
-    private fun cancelDownloadAppUpdate(context: Context) {
-        AppUpdateDownloadJob.stop(context)
-    }
-
     /**
      * Method called when user wants to mark manga chapters as read
      *
@@ -295,17 +295,14 @@ class NotificationReceiver : BroadcastReceiver() {
      * @param mangaId id of manga
      */
     private fun markAsRead(chapterUrls: Array<String>, mangaId: Long) {
-        val downloadPreferences: DownloadPreferences = Injekt.get()
-        val sourceManager: MangaSourceManager = Injekt.get()
-
-        launchIO {
+        scope.launchIO {
             val toUpdate = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
                 .map {
                     val chapter = it.copy(read = true)
                     if (downloadPreferences.removeAfterMarkedAsRead.get()) {
                         val manga = getManga.await(mangaId)
                         if (manga != null) {
-                            val source = sourceManager.get(manga.source)
+                            val source = mangaSourceManager.get(manga.source)
                             if (source != null) {
                                 mangaDownloadManager.deleteChapters(listOf(it), manga, source)
                             }
@@ -324,7 +321,7 @@ class NotificationReceiver : BroadcastReceiver() {
      * @param mangaId id of manga
      */
     private fun downloadChapters(chapterUrls: Array<String>, mangaId: Long) {
-        launchIO {
+        scope.launchIO {
             val manga = getManga.await(mangaId) ?: return@launchIO
             val chapters = chapterUrls.mapNotNull { getChapter.await(it, mangaId) }
             mangaDownloadManager.downloadChapters(manga, chapters)
@@ -332,7 +329,7 @@ class NotificationReceiver : BroadcastReceiver() {
     }
 
     private fun markAsViewed(episodeUrls: Array<String>, animeId: Long) {
-        launchIO {
+        scope.launchIO {
             val toUpdate = episodeUrls.mapNotNull { getEpisode.await(it, animeId) }
                 .map { it.copy(seen = true).toEpisodeUpdate() }
             updateEpisode.awaitAll(toUpdate)
@@ -340,7 +337,7 @@ class NotificationReceiver : BroadcastReceiver() {
     }
 
     private fun downloadEpisodes(episodeUrls: Array<String>, animeId: Long) {
-        launchIO {
+        scope.launchIO {
             val anime = getAnime.await(animeId) ?: return@launchIO
             val episodes = episodeUrls.mapNotNull { getEpisode.await(it, animeId) }
             animeDownloadManager.downloadEpisodes(anime, episodes)
@@ -359,9 +356,6 @@ class NotificationReceiver : BroadcastReceiver() {
         private const val ACTION_CANCEL_LIBRARY_UPDATE = "$ID.$NAME.CANCEL_LIBRARY_UPDATE"
         private const val ACTION_CANCEL_ANIME_LIBRARY_UPDATE = "$ID.$NAME.CANCEL_ANIME_LIBRARY_UPDATE"
         private const val ACTION_CANCEL_SYNC = "$ID.$NAME.CANCEL_SYNC"
-
-        private const val ACTION_START_APP_UPDATE = "$ID.$NAME.ACTION_START_APP_UPDATE"
-        private const val ACTION_CANCEL_APP_UPDATE_DOWNLOAD = "$ID.$NAME.CANCEL_APP_UPDATE_DOWNLOAD"
 
         private const val ACTION_MARK_AS_READ = "$ID.$NAME.MARK_AS_READ"
         private const val ACTION_MARK_AS_VIEWED = "$ID.$NAME.MARK_AS_VIEWED"
@@ -777,45 +771,6 @@ class NotificationReceiver : BroadcastReceiver() {
             val intent = Intent(context, NotificationReceiver::class.java).apply {
                 action = ACTION_CANCEL_SYNC
                 putExtra(EXTRA_NOTIFICATION_ID, notificationId)
-            }
-            return PendingIntent.getBroadcast(
-                context,
-                0,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-        }
-
-        /**
-         * Returns [PendingIntent] that starts the [AppUpdateDownloadJob] to download an app update.
-         *
-         * @param context context of application
-         * @return [PendingIntent]
-         */
-        internal fun downloadAppUpdatePendingBroadcast(
-            context: Context,
-            url: String,
-            title: String? = null,
-        ): PendingIntent {
-            return Intent(context, NotificationReceiver::class.java).run {
-                action = ACTION_START_APP_UPDATE
-                putExtra(AppUpdateDownloadJob.EXTRA_DOWNLOAD_URL, url)
-                title?.let { putExtra(AppUpdateDownloadJob.EXTRA_DOWNLOAD_TITLE, it) }
-                PendingIntent.getBroadcast(
-                    context,
-                    0,
-                    this,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                )
-            }
-        }
-
-        /**
-         *
-         */
-        internal fun cancelDownloadAppUpdatePendingBroadcast(context: Context): PendingIntent {
-            val intent = Intent(context, NotificationReceiver::class.java).apply {
-                action = ACTION_CANCEL_APP_UPDATE_DOWNLOAD
             }
             return PendingIntent.getBroadcast(
                 context,

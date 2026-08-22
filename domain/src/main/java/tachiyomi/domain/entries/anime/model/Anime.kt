@@ -1,18 +1,26 @@
 package tachiyomi.domain.entries.anime.model
 
+import android.annotation.SuppressLint
 import androidx.compose.runtime.Immutable
 import aniyomi.domain.anime.SeasonDisplayMode
 import eu.kanade.tachiyomi.animesource.model.AnimeUpdateStrategy
 import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.animesource.model.SAnime
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import mihon.core.common.extensions.EMPTY
 import tachiyomi.core.common.preference.TriState
 import tachiyomi.domain.entries.anime.interactor.GetCustomAnimeInfo
 import uy.kohesive.injekt.injectLazy
-import java.io.Serializable
-import java.time.Instant
+import java.io.ObjectStreamException
 import kotlin.math.pow
+import kotlin.time.Instant
+import java.io.Serializable as JavaSerializable
 
+@SuppressLint("UnsafeOptInUsageError")
+@Serializable
 @Immutable
 data class Anime(
     val id: Long,
@@ -49,9 +57,11 @@ data class Anime(
     val seasonFlags: Long,
     val seasonNumber: Double,
     val seasonSourceOrder: Long,
-) : Serializable {
+    val memo: JsonObject,
+) : JavaSerializable {
 
     // SY -->
+    @kotlinx.serialization.Transient
     private val customAnimeInfo = if (favorite) {
         getCustomAnimeInfo.get(id)
     } else {
@@ -74,7 +84,7 @@ data class Anime(
     val expectedNextUpdate: Instant?
         get() = nextUpdate
             .takeIf { status != SAnime.COMPLETED.toLong() }
-            ?.let { Instant.ofEpochMilli(it) }
+            ?.let { Instant.fromEpochMilliseconds(it) }
 
     val sorting: Long
         get() = episodeFlags and EPISODE_SORTING_MASK
@@ -373,10 +383,24 @@ data class Anime(
             seasonFlags = 0L,
             seasonNumber = -1.0,
             seasonSourceOrder = 0L,
+            memo = JsonObject.EMPTY,
         )
 
         // SY -->
         private val getCustomAnimeInfo: GetCustomAnimeInfo by injectLazy()
         // SY <--
+    }
+
+    @Throws(ObjectStreamException::class)
+    private fun writeReplace(): Any {
+        return JavaToKotlinXSerializable(Json.encodeToString<Anime>(this))
+    }
+
+    class JavaToKotlinXSerializable(private val data: String) : JavaSerializable {
+
+        @Throws(ObjectStreamException::class)
+        private fun readResolve(): Any {
+            return Json.decodeFromString<Anime>(data)
+        }
     }
 }

@@ -18,6 +18,7 @@
 -keep,allowoptimization class rx.** { public protected *; }
 -keep,allowoptimization class app.cash.quickjs.** { public protected *; }
 -keep,allowoptimization class uy.kohesive.injekt.** { public protected *; }
+-keep,allowoptimization class com.squareup.zstd.** { public protected *; }
 -keep,allowoptimization class is.xyz.mpv.** { *; }
 -keep,allowoptimization class com.arthenica.** { public protected *; }
 
@@ -29,6 +30,14 @@
 -keep,allowoptimization class eu.kanade.tachiyomi.network.RequestsKt { public protected *; }
 -keep,allowoptimization class eu.kanade.tachiyomi.AppInfo { public protected *; }
 -keep,allowoptimization class eu.kanade.tachiyomi.torrentutils.** { public protected *; }
+-keepclassmembers class * implements java.io.Serializable {
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}
+
+# Provided by the OEM at runtime when supported
+-dontwarn androidx.window.extensions.**
+-dontwarn androidx.window.sidecar.**
 
 ##---------------Begin: proguard configuration for RxJava 1.x  ----------
 -dontwarn sun.misc.**
@@ -81,7 +90,6 @@
 
 # XmlUtil
 -keep public enum nl.adaptivity.xmlutil.EventType { *; }
-
 # Firebase
 -keep class com.google.firebase.installations.** { *; }
 -keep interface com.google.firebase.installations.** { *; }
@@ -116,4 +124,18 @@
 # Apache Commons Compress
 -keep class * extends org.apache.commons.compress.archivers.zip.ZipExtraField { <init>(); }
 
--keep public enum nl.adaptivity.xmlutil.EventType { *; }
+# Discord RPC Manager JNI Calls
+-keep class eu.kanade.tachiyomi.data.connections.discord.DiscordRpcManager { *; }
+-keep class com.discord.socialsdk.** { *; }
+
+# TorrServer JNI Calls
+-keep class xyz.secozzi.torrserver.** { *; }
+
+# KotlinX Datetime
+-keep,allowoptimization class kotlinx.datetime.** { public protected *; }
+
+# Methods called by Shizuku only
+-keepclassmembers class mihon.app.shizuku.ShellInterface {
+    public <init>();
+    public void destroy();
+}

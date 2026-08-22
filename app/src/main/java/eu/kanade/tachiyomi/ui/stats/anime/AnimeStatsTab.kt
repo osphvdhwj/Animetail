@@ -5,10 +5,10 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.presentation.more.stats.AnimeStatsScreenContent
 import eu.kanade.presentation.more.stats.StatsScreenState
@@ -20,8 +20,8 @@ fun Screen.animeStatsTab(): TabContent {
     val navigator = LocalNavigator.currentOrThrow
     val context = androidx.compose.ui.platform.LocalContext.current
 
-    val screenModel = rememberScreenModel { AnimeStatsScreenModel() }
-    val state by screenModel.state.collectAsState()
+    val viewModel = metroViewModel<AnimeStatsViewModel>()
+    val state by viewModel.state.collectAsState()
 
     if (state is StatsScreenState.Loading) {
         LoadingScreen()

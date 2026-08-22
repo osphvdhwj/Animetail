@@ -21,10 +21,8 @@ import eu.kanade.presentation.more.settings.widget.TriStateListDialog
 import eu.kanade.tachiyomi.data.library.anime.AnimeLibraryUpdateJob
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateJob
 import eu.kanade.tachiyomi.ui.category.CategoriesTab
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableMap
 import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.category.manga.interactor.ResetMangaCategoryFlags
@@ -49,8 +47,6 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object SettingsLibraryScreen : SearchableSettings {
 
@@ -60,11 +56,12 @@ object SettingsLibraryScreen : SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val getCategories = remember { Injekt.get<GetMangaCategories>() }
+        val context = LocalContext.current
+        val getCategories = remember { context.appGraph.getMangaCategories }
         val allCategories by getCategories.subscribe().collectAsState(initial = emptyList())
-        val getAnimeCategories = remember { Injekt.get<GetAnimeCategories>() }
+        val getAnimeCategories = remember { context.appGraph.getAnimeCategories }
         val allAnimeCategories by getAnimeCategories.subscribe().collectAsState(initial = emptyList())
-        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
+        val libraryPreferences = remember { context.appGraph.libraryPreferences }
 
         return listOf(
             getCategoriesGroup(
@@ -87,6 +84,7 @@ object SettingsLibraryScreen : SearchableSettings {
         allAnimeCategories: List<Category>,
         libraryPreferences: LibraryPreferences,
     ): Preference.PreferenceGroup {
+        val context = LocalContext.current
         val scope = rememberCoroutineScope()
         val userCategoriesCount = allCategories.filterNot(Category::isSystemCategory).size
         val userAnimeCategoriesCount = allAnimeCategories.filterNot(Category::isSystemCategory).size
@@ -104,7 +102,7 @@ object SettingsLibraryScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(AYMR.strings.general_categories),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(AYMR.strings.action_edit_anime_categories),
                     subtitle = pluralStringResource(
@@ -116,7 +114,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.defaultAnimeCategory,
-                    entries = animeIds.zip(animeLabels).toMap().toImmutableMap(),
+                    entries = animeIds.zip(animeLabels).toMap().toMap(),
                     title = stringResource(AYMR.strings.default_anime_category),
                 ),
                 Preference.PreferenceItem.TextPreference(
@@ -133,7 +131,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.defaultCategory,
-                    entries = mangaIds.zip(mangaLabels).toMap().toImmutableMap(),
+                    entries = mangaIds.zip(mangaLabels).toMap().toMap(),
                     title = stringResource(AYMR.strings.default_manga_category),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
@@ -142,7 +140,7 @@ object SettingsLibraryScreen : SearchableSettings {
                     onValueChanged = {
                         if (!it) {
                             scope.launch {
-                                Injekt.get<ResetMangaCategoryFlags>().await()
+                                context.appGraph.resetMangaCategoryFlags.await()
                             }
                         }
                         true
@@ -223,10 +221,10 @@ object SettingsLibraryScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_library_update),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = autoUpdateIntervalPref,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         0 to stringResource(MR.strings.update_never),
                         12 to stringResource(MR.strings.update_12hour),
                         24 to stringResource(MR.strings.update_24hour),
@@ -243,7 +241,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.MultiSelectListPreference(
                     preference = libraryPreferences.autoUpdateDeviceRestrictions,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         DEVICE_ONLY_ON_WIFI to stringResource(MR.strings.connected_to_wifi),
                         DEVICE_NETWORK_NOT_METERED to stringResource(MR.strings.network_not_metered),
                         DEVICE_CHARGING to stringResource(MR.strings.charging),
@@ -282,7 +280,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.groupAnimeLibraryUpdateType,
                     title = stringResource(TLMR.strings.anime_library_group_updates),
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         AnimeGroupLibraryMode.GLOBAL to stringResource(
                             TLMR.strings.library_group_updates_global,
                         ),
@@ -297,7 +295,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.groupMangaLibraryUpdateType,
                     title = stringResource(TLMR.strings.manga_library_group_updates),
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         MangaGroupLibraryMode.GLOBAL to stringResource(
                             TLMR.strings.library_group_updates_global,
                         ),
@@ -317,7 +315,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.MultiSelectListPreference(
                     preference = libraryPreferences.autoUpdateMangaRestrictions,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         ENTRY_HAS_UNVIEWED to stringResource(AYMR.strings.pref_update_only_completely_read),
                         ENTRY_NON_VIEWED to stringResource(MR.strings.pref_update_only_started),
                         ENTRY_NON_COMPLETED to stringResource(MR.strings.pref_update_only_non_completed),
@@ -339,7 +337,7 @@ object SettingsLibraryScreen : SearchableSettings {
     ): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(
             title = stringResource(AYMR.strings.pref_library_season),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = libraryPreferences.updateSeasonOnRefresh,
                     title = stringResource(AYMR.strings.pref_update_seasons_refresh),
@@ -358,10 +356,10 @@ object SettingsLibraryScreen : SearchableSettings {
     ): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(
             title = stringResource(AYMR.strings.pref_behavior),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.swipeChapterStartAction,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         LibraryPreferences.ChapterSwipeAction.Disabled to
                             stringResource(MR.strings.disabled),
                         LibraryPreferences.ChapterSwipeAction.ToggleBookmark to
@@ -375,7 +373,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.swipeChapterEndAction,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         LibraryPreferences.ChapterSwipeAction.Disabled to
                             stringResource(MR.strings.disabled),
                         LibraryPreferences.ChapterSwipeAction.ToggleBookmark to
@@ -389,7 +387,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.MultiSelectListPreference(
                     preference = libraryPreferences.markDuplicateReadChapterAsRead,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         MARK_DUPLICATE_CHAPTER_READ_EXISTING to
                             stringResource(MR.strings.pref_mark_duplicate_read_chapter_read_existing),
                         MARK_DUPLICATE_CHAPTER_READ_NEW to
@@ -411,10 +409,10 @@ object SettingsLibraryScreen : SearchableSettings {
     ): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(
             title = stringResource(AYMR.strings.pref_behavior_episode),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.swipeEpisodeStartAction,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         LibraryPreferences.EpisodeSwipeAction.Disabled to
                             stringResource(MR.strings.disabled),
                         LibraryPreferences.EpisodeSwipeAction.ToggleBookmark to
@@ -430,7 +428,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = libraryPreferences.swipeEpisodeEndAction,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         LibraryPreferences.EpisodeSwipeAction.Disabled to
                             stringResource(MR.strings.disabled),
                         LibraryPreferences.EpisodeSwipeAction.ToggleBookmark to
@@ -446,7 +444,7 @@ object SettingsLibraryScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.MultiSelectListPreference(
                     preference = libraryPreferences.markDuplicateSeenEpisodeAsSeen,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         MARK_DUPLICATE_EPISODE_SEEN_EXISTING to
                             stringResource(AYMR.strings.pref_mark_duplicate_seen_episode_seen_existing),
                         MARK_DUPLICATE_EPISODE_SEEN_NEW to

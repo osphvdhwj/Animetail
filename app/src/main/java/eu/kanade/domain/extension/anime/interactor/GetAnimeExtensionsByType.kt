@@ -1,5 +1,6 @@
 package eu.kanade.domain.extension.anime.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.extension.anime.model.AnimeExtensions
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
@@ -7,6 +8,7 @@ import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
+@Inject
 class GetAnimeExtensionsByType(
     private val preferences: SourcePreferences,
     private val extensionManager: AnimeExtensionManager,
@@ -17,10 +19,11 @@ class GetAnimeExtensionsByType(
 
         return combine(
             preferences.enabledLanguages.changes(),
+            preferences.disabledRepos.changes(),
             extensionManager.installedExtensionsFlow,
             extensionManager.untrustedExtensionsFlow,
             extensionManager.availableExtensionsFlow,
-        ) { enabledLanguages, _installed, _untrusted, _available ->
+        ) { enabledLanguages, disabledRepos, _installed, _untrusted, _available ->
             val (updates, installed) = _installed
                 .filter { (showNsfwSources || !it.isNsfw) }
                 .sortedWith(
@@ -34,24 +37,16 @@ class GetAnimeExtensionsByType(
 
             val available = _available
                 .filter { extension ->
-                    _installed.none {
-                        // KMK -->
-                        it.signatureHash == extension.signatureHash &&
-                            // KMK <--
+                    extension.store.indexUrl !in disabledRepos &&
+                        _installed.none {
                             it.pkgName == extension.pkgName
-                    } &&
+                        } &&
                         _untrusted.none {
-                            // KMK -->
-                            it.signatureHash == extension.signatureHash &&
-                                // KMK <--
-                                it.pkgName == extension.pkgName
+                            it.pkgName == extension.pkgName
                         } &&
                         (showNsfwSources || !extension.isNsfw)
                 }
                 .flatMap { ext ->
-                    if (ext.sources.isEmpty()) {
-                        return@flatMap if (ext.lang in enabledLanguages) listOf(ext) else emptyList()
-                    }
                     ext.sources.filter { it.lang in enabledLanguages }
                         .map {
                             ext.copy(

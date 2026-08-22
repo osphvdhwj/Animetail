@@ -9,8 +9,6 @@ import android.os.Build
 import androidx.core.content.pm.PackageInfoCompat
 import dalvik.system.PathClassLoader
 import eu.kanade.domain.extension.anime.interactor.TrustAnimeExtension
-import eu.kanade.domain.source.service.SourcePreferences
-import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.AnimeSourceFactory
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
@@ -18,15 +16,16 @@ import eu.kanade.tachiyomi.extension.anime.model.AnimeLoadResult
 import eu.kanade.tachiyomi.util.lang.Hash
 import eu.kanade.tachiyomi.util.storage.copyAndSetReadOnlyTo
 import eu.kanade.tachiyomi.util.system.ChildFirstPathClassLoader
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
 import logcat.LogPriority
-import mihon.domain.extensionrepo.anime.interactor.CreateAnimeExtensionRepo.Companion.ANIMETAIL_SIGNATURE
-import mihon.domain.extensionrepo.anime.interactor.GetAnimeExtensionRepo
-import mihon.domain.extensionrepo.model.ExtensionRepo
+import mihon.app.di.appGraph
+import mihon.domain.extension.anime.interactor.GetAnimeExtensionStores
+import mihon.domain.extension.model.ExtensionStore
+import mihon.domain.extension.model.ExtensionStore.Companion.ANIMETAIL_SIGNATURE
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.injectLazy
 import java.io.File
 
 /**
@@ -35,17 +34,6 @@ import java.io.File
 @SuppressLint("PackageManagerGetSignatures")
 internal object AnimeExtensionLoader {
 
-    private val preferences: SourcePreferences by injectLazy()
-    private val trustExtension: TrustAnimeExtension by injectLazy()
-
-    // KMK -->
-    private val getExtensionRepo: GetAnimeExtensionRepo by injectLazy()
-    // KMK <--
-
-    private val loadNsfwSource by lazy {
-        preferences.showNsfwSource.get()
-    }
-
     private const val EXTENSION_FEATURE = "tachiyomi.animeextension"
     private const val METADATA_SOURCE_CLASS = "tachiyomi.animeextension.class"
     private const val METADATA_SOURCE_FACTORY = "tachiyomi.animeextension.factory"
@@ -53,8 +41,12 @@ internal object AnimeExtensionLoader {
     private const val METADATA_HAS_README = "tachiyomi.animeextension.hasReadme"
     private const val METADATA_HAS_CHANGELOG = "tachiyomi.animeextension.hasChangelog"
     private const val METADATA_TORRENT = "tachiyomi.animeextension.torrent"
+    private const val METADATA_NAME = "tachiyomix.name"
+    private const val METADATA_EXTENSION_LIB = "tachiyomix.extensionLib"
+    private const val METADATA_CONTENT_WARNING = "tachiyomix.contentWarning"
     const val LIB_VERSION_MIN = 12
     const val LIB_VERSION_MAX = 16
+    private val SUPPORTED_LIB_VERSIONS = (LIB_VERSION_MIN..LIB_VERSION_MAX).map { it.toDouble() }
 
     @Suppress("DEPRECATION")
     private val PACKAGE_FLAGS = PackageManager.GET_CONFIGURATIONS or
@@ -176,11 +168,11 @@ internal object AnimeExtensionLoader {
         // KMK -->
         // Pre-fetch repos outside runBlocking to avoid nested runBlocking deadlock
         // with the SQLDelight driver's connection pool
-        val repos = runBlocking { getExtensionRepo.getAll() }
+        val repos = runBlocking { context.appGraph.getAnimeExtensionStores.await() }
         // KMK <--
 
         // Load each extension concurrently and wait for completion
-        return runBlocking {
+        return runBlocking(Dispatchers.IO) {
             val deferred = extPkgs.map {
                 async { loadExtension(context, it, extRepos = repos) }
             }
@@ -253,11 +245,14 @@ internal object AnimeExtensionLoader {
         context: Context,
         extensionInfo: AnimeExtensionInfo,
         // KMK -->
-        extRepos: List<ExtensionRepo>? = null,
+        extRepos: List<ExtensionStore>? = null,
         // KMK <--
     ): AnimeLoadResult {
+        val trustExtension: TrustAnimeExtension = context.appGraph.trustAnimeExtension
+        val loadNsfwSource: Boolean = context.appGraph.sourcePreferences.showNsfwSource.get()
+        val getExtensionStores: GetAnimeExtensionStores = context.appGraph.getAnimeExtensionStores
         // KMK -->
-        val repos = extRepos ?: getExtensionRepo.getAll()
+        val repos = extRepos ?: getExtensionStores.await()
         // KMK <--
         val pkgManager = context.packageManager
 
@@ -265,7 +260,8 @@ internal object AnimeExtensionLoader {
         val appInfo = pkgInfo.applicationInfo!!
         val pkgName = pkgInfo.packageName
 
-        val extName = pkgManager.getApplicationLabel(appInfo).toString().substringAfter("Animetail: ")
+        val extName = appInfo.metaData.getString(METADATA_NAME)
+            ?: pkgManager.getApplicationLabel(appInfo).toString().substringAfter("Animetail: ")
         val versionName = pkgInfo.versionName
         val versionCode = PackageInfoCompat.getLongVersionCode(pkgInfo)
 
@@ -275,11 +271,15 @@ internal object AnimeExtensionLoader {
         }
 
         // Validate lib version
-        val libVersion = versionName.substringBeforeLast('.').toDoubleOrNull()
-        if (libVersion == null || libVersion < LIB_VERSION_MIN || libVersion > LIB_VERSION_MAX) {
+        val libVersion = appInfo.metaData.getInt(METADATA_EXTENSION_LIB)
+            .takeUnless { it == 0 }
+            ?.toString()
+            ?.toDouble()
+            ?: versionName.substringBeforeLast('.').toDoubleOrNull()
+        if (libVersion == null || libVersion !in SUPPORTED_LIB_VERSIONS) {
             logcat(LogPriority.WARN) {
-                "Lib version is $libVersion, while only versions " +
-                    "$LIB_VERSION_MIN to $LIB_VERSION_MAX are allowed"
+                "Lib version is $libVersion, while only version(s) " +
+                    "${SUPPORTED_LIB_VERSIONS.joinToString()} are supported"
             }
             return AnimeLoadResult.Error
         }
@@ -301,7 +301,7 @@ internal object AnimeExtensionLoader {
                     isOfficiallySigned(signatures) -> "Animetail"
 
                     else -> repos.firstOrNull { repo ->
-                        signatures.all { it == repo.signingKeyFingerprint }
+                        signatures.all { it == repo.signingKey }
                     }?.name
                 },
                 // KMK <--
@@ -310,7 +310,8 @@ internal object AnimeExtensionLoader {
             return AnimeLoadResult.Untrusted(extension)
         }
 
-        val isNsfw = appInfo.metaData.getInt(METADATA_NSFW) == 1
+        val isNsfw = appInfo.metaData.getInt(METADATA_CONTENT_WARNING) > 0 ||
+            appInfo.metaData.getInt(METADATA_NSFW) == 1
         if (!loadNsfwSource && isNsfw) {
             logcat(LogPriority.WARN) { "NSFW extension $pkgName not allowed" }
             return AnimeLoadResult.Error
@@ -370,9 +371,7 @@ internal object AnimeExtensionLoader {
                 }
             }
 
-        val langs = sources.filterIsInstance<AnimeCatalogueSource>()
-            .map { it.lang }
-            .toSet()
+        val langs = sources.map { it.lang }.toSet()
         val lang = when (langs.size) {
             0 -> ""
             1 -> langs.first()
@@ -398,7 +397,7 @@ internal object AnimeExtensionLoader {
                 isOfficiallySigned(signatures) -> "Animetail"
 
                 else -> repos.firstOrNull { repo ->
-                    signatures.all { it == repo.signingKeyFingerprint }
+                    signatures.all { it == repo.signingKey }
                 }?.name
             },
             // KMK <--

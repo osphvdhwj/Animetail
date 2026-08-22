@@ -4,9 +4,11 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.base.BasePreferences
 import eu.kanade.tachiyomi.extension.InstallStep
-import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.extension.anime.installer.InstallerAnime
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.network.NetworkHelper
@@ -15,6 +17,7 @@ import eu.kanade.tachiyomi.util.system.isPackageInstalled
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,8 +27,6 @@ import logcat.LogPriority
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import tachiyomi.core.common.util.system.logcat
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 
 /**
@@ -33,12 +34,18 @@ import java.io.File
  *
  * @param context The application context.
  */
-internal class AnimeExtensionInstaller(private val context: Context) {
-    private val scope = CoroutineScope(Dispatchers.IO)
+@Inject
+@SingleIn(AppScope::class)
+class AnimeExtensionInstaller(
+    private val context: Context,
+    basePreferences: BasePreferences,
+    networkHelper: NetworkHelper,
+) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val activeJobs = mutableMapOf<String, Job>()
     private val activeSteps = mutableMapOf<Long, MutableStateFlow<InstallStep>>()
-    private val extensionInstaller = Injekt.get<BasePreferences>().extensionInstaller
-    private val httpClient: OkHttpClient = Injekt.get<NetworkHelper>().client
+    private val extensionInstaller = basePreferences.extensionInstaller
+    private val httpClient: OkHttpClient = networkHelper.client
 
     /**
      * Adds the given extension to the downloads queue and returns an observable containing its
@@ -46,15 +53,20 @@ internal class AnimeExtensionInstaller(private val context: Context) {
      *
      * @param url The url of the apk.
      * @param extension The extension to install.
+     * @param isUpdateForPrivatelyInstalled If this is an update for a privately installed extension
      */
-    fun downloadAndInstall(url: String, extension: AnimeExtension): Flow<InstallStep> {
+    fun downloadAndInstall(
+        url: String,
+        extension: AnimeExtension,
+        isUpdateForPrivatelyInstalled: Boolean = false,
+    ): Flow<InstallStep> {
         val downloadId = extension.pkgName.hashCode().toLong()
         cancelInstall(extension.pkgName)
 
         val step = MutableStateFlow(InstallStep.Pending)
         activeSteps[downloadId] = step
 
-        val job = scope.launch {
+        val job = scope.launch(Dispatchers.IO) {
             val tmpFile = File(context.cacheDir, "extension_${extension.pkgName}.apk")
             try {
                 step.value = InstallStep.Downloading
@@ -72,7 +84,7 @@ internal class AnimeExtensionInstaller(private val context: Context) {
                 }
 
                 step.value = InstallStep.Installing
-                installApk(downloadId, tmpFile)
+                installApk(downloadId, tmpFile, isUpdateForPrivatelyInstalled)
             } catch (e: Exception) {
                 if (e is InterruptedException) {
                     // Canceled
@@ -97,8 +109,14 @@ internal class AnimeExtensionInstaller(private val context: Context) {
      * Starts an intent to install the extension at the given file.
      *
      * @param tempFile The file of the extension to install. Delete after use.
+     * @param isUpdateForPrivatelyInstalled If this install is an update for a privately installed extension
      */
-    private fun installApk(downloadId: Long, tempFile: File) {
+    private fun installApk(downloadId: Long, tempFile: File, isUpdateForPrivatelyInstalled: Boolean = false) {
+        if (isUpdateForPrivatelyInstalled) {
+            installApkPrivately(downloadId, tempFile)
+            return
+        }
+
         when (val installer = extensionInstaller.get()) {
             BasePreferences.ExtensionInstaller.LEGACY -> {
                 val intent = Intent(context, AnimeExtensionInstallActivity::class.java)
@@ -112,20 +130,7 @@ internal class AnimeExtensionInstaller(private val context: Context) {
             }
 
             BasePreferences.ExtensionInstaller.PRIVATE -> {
-                val extensionManager = Injekt.get<AnimeExtensionManager>()
-
-                try {
-                    if (AnimeExtensionLoader.installPrivateExtensionFile(context, tempFile)) {
-                        extensionManager.updateInstallStep(downloadId, InstallStep.Installed)
-                    } else {
-                        extensionManager.updateInstallStep(downloadId, InstallStep.Error)
-                    }
-                } catch (e: Exception) {
-                    logcat(LogPriority.ERROR, e) { "Failed to read downloaded extension file." }
-                    extensionManager.updateInstallStep(downloadId, InstallStep.Error)
-                }
-
-                tempFile.delete()
+                installApkPrivately(downloadId, tempFile)
             }
 
             else -> {
@@ -139,6 +144,21 @@ internal class AnimeExtensionInstaller(private val context: Context) {
                 ContextCompat.startForegroundService(context, intent)
             }
         }
+    }
+
+    private fun installApkPrivately(downloadId: Long, tempFile: File) {
+        try {
+            if (AnimeExtensionLoader.installPrivateExtensionFile(context, tempFile)) {
+                updateInstallStep(downloadId, InstallStep.Installed)
+            } else {
+                updateInstallStep(downloadId, InstallStep.Error)
+            }
+        } catch (e: Exception) {
+            logcat(LogPriority.ERROR, e) { "Failed to read downloaded extension file." }
+            updateInstallStep(downloadId, InstallStep.Error)
+        }
+
+        tempFile.delete()
     }
 
     /**

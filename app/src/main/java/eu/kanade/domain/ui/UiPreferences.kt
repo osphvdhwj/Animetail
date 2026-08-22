@@ -1,6 +1,9 @@
 package eu.kanade.domain.ui
 
 import com.materialkolor.PaletteStyle
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.domain.ui.model.NavStyle
 import eu.kanade.domain.ui.model.StartScreen
@@ -15,6 +18,8 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 
+@Inject
+@SingleIn(AppScope::class)
 class UiPreferences(
     preferenceStore: PreferenceStore,
 ) {
@@ -47,7 +52,7 @@ class UiPreferences(
 
     val tabletUiMode: Preference<TabletUiMode> = preferenceStore.getEnum("tablet_ui_mode", TabletUiMode.AUTOMATIC)
 
-    val startScreen: Preference<StartScreen> = preferenceStore.getEnum("start_screen", StartScreen.ANIME)
+    val startScreen: Preference<StartScreen> = preferenceStore.getEnum("start_screen", StartScreen.HOME)
 
     val navStyle: Preference<NavStyle> = preferenceStore.getEnum("bottom_rail_nav_style", NavStyle.MOVE_HISTORY_TO_MORE)
 
@@ -58,12 +63,32 @@ class UiPreferences(
     val showNavHistory: Preference<Boolean> = preferenceStore.getBoolean("pref_show_history_button", true)
     val showNavDiscover: Preference<Boolean> = preferenceStore.getBoolean("pref_show_discover_button", true)
     val showNavBrowse: Preference<Boolean> = preferenceStore.getBoolean("pref_show_browse_button", true)
-    
+    val showHomeTab: Preference<Boolean> = preferenceStore.getBoolean("pref_show_home_tab", false)
     val bottomBarLabels: Preference<Boolean> = preferenceStore.getBoolean("pref_show_bottom_bar_labels", true)
     val hideFeedTab: Preference<Boolean> = preferenceStore.getBoolean("hide_latest_tab", false)
     val feedTabInFront: Preference<Boolean> = preferenceStore.getBoolean("latest_tab_position", false)
     val expandFilters: Preference<Boolean> = preferenceStore.getBoolean("eh_expand_filters", false)
     val useNewSourceNavigation: Preference<Boolean> = preferenceStore.getBoolean("use_new_source_navigation", true)
+
+    val homeMediaFilter: Preference<Int> = preferenceStore.getInt("home_media_filter", 0)
+    val homeAutoScrollHero: Preference<Boolean> = preferenceStore.getBoolean("home_auto_scroll_hero", true)
+    val homeHeroSource: Preference<Int> = preferenceStore.getInt("home_hero_source", 0)
+    val homeItemsPerSection: Preference<Int> = preferenceStore.getInt("home_items_per_section", 12)
+    val homeHideCompleted: Preference<Boolean> = preferenceStore.getBoolean("home_hide_completed", false)
+    val homeEnableTmdb: Preference<Boolean> = preferenceStore.getBoolean("home_enable_tmdb", true)
+    val homeEnableAnilist: Preference<Boolean> = preferenceStore.getBoolean("home_enable_anilist", true)
+
+    val homeShowFeatured: Preference<Boolean> = preferenceStore.getBoolean("home_show_featured", true)
+    val homeShowContinue: Preference<Boolean> = preferenceStore.getBoolean("home_show_continue", true)
+    val homeShowBecauseYouWatched: Preference<Boolean> = preferenceStore.getBoolean(
+        "home_show_because_you_watched",
+        true,
+    )
+    val homeShowRecommended: Preference<Boolean> = preferenceStore.getBoolean("home_show_recommended", true)
+    val homeShowPopularAnime: Preference<Boolean> = preferenceStore.getBoolean("home_show_popular_anime", true)
+    val homeShowPopularManga: Preference<Boolean> = preferenceStore.getBoolean("home_show_popular_manga", true)
+    val homeShowPopularMovies: Preference<Boolean> = preferenceStore.getBoolean("home_show_popular_movies", true)
+    val homeShowPopularSeries: Preference<Boolean> = preferenceStore.getBoolean("home_show_popular_series", true)
 
     // SY <--
     // KMK -->
@@ -99,3 +124,4 @@ class UiPreferences(
         }
     }
 }
+

@@ -47,16 +47,14 @@ import eu.kanade.presentation.browse.BaseBrowseItem
 import eu.kanade.presentation.browse.manga.components.MangaExtensionIcon
 import eu.kanade.presentation.components.WarningBanner
 import eu.kanade.presentation.entries.components.DotSeparatorNoSpaceText
-import eu.kanade.presentation.more.settings.screen.browse.MangaExtensionReposScreen
-import eu.kanade.presentation.util.animateItemFastScroll
+import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.manga.model.MangaExtension
 import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionUiModel
-import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionsScreenModel
+import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionsViewModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.material.PullRefresh
@@ -72,7 +70,7 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 @Composable
 fun MangaExtensionScreen(
-    state: MangaExtensionsScreenModel.State,
+    state: MangaExtensionsViewModel.State,
     contentPadding: PaddingValues,
     searchQuery: String?,
     onLongClickItem: (MangaExtension) -> Unit,
@@ -105,11 +103,11 @@ fun MangaExtensionScreen(
                 EmptyScreen(
                     stringRes = msg,
                     modifier = Modifier.padding(contentPadding),
-                    actions = persistentListOf(
+                    actions = listOf(
                         EmptyScreenAction(
-                            stringRes = MR.strings.label_extension_repos,
+                            stringRes = MR.strings.extensionStores,
                             icon = Icons.Outlined.Settings,
-                            onClick = { navigator.push(MangaExtensionReposScreen()) },
+                            onClick = { navigator.push(ExtensionStoresScreen(isManga = true)) },
                         ),
                     ),
                 )
@@ -136,7 +134,7 @@ fun MangaExtensionScreen(
 
 @Composable
 private fun ExtensionContent(
-    state: MangaExtensionsScreenModel.State,
+    state: MangaExtensionsViewModel.State,
     contentPadding: PaddingValues,
     onLongClickItem: (MangaExtension) -> Unit,
     onOpenWebView: (MangaExtension.Available) -> Unit,
@@ -190,7 +188,7 @@ private fun ExtensionContent(
                             }
                         ExtensionHeader(
                             textRes = header.textRes,
-                            modifier = Modifier.animateItemFastScroll(),
+                            modifier = Modifier.animateItem(),
                             action = action,
                         )
                     }
@@ -198,7 +196,7 @@ private fun ExtensionContent(
                     is MangaExtensionUiModel.Header.Text -> {
                         ExtensionHeader(
                             text = header.text,
-                            modifier = Modifier.animateItemFastScroll(),
+                            modifier = Modifier.animateItem(),
                         )
                     }
                 }
@@ -216,7 +214,7 @@ private fun ExtensionContent(
                 },
             ) { item ->
                 ExtensionItem(
-                    modifier = Modifier.animateItemFastScroll(),
+                    modifier = Modifier.animateItem(),
                     item = item,
                     onClickItem = {
                         when (it) {

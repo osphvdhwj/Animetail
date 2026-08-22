@@ -135,6 +135,7 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
         }
     }
 
+    @Suppress("DEPRECATION")
     fun onKey(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_MULTIPLE || KeyEvent.isModifierKey(event.keyCode)) {
             return false
@@ -226,7 +227,10 @@ class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(
             (subtitlePreferences.subtitlesSecondaryDelay().get() / 1000.0).toString(),
         )
 
-        mpv?.setOptionString("sub-font", subtitlePreferences.subtitleFont().get())
+        val font = subtitlePreferences.subtitleFont().get().let {
+            if (it == "Sans Serif") "sans-serif" else it
+        }
+        mpv?.setOptionString("sub-font", font)
         subtitlePreferences.overrideSubsASS().get().let {
             mpv?.setOptionString("sub-ass-override", it.value)
             if (it != SubtitleAssOverride.No) {

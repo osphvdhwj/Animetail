@@ -6,43 +6,41 @@ import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.core.preference.asState
-import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.components.TabbedScreen
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.DiscordScreen
-import eu.kanade.tachiyomi.ui.browse.anime.extension.AnimeExtensionsScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.extension.AnimeExtensionsViewModel
 import eu.kanade.tachiyomi.ui.browse.anime.extension.animeExtensionsTab
 import eu.kanade.tachiyomi.ui.browse.anime.migration.sources.migrateAnimeSourceTab
 import eu.kanade.tachiyomi.ui.browse.anime.source.animeSourcesTab
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen
 import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenModel
 import eu.kanade.tachiyomi.ui.browse.feed.feedTab
-import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionsScreenModel
+import eu.kanade.tachiyomi.ui.browse.manga.extension.MangaExtensionsViewModel
 import eu.kanade.tachiyomi.ui.browse.manga.extension.mangaExtensionsTab
 import eu.kanade.tachiyomi.ui.browse.manga.migration.sources.migrateMangaSourceTab
 import eu.kanade.tachiyomi.ui.browse.manga.source.mangaSourcesTab
 import eu.kanade.tachiyomi.ui.main.MainActivity
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.receiveAsFlow
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 data object BrowseTab : Tab {
     private fun readResolve(): Any = BrowseTab
@@ -94,19 +92,20 @@ data object BrowseTab : Tab {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
         // SY -->
-        val hideFeedTab by remember { Injekt.get<UiPreferences>().hideFeedTab.asState(scope) }
-        val feedTabInFront by remember { Injekt.get<UiPreferences>().feedTabInFront.asState(scope) }
+        val uiPreferences = remember { context.appGraph.uiPreferences }
+        val hideFeedTab by remember { uiPreferences.hideFeedTab.asState(scope) }
+        val feedTabInFront by remember { uiPreferences.feedTabInFront.asState(scope) }
         // SY <--
 
         // Hoisted for extensions tab's search bar
-        val mangaExtensionsScreenModel = rememberScreenModel { MangaExtensionsScreenModel() }
-        val mangaExtensionsState by mangaExtensionsScreenModel.state.collectAsState()
+        val mangaExtensionsViewModel = metroViewModel<MangaExtensionsViewModel>()
+        val mangaExtensionsSearchQuery by mangaExtensionsViewModel.searchQuery.collectAsStateWithLifecycle()
 
-        val animeExtensionsScreenModel = rememberScreenModel { AnimeExtensionsScreenModel() }
-        val animeExtensionsState by animeExtensionsScreenModel.state.collectAsState()
+        val animeExtensionsViewModel = metroViewModel<AnimeExtensionsViewModel>()
+        val animeExtensionsSearchQuery by animeExtensionsViewModel.searchQuery.collectAsStateWithLifecycle()
 
-        val animeExtensionsTabContent = animeExtensionsTab(animeExtensionsScreenModel)
-        val mangaExtensionsTabContent = mangaExtensionsTab(mangaExtensionsScreenModel)
+        val animeExtensionsTabContent = animeExtensionsTab(animeExtensionsViewModel)
+        val mangaExtensionsTabContent = mangaExtensionsTab(mangaExtensionsViewModel)
 
         // KMK -->
         val feedScreenModel = rememberScreenModel { FeedScreenModel() }
@@ -114,7 +113,7 @@ data object BrowseTab : Tab {
 
         val tabs = when {
             hideFeedTab ->
-                persistentListOf(
+                listOf(
                     animeSourcesTab(),
                     mangaSourcesTab(),
                     animeExtensionsTabContent,
@@ -124,7 +123,7 @@ data object BrowseTab : Tab {
                 )
 
             feedTabInFront ->
-                persistentListOf(
+                listOf(
                     feedTab(
                         // KMK -->
                         feedScreenModel,
@@ -139,7 +138,7 @@ data object BrowseTab : Tab {
                 )
 
             else ->
-                persistentListOf(
+                listOf(
                     animeSourcesTab(),
                     mangaSourcesTab(),
                     feedTab(
@@ -168,10 +167,12 @@ data object BrowseTab : Tab {
             titleRes = MR.strings.browse,
             tabs = tabs,
             state = state,
-            mangaSearchQuery = mangaExtensionsState.searchQuery,
-            onChangeMangaSearchQuery = mangaExtensionsScreenModel::search,
-            animeSearchQuery = animeExtensionsState.searchQuery,
-            onChangeAnimeSearchQuery = animeExtensionsScreenModel::search,
+            mangaSearchQuery = mangaExtensionsSearchQuery,
+            onChangeMangaSearchQuery = mangaExtensionsViewModel::search,
+            animeSearchQuery = animeExtensionsSearchQuery,
+            onChangeAnimeSearchQuery = animeExtensionsViewModel::search,
+            animeExtensionsTabIndex = animeExtensionsTabIndex,
+            mangaExtensionsTabIndex = mangaExtensionsTabIndex,
             // KMK -->
             feedScreenModel = feedScreenModel,
             // KMK <--

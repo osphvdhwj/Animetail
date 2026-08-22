@@ -111,3 +111,4 @@ class AnimeDownloadHolder(private val view: View, val adapter: AnimeDownloadAdap
         )
     }
 }
+

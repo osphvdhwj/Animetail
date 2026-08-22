@@ -4,6 +4,9 @@ import android.content.Context
 import aniyomi.util.DataSaver
 import aniyomi.util.DataSaver.Companion.getImage
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.domain.entries.manga.model.getComicInfo
 import eu.kanade.domain.items.chapter.model.toSChapter
 import eu.kanade.domain.source.service.SourcePreferences
@@ -11,6 +14,7 @@ import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.data.library.manga.MangaLibraryUpdateNotifier
 import eu.kanade.tachiyomi.data.notification.NotificationHandler
+import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.source.UnmeteredSource
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.online.HttpSource
@@ -48,9 +52,7 @@ import okhttp3.Response
 import okio.Throttler
 import okio.buffer
 import tachiyomi.core.common.i18n.stringResource
-import tachiyomi.core.common.storage.extension
 import tachiyomi.core.common.util.lang.launchIO
-import tachiyomi.core.common.util.lang.launchNow
 import tachiyomi.core.common.util.lang.withIOContext
 import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
@@ -64,10 +66,9 @@ import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 import java.io.File
 import java.util.Locale
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * This class is the one in charge of downloading chapters.
@@ -78,44 +79,36 @@ import java.util.Locale
  * The queue manipulation must be done in one thread (currently the main thread) to avoid unexpected
  * behavior, but it's safe to read it from multiple threads.
  */
-@OptIn(DelicateCoroutinesApi::class)
+@Inject
+@SingleIn(AppScope::class)
 class MangaDownloader(
     private val context: Context,
     private val provider: MangaDownloadProvider,
     private val cache: MangaDownloadCache,
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val chapterCache: ChapterCache = Injekt.get(),
-    private val downloadPreferences: DownloadPreferences = Injekt.get(),
-    private val xml: XML = Injekt.get(),
-    private val getCategories: GetMangaCategories = Injekt.get(),
-    private val getMangaTracks: GetMangaTracks = Injekt.get(),
+    private val sourceManager: MangaSourceManager,
+    private val chapterCache: ChapterCache,
+    private val downloadPreferences: DownloadPreferences,
+    private val xml: XML,
+    private val getCategories: GetMangaCategories,
+    private val getMangaTracks: GetMangaTracks,
+    private val store: MangaDownloadStore,
+    private val notifier: MangaDownloadNotifier,
     // SY -->
-    private val sourcePreferences: SourcePreferences = Injekt.get(),
+    private val sourcePreferences: SourcePreferences,
     // SY <--
 ) {
-
-    /**
-     * Store for persisting downloads across restarts.
-     */
-    private val store = MangaDownloadStore(context)
-
     /**
      * Queue where active downloads are kept.
      */
     private val _queueState = MutableStateFlow<List<MangaDownload>>(emptyList())
     val queueState = _queueState.asStateFlow()
 
-    /**
-     * Notifier for the downloader state and progress.
-     */
-    private val notifier by lazy { MangaDownloadNotifier(context) }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     /**
      * The throttler used to control the download speed.
      */
     private val throttler = Throttler()
-
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var downloaderJob: Job? = null
 
     /**
@@ -131,7 +124,7 @@ class MangaDownloader(
     var isPaused: Boolean = false
 
     init {
-        launchNow {
+        scope.launch {
             val chapters = async { store.restore() }
             addAllToQueue(chapters.await())
         }
@@ -210,7 +203,7 @@ class MangaDownloader(
     private fun launchDownloaderJob() {
         if (isRunning) return
 
-        downloaderJob = scope.launch {
+        downloaderJob = scope.launchIO {
             val activeDownloadsFlow = queueState.transformLatest { queue ->
                 while (true) {
                     val activeDownloads = queue.asSequence()
@@ -385,7 +378,7 @@ class MangaDownloader(
 
             // Delete all temporary (unfinished) files
             tmpDir.listFiles()
-                ?.filter { it.extension == "tmp" }
+                ?.filter { it.name?.endsWith(".tmp") == true }
                 ?.forEach { it.delete() }
 
             download.status = MangaDownload.State.DOWNLOADING
@@ -467,17 +460,10 @@ class MangaDownloader(
 
         val digitCount = (download.pages?.size ?: 0).toString().length.coerceAtLeast(3)
         val filename = "%0${digitCount}d".format(Locale.ENGLISH, page.number)
-        val tmpFile = tmpDir.findFile("$filename.tmp")
-
-        // Delete temp file if it exists
-        tmpFile?.delete()
 
         // Try to find the image file
         val imageFile = tmpDir.listFiles()?.firstOrNull {
-            it.name!!.startsWith("$filename.") ||
-                it.name!!.startsWith(
-                    "${filename}__001",
-                )
+            isDownloadedPageImage(it.name ?: return@firstOrNull false, filename)
         }
 
         try {
@@ -526,20 +512,28 @@ class MangaDownloader(
         page.status = Page.State.DOWNLOAD_IMAGE
         page.progress = 0
         return flow {
-            val response = source.getImage(page, dataSaver)
-            val file = tmpDir.createFile("$filename.tmp")!!
+            val file = tmpDir.findFile("$filename.tmp")
+                ?: tmpDir.createFile("$filename.tmp")!!
+
             try {
-                throttler.apply {
-                    bytesPerSecond(downloadPreferences.downloadSpeedLimit.get().toLong() * 1024)
+                source.getImage(page, dataSaver, file.length()).use {
+                    throttler.apply {
+                        bytesPerSecond(downloadPreferences.downloadSpeedLimit.get().toLong() * 1024)
+                    }
+                    val throttledSource = throttler.source(it.body.source()).buffer()
+                    throttledSource.saveTo(
+                        // If the server supports partial downloads (HTTP 206),
+                        // append to the existing file.
+                        // Otherwise, start from scratch and overwrite the file.
+                        stream = file.openOutputStream(it.code == 206),
+                    )
+                    val extension = getImageExtension(it, file)
+                    file.renameTo("$filename.$extension")
                 }
-                val throttledSource = throttler.source(response.body.source()).buffer()
-                throttledSource.saveTo(file.openOutputStream())
-                throttledSource.close()
-                val extension = getImageExtension(response, file)
-                file.renameTo("$filename.$extension")
-            } catch (e: Exception) {
-                response.close()
-                file.delete()
+            } catch (e: HttpException) {
+                if (e.code == 416) {
+                    file.delete()
+                }
                 throw e
             }
             emit(file)
@@ -547,7 +541,7 @@ class MangaDownloader(
             // Retry 3 times, waiting 2, 4 and 8 seconds between attempts.
             .retryWhen { _, attempt ->
                 if (attempt < 3) {
-                    delay((2L shl attempt.toInt()) * 1000)
+                    delay((2L shl attempt.toInt()).seconds)
                     true
                 } else {
                     false
@@ -642,6 +636,18 @@ class MangaDownloader(
         }
         return downloadedImagesCount == downloadPageCount
     }
+
+    /**
+     * Checks if the file name matches a downloaded page image.
+     *
+     * @param fileName Name of the file to check
+     * @param pagePrefix Expected page prefix (e.g., "001")
+     */
+    private fun isDownloadedPageImage(fileName: String, pagePrefix: String): Boolean =
+        !fileName.endsWith(".tmp") && (
+            fileName.startsWith("$pagePrefix.") ||
+                fileName.startsWith("${pagePrefix}__001.")
+            )
 
     /**
      * Archive the chapter pages as a CBZ.

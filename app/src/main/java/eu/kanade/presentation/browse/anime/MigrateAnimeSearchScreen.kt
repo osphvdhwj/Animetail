@@ -4,14 +4,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import eu.kanade.presentation.browse.anime.components.GlobalAnimeSearchToolbar
 import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
-import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSearchScreenModel
+import eu.kanade.tachiyomi.animesource.AnimeSource
+import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSearchViewModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSourceFilter
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.presentation.core.components.material.Scaffold
 
 @Composable
 fun MigrateAnimeSearchScreen(
-    state: AnimeSearchScreenModel.State,
+    state: AnimeSearchViewModel.State,
     fromSourceId: Long?,
     navigateUp: () -> Unit,
     onChangeSearchQuery: (String?) -> Unit,
@@ -19,7 +20,7 @@ fun MigrateAnimeSearchScreen(
     onChangeSearchFilter: (AnimeSourceFilter) -> Unit,
     onToggleResults: () -> Unit,
     getAnime: @Composable (Anime) -> State<Anime>,
-    onClickSource: (AnimeCatalogueSource) -> Unit,
+    onClickSource: (AnimeSource) -> Unit,
     onClickItem: (Anime) -> Unit,
     onLongClickItem: (Anime) -> Unit,
 ) {

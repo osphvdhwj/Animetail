@@ -1,5 +1,11 @@
 package tachiyomi.data.source.anime
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.source.anime.model.FeedSavedSearch
@@ -8,6 +14,9 @@ import tachiyomi.domain.source.anime.model.SavedSearch
 import tachiyomi.domain.source.anime.repository.FeedSavedSearchRepository
 import tachiyomi.mi.data.AnimeDatabase
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class FeedSavedSearchRepositoryImpl(
     private val handler: AnimeDatabaseHandler,
 ) : FeedSavedSearchRepository {
@@ -64,9 +73,7 @@ class FeedSavedSearchRepositoryImpl(
     override suspend fun insert(feedSavedSearch: FeedSavedSearch): Long {
         // KMK -->
         return handler.await(true) {
-            val currentFeeds = handler.awaitList {
-                feed_saved_searchQueries.selectAll(FeedSavedSearchMapper::map)
-            }
+            val currentFeeds = feed_saved_searchQueries.selectAll(FeedSavedSearchMapper::map).awaitAsList()
             val existedFeedId = currentFeeds.find { currentFeed ->
                 currentFeed.source == feedSavedSearch.source &&
                     currentFeed.savedSearch == feedSavedSearch.savedSearch &&
@@ -75,14 +82,11 @@ class FeedSavedSearchRepositoryImpl(
 
             existedFeedId
                 // KMK <--
-                ?: handler.awaitOneExecutable(true) {
-                    feed_saved_searchQueries.insert(
-                        feedSavedSearch.source,
-                        feedSavedSearch.savedSearch,
-                        feedSavedSearch.global,
-                    )
-                    feed_saved_searchQueries.selectLastInsertedRowId()
-                }
+                ?: feed_saved_searchQueries.insert(
+                    feedSavedSearch.source,
+                    feedSavedSearch.savedSearch,
+                    feedSavedSearch.global,
+                ).awaitAsOne()
         }
     }
 
@@ -93,7 +97,7 @@ class FeedSavedSearchRepositoryImpl(
                     it.source,
                     it.savedSearch,
                     it.global,
-                )
+                ).awaitAsOne()
             }
         }
     }
@@ -106,14 +110,12 @@ class FeedSavedSearchRepositoryImpl(
     }
 
     override suspend fun updatePartial(updates: List<FeedSavedSearchUpdate>) {
-        handler.await(inTransaction = true) {
-            for (update in updates) {
-                updatePartialBlocking(update)
-            }
+        for (update in updates) {
+            updatePartial(update)
         }
     }
 
-    private fun AnimeDatabase.updatePartialBlocking(update: FeedSavedSearchUpdate) {
+    private suspend fun AnimeDatabase.updatePartialBlocking(update: FeedSavedSearchUpdate) {
         feed_saved_searchQueries.update(
             source = update.source,
             saved_search = update.savedSearch,

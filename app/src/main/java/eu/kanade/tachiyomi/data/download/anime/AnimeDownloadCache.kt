@@ -4,6 +4,9 @@ import android.app.Application
 import android.content.Context
 import androidx.core.net.toUri
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.extension.anime.AnimeExtensionManager
 import eu.kanade.tachiyomi.util.size
@@ -20,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
@@ -62,12 +66,14 @@ import kotlin.time.Duration.Companion.seconds
  * defined in [renewInterval] as we don't have any control over the filesystem and the user can
  * delete the folders at any time without the app noticing.
  */
+@Inject
+@SingleIn(AppScope::class)
 class AnimeDownloadCache(
     private val context: Context,
-    private val provider: AnimeDownloadProvider = Injekt.get(),
-    private val sourceManager: AnimeSourceManager = Injekt.get(),
-    private val extensionManager: AnimeExtensionManager = Injekt.get(),
-    private val storageManager: StorageManager = Injekt.get(),
+    private val provider: AnimeDownloadProvider,
+    private val sourceManager: AnimeSourceManager,
+    private val extensionManager: AnimeExtensionManager,
+    private val storageManager: StorageManager,
 ) {
 
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -75,6 +81,7 @@ class AnimeDownloadCache(
     private val _changes: Channel<Unit> = Channel(Channel.UNLIMITED)
     val changes = _changes.receiveAsFlow()
         .onStart { emit(Unit) }
+        .flowOn(Dispatchers.IO)
         .shareIn(scope, SharingStarted.Lazily, 1)
 
     /**
@@ -355,67 +362,69 @@ class AnimeDownloadCache(
                 _isInitializing.emit(true)
             }
 
-            // Try to wait until extensions and sources have loaded
-            var sources = emptyList<AnimeSource>()
-            withTimeoutOrNull(30.seconds) {
-                extensionManager.isInitialized.first { it }
-                sourceManager.isInitialized.first { it }
+            try {
+                // Try to wait until extensions and sources have loaded
+                var sources = emptyList<AnimeSource>()
+                withTimeoutOrNull(30.seconds) {
+                    extensionManager.isInitialized.first { it }
+                    sourceManager.isInitialized.first { it }
 
-                sources = getSources()
-            }
+                    sources = getSources()
+                }
 
-            val sourceMap = sources.associate {
-                provider.getSourceDirName(it).lowercase() to it.id
-            }
+                val sourceMap = sources.associate {
+                    provider.getSourceDirName(it).lowercase() to it.id
+                }
 
-            rootDownloadsDirMutex.withLock {
-                val updatedRootDir = RootDirectory(storageManager.getDownloadsDirectory())
+                rootDownloadsDirMutex.withLock {
+                    val updatedRootDir = RootDirectory(storageManager.getDownloadsDirectory())
 
-                updatedRootDir.sourceDirs = updatedRootDir.dir?.listFiles().orEmpty()
-                    .filter { it.isDirectory && !it.name.isNullOrBlank() }
-                    .mapNotNull { dir ->
-                        val sourceId = sourceMap[dir.name!!.lowercase()]
-                        sourceId?.let { it to SourceDirectory(dir) }
-                    }
-                    .toMap()
+                    updatedRootDir.sourceDirs = updatedRootDir.dir?.listFiles().orEmpty()
+                        .filter { it.isDirectory && !it.name.isNullOrBlank() }
+                        .mapNotNull { dir ->
+                            val sourceId = sourceMap[dir.name!!.lowercase()]
+                            sourceId?.let { it to SourceDirectory(dir) }
+                        }
+                        .toMap()
 
-                updatedRootDir.sourceDirs.values.map { sourceDir ->
-                    async {
-                        sourceDir.animeDirs = sourceDir.dir?.listFiles().orEmpty()
-                            .filter { it.isDirectory && !it.name.isNullOrBlank() }
-                            .associate { it.name!! to AnimeDirectory(it) }
-                        sourceDir.animeDirs.values.forEach { animeDir ->
-                            val episodeDirs = animeDir.dir?.listFiles().orEmpty()
-                                .mapNotNull {
-                                    when {
-                                        // Ignore incomplete downloads
-                                        it.name?.endsWith(AnimeDownloader.TMP_DIR_SUFFIX) == true -> null
+                    updatedRootDir.sourceDirs.values.map { sourceDir ->
+                        async {
+                            sourceDir.animeDirs = sourceDir.dir?.listFiles().orEmpty()
+                                .filter { it.isDirectory && !it.name.isNullOrBlank() }
+                                .associate { it.name!! to AnimeDirectory(it) }
+                            sourceDir.animeDirs.values.forEach { animeDir ->
+                                val episodeDirs = animeDir.dir?.listFiles().orEmpty()
+                                    .mapNotNull {
+                                        when {
+                                            // Ignore incomplete downloads
+                                            it.name?.endsWith(AnimeDownloader.TMP_DIR_SUFFIX) == true -> null
 
-                                        // Folder of videos
-                                        it.isDirectory -> it.name
+                                            // Folder of videos
+                                            it.isDirectory -> it.name
 
-                                        // MP4 files
-                                        it.isFile && it.extension == "mp4" -> it.nameWithoutExtension
+                                            // MP4 files
+                                            it.isFile && it.extension == "mp4" -> it.nameWithoutExtension
 
-                                        // MKV files
-                                        it.isFile && it.extension == "mkv" -> it.nameWithoutExtension
+                                            // MKV files
+                                            it.isFile && it.extension == "mkv" -> it.nameWithoutExtension
 
-                                        // Anything else is irrelevant
-                                        else -> null
+                                            // Anything else is irrelevant
+                                            else -> null
+                                        }
                                     }
-                                }
-                                .toMutableSet()
+                                    .toMutableSet()
 
-                            animeDir.episodeDirs = episodeDirs
+                                animeDir.episodeDirs = episodeDirs
+                            }
                         }
                     }
+                        .awaitAll()
+
+                    rootDownloadsDir = updatedRootDir
                 }
-                    .awaitAll()
-
-                rootDownloadsDir = updatedRootDir
+            } finally {
+                _isInitializing.value = false
             }
-
-            _isInitializing.emit(false)
         }.also {
             it.invokeOnCompletion(onCancelling = true) { exception ->
                 if (exception != null && exception !is CancellationException) {
@@ -431,7 +440,7 @@ class AnimeDownloadCache(
     }
 
     private fun getSources(): List<AnimeSource> {
-        return sourceManager.getOnlineSources() + sourceManager.getStubSources()
+        return sourceManager.getAll() + sourceManager.getStubSources()
     }
 
     private fun notifyChanges() {

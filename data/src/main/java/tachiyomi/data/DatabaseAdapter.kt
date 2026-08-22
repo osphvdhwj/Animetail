@@ -7,6 +7,7 @@ import eu.kanade.tachiyomi.animesource.model.FetchType
 import eu.kanade.tachiyomi.source.model.UpdateStrategy
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import java.util.Date
 
 object DateColumnAdapter : ColumnAdapter<Date, Long> {
@@ -66,5 +67,20 @@ object CastColumnAdapter : ColumnAdapter<List<Credit>, String> {
         Json.encodeToString(value)
     } catch (e: Exception) {
         ""
+    }
+}
+
+object MemoColumnAdapter : ColumnAdapter<JsonObject, ByteArray> {
+    override fun decode(databaseValue: ByteArray): JsonObject {
+        if (databaseValue.isEmpty()) return JsonObject(emptyMap())
+        return try {
+            Json.decodeFromString<JsonObject>(databaseValue.decodeToString())
+        } catch (_: Exception) {
+            JsonObject(emptyMap())
+        }
+    }
+
+    override fun encode(value: JsonObject): ByteArray {
+        return value.toString().encodeToByteArray()
     }
 }

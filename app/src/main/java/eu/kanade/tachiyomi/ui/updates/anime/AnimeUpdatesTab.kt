@@ -9,13 +9,13 @@ import androidx.compose.material.icons.outlined.SelectAll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.NavigatorAdaptiveSheet
 import eu.kanade.presentation.components.TabContent
@@ -31,13 +31,13 @@ import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import mihon.app.di.appGraph
 import mihon.feature.upcoming.anime.UpcomingAnimeScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.injectLazy
 
 @Composable
 fun Screen.animeUpdatesTab(
@@ -45,9 +45,9 @@ fun Screen.animeUpdatesTab(
     fromMore: Boolean,
 ): TabContent {
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { AnimeUpdatesScreenModel() }
+    val viewModel = metroViewModel<AnimeUpdatesViewModel>()
     val scope = rememberCoroutineScope()
-    val state by screenModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     val navigateUp: (() -> Unit)? = if (fromMore) {
         {
@@ -62,15 +62,10 @@ fun Screen.animeUpdatesTab(
     }
 
     suspend fun openEpisode(updateItem: AnimeUpdatesItem, altPlayer: Boolean = false) {
-        val playerPreferences: PlayerPreferences by injectLazy()
+        val playerPreferences = context.appGraph.playerPreferences
         val update = updateItem.update
         val extPlayer = playerPreferences.alwaysUseExternalPlayer().get() != altPlayer
-        MainActivity.startPlayerActivity(
-            context,
-            update.animeId,
-            update.episodeId,
-            extPlayer,
-        )
+        MainActivity.startPlayerActivity(context, update.animeId, update.episodeId, extPlayer, update.sourceId)
     }
 
     return TabContent(
@@ -79,41 +74,40 @@ fun Screen.animeUpdatesTab(
         content = { contentPadding, _ ->
             AnimeUpdateScreen(
                 state = state,
-                snackbarHostState = screenModel.snackbarHostState,
-                lastUpdated = screenModel.lastUpdated,
+                snackbarHostState = viewModel.snackbarHostState,
+                lastUpdated = viewModel.lastUpdated,
                 onClickCover = { item -> navigator.push(AnimeScreen(item.update.animeId)) },
-                onSelectAll = screenModel::toggleAllSelection,
-                onInvertSelection = screenModel::invertSelection,
-                onUpdateLibrary = screenModel::updateLibrary,
-                onDownloadEpisode = screenModel::downloadEpisodes,
-                onMultiBookmarkClicked = screenModel::bookmarkUpdates,
-                onMultiFillermarkClicked = screenModel::fillermarkUpdates,
-                onMultiMarkAsSeenClicked = screenModel::markUpdatesSeen,
-                onMultiDeleteClicked = screenModel::showConfirmDeleteEpisodes,
-                onUpdateSelected = screenModel::toggleSelection,
+                onSelectAll = viewModel::toggleAllSelection,
+                onInvertSelection = viewModel::invertSelection,
+                onUpdateLibrary = viewModel::updateLibrary,
+                onDownloadEpisode = viewModel::downloadEpisodes,
+                onMultiBookmarkClicked = viewModel::bookmarkUpdates,
+                onMultiFillermarkClicked = viewModel::fillermarkUpdates,
+                onMultiMarkAsSeenClicked = viewModel::markUpdatesSeen,
+                onMultiDeleteClicked = viewModel::showConfirmDeleteEpisodes,
+                onUpdateSelected = viewModel::toggleSelection,
                 onOpenEpisode = { updateItem: AnimeUpdatesItem, altPlayer: Boolean ->
                     scope.launchIO {
                         openEpisode(updateItem, altPlayer)
                     }
-                    Unit
                 },
             )
 
-            val onDismissDialog = { screenModel.setDialog(null) }
+            val onDismissDialog = { viewModel.setDialog(null) }
             when (val dialog = state.dialog) {
-                is AnimeUpdatesScreenModel.Dialog.DeleteConfirmation -> {
+                is AnimeUpdatesViewModel.Dialog.DeleteConfirmation -> {
                     UpdatesDeleteConfirmationDialog(
                         onDismissRequest = onDismissDialog,
-                        onConfirm = { screenModel.deleteEpisodes(dialog.toDelete) },
+                        onConfirm = { viewModel.deleteEpisodes(dialog.toDelete) },
                         isManga = false,
                     )
                 }
 
-                is AnimeUpdatesScreenModel.Dialog.ShowQualities -> {
+                is AnimeUpdatesViewModel.Dialog.ShowQualities -> {
                     EpisodeOptionsDialogScreen.onDismissDialog = onDismissDialog
                     NavigatorAdaptiveSheet(
                         screen = EpisodeOptionsDialogScreen(
-                            useExternalDownloader = screenModel.useExternalDownloader,
+                            useExternalDownloader = viewModel.useExternalDownloader,
                             episodeTitle = dialog.episodeTitle,
                             episodeId = dialog.episodeId,
                             animeId = dialog.animeId,
@@ -130,21 +124,21 @@ fun Screen.animeUpdatesTab(
                 // AM (DISCORD) -->
                 DiscordRPCService.setScreen(context, DiscordScreen.UPDATES)
                 // <-- AM (DISCORD)
-                screenModel.events.collectLatest { event ->
+                viewModel.events.collectLatest { event ->
                     when (event) {
-                        AnimeUpdatesScreenModel.Event.InternalError -> screenModel.snackbarHostState.showSnackbar(
+                        AnimeUpdatesViewModel.Event.InternalError -> viewModel.snackbarHostState.showSnackbar(
                             context.stringResource(
                                 MR.strings.internal_error,
                             ),
                         )
 
-                        is AnimeUpdatesScreenModel.Event.LibraryUpdateTriggered -> {
+                        is AnimeUpdatesViewModel.Event.LibraryUpdateTriggered -> {
                             val msg = if (event.started) {
                                 MR.strings.updating_library
                             } else {
                                 MR.strings.update_already_running
                             }
-                            screenModel.snackbarHostState.showSnackbar(context.stringResource(msg))
+                            viewModel.snackbarHostState.showSnackbar(context.stringResource(msg))
                         }
                     }
                 }
@@ -160,25 +154,25 @@ fun Screen.animeUpdatesTab(
                 }
             }
             DisposableEffect(Unit) {
-                screenModel.resetNewUpdatesCount()
+                viewModel.resetNewUpdatesCount()
 
                 onDispose {
-                    screenModel.resetNewUpdatesCount()
+                    viewModel.resetNewUpdatesCount()
                 }
             }
         },
         actions =
-        if (screenModel.state.collectAsState().value.selected.isNotEmpty()) {
+        if (state.selected.isNotEmpty()) {
             persistentListOf(
                 AppBar.Action(
                     title = stringResource(MR.strings.action_select_all),
                     icon = Icons.Outlined.SelectAll,
-                    onClick = { screenModel.toggleAllSelection(true) },
+                    onClick = { viewModel.toggleAllSelection(true) },
                 ),
                 AppBar.Action(
                     title = stringResource(MR.strings.action_select_inverse),
                     icon = Icons.Outlined.FlipToBack,
-                    onClick = { screenModel.invertSelection() },
+                    onClick = { viewModel.invertSelection() },
                 ),
             )
         } else {
@@ -191,7 +185,7 @@ fun Screen.animeUpdatesTab(
                 AppBar.Action(
                     title = stringResource(MR.strings.action_update_library),
                     icon = Icons.Outlined.Refresh,
-                    onClick = { screenModel.updateLibrary() },
+                    onClick = { viewModel.updateLibrary() },
                 ),
             )
         },

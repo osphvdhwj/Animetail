@@ -1,22 +1,33 @@
 package tachiyomi.data.entries.anime
 
 import aniyomi.domain.anime.SeasonAnime
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.data.AnimeUpdateStrategyColumnAdapter
 import tachiyomi.data.CastColumnAdapter
 import tachiyomi.data.FetchTypeColumnAdapter
+import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.StringListColumnAdapter
+import tachiyomi.data.entries.anime.AnimeMapper
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.anime.model.AnimeUpdate
 import tachiyomi.domain.entries.anime.repository.AnimeRepository
 import tachiyomi.domain.library.anime.LibraryAnime
 import tachiyomi.domain.source.anime.model.DeletableAnime
-import java.time.LocalDate
-import java.time.ZoneId
+import kotlin.time.Clock
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class AnimeRepositoryImpl(
     private val handler: AnimeDatabaseHandler,
 ) : AnimeRepository {
@@ -25,7 +36,7 @@ class AnimeRepositoryImpl(
         return handler.awaitOne { animesQueries.getAnimeById(id, AnimeMapper::mapAnime) }
     }
 
-    override suspend fun getAnimeByIdAsFlow(id: Long): Flow<Anime> {
+    override fun getAnimeByIdAsFlow(id: Long): Flow<Anime> {
         return handler.subscribeToOne { animesQueries.getAnimeById(id, AnimeMapper::mapAnime) }
     }
 
@@ -75,10 +86,24 @@ class AnimeRepositoryImpl(
         }
     }
 
-    override suspend fun getUpcomingAnime(statuses: Set<Long>): Flow<List<Anime>> {
-        val epochMillis = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toEpochSecond() * 1000
+    override suspend fun getUpcomingAnime(
+        statuses: Set<Long>,
+        excludedCategories: List<Long>,
+        includedCategories: List<Long>,
+    ): Flow<List<Anime>> {
+        val timeZone = TimeZone.currentSystemDefault()
+        val epochMillis =
+            Clock.System.now().toLocalDateTime(timeZone).date.atStartOfDayIn(timeZone).toEpochMilliseconds()
         return handler.subscribeToList {
-            animesQueries.getUpcomingAnime(epochMillis, statuses, AnimeMapper::mapAnime)
+            animesQueries.getUpcomingAnime(
+                startOfDay = epochMillis,
+                statuses = statuses,
+                includedEmpty = includedCategories.isEmpty(),
+                includedCategories = includedCategories,
+                excludedEmpty = excludedCategories.isEmpty(),
+                excludedCategories = excludedCategories,
+                mapper = AnimeMapper::mapAnime,
+            )
         }
     }
 
@@ -103,7 +128,7 @@ class AnimeRepositoryImpl(
 
     override suspend fun insertAnime(anime: Anime): Long? {
         return handler.awaitOneOrNullExecutable(inTransaction = true) {
-            animesQueries.insert(
+            animesQueries.insertReturningId(
                 source = anime.source,
                 url = anime.url,
                 artist = anime.artist,
@@ -133,8 +158,8 @@ class AnimeRepositoryImpl(
                 seasonNumber = anime.seasonNumber,
                 seasonSourceOrder = anime.seasonSourceOrder,
                 cast = anime.cast,
+                memo = anime.memo,
             )
-            animesQueries.selectLastInsertedRowId()
         }
     }
 
@@ -221,6 +246,7 @@ class AnimeRepositoryImpl(
                     seasonFlags = value.seasonFlags,
                     seasonNumber = value.seasonNumber,
                     seasonSourceOrder = value.seasonSourceOrder,
+                    memo = value.memo?.let(MemoColumnAdapter::encode),
                 )
             }
         }

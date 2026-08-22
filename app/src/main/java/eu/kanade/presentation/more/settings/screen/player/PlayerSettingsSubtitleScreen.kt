@@ -5,6 +5,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.SearchableSettings
+import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
@@ -13,7 +14,7 @@ import uy.kohesive.injekt.api.get
 import java.util.Locale
 import java.util.MissingResourceException
 
-object PlayerSettingsSubtitleScreen : SearchableSettings {
+object PlayerSettingsSubtitleScreen : Screen(), SearchableSettings {
 
     @ReadOnlyComposable
     @Composable
@@ -26,6 +27,7 @@ object PlayerSettingsSubtitleScreen : SearchableSettings {
         val langPref = subtitlePreferences.preferredSubLanguages()
         val whitelist = subtitlePreferences.subtitleWhitelist()
         val blacklist = subtitlePreferences.subtitleBlacklist()
+        val blackBars = subtitlePreferences.subtitleBlackBars()
 
         return listOf(
             Preference.PreferenceItem.EditTextInfoPreference(
@@ -78,6 +80,11 @@ object PlayerSettingsSubtitleScreen : SearchableSettings {
                 preference = blacklist,
                 dialogSubtitle = stringResource(AYMR.strings.pref_player_subtitle_blacklist_info),
                 title = stringResource(AYMR.strings.pref_player_subtitle_blacklist),
+            ),
+            Preference.PreferenceItem.SwitchPreference(
+                preference = blackBars,
+                title = stringResource(AYMR.strings.pref_player_subtitle_black_bars),
+                subtitle = stringResource(AYMR.strings.pref_player_subtitle_black_bars_summary),
             ),
         )
     }

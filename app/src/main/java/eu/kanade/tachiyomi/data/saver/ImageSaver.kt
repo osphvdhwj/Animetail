@@ -11,6 +11,9 @@ import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
 import androidx.core.content.contentValuesOf
 import androidx.core.net.toUri
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.util.storage.DiskUtil
 import eu.kanade.tachiyomi.util.storage.cacheImageDir
 import eu.kanade.tachiyomi.util.storage.getUriCompat
@@ -24,10 +27,12 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
-import java.time.Instant
+import kotlin.time.Clock
 
 typealias ImageBackground = Image.Cover
 
+@Inject
+@SingleIn(AppScope::class)
 class ImageSaver(
     val context: Context,
 ) {
@@ -87,7 +92,7 @@ class ImageSaver(
             MediaStore.MediaColumns.RELATIVE_PATH to relativePath,
             MediaStore.MediaColumns.DISPLAY_NAME to if (isMimeTypeSupported) image.name else filename,
             MediaStore.MediaColumns.MIME_TYPE to type.mime,
-            MediaStore.MediaColumns.DATE_MODIFIED to Instant.now().epochSecond,
+            MediaStore.MediaColumns.DATE_MODIFIED to Clock.System.now().epochSeconds,
         )
 
         val picture = findUriOrDefault(relativePath, filename) {
@@ -183,7 +188,6 @@ sealed class Image(
 }
 
 sealed interface Location {
-    @ConsistentCopyVisibility
     data class Pictures(val relativePath: String) : Location {
         companion object {
             fun create(relativePath: String = ""): Pictures {

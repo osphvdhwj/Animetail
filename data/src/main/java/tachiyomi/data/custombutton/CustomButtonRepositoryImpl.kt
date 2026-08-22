@@ -1,6 +1,11 @@
 package tachiyomi.data.custombutton
 
 import android.database.sqlite.SQLiteException
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.custombuttons.exception.SaveCustomButtonException
@@ -9,6 +14,9 @@ import tachiyomi.domain.custombuttons.model.CustomButtonUpdate
 import tachiyomi.domain.custombuttons.repository.CustomButtonRepository
 import tachiyomi.mi.data.AnimeDatabase
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class CustomButtonRepositoryImpl(
     private val handler: AnimeDatabaseHandler,
 ) : CustomButtonRepository {
@@ -28,7 +36,9 @@ class CustomButtonRepositoryImpl(
         onStartup: String,
     ) {
         try {
-            handler.await { custom_buttonsQueries.insert(name, false, sortIndex, content, longPressContent, onStartup) }
+            handler.await {
+                custom_buttonsQueries.insert(name, false, sortIndex, content, longPressContent, onStartup).awaitAsOne()
+            }
         } catch (ex: SQLiteException) {
             throw SaveCustomButtonException(ex)
         }
@@ -41,10 +51,8 @@ class CustomButtonRepositoryImpl(
     }
 
     override suspend fun updatePartialCustomButtons(updates: List<CustomButtonUpdate>) {
-        handler.await(inTransaction = true) {
-            for (update in updates) {
-                updatePartialBlocking(update)
-            }
+        for (update in updates) {
+            updatePartialCustomButton(update)
         }
     }
 
@@ -52,7 +60,7 @@ class CustomButtonRepositoryImpl(
         return handler.await { custom_buttonsQueries.delete(customButtonId) }
     }
 
-    private fun AnimeDatabase.updatePartialBlocking(update: CustomButtonUpdate) {
+    private suspend fun AnimeDatabase.updatePartialBlocking(update: CustomButtonUpdate) {
         custom_buttonsQueries.update(
             name = update.name,
             isFavorite = update.isFavorite,

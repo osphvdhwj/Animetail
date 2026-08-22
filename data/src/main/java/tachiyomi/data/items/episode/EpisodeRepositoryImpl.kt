@@ -1,13 +1,23 @@
 package tachiyomi.data.items.episode
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.json.JsonObject
 import logcat.LogPriority
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.items.episode.model.Episode
 import tachiyomi.domain.items.episode.model.EpisodeUpdate
 import tachiyomi.domain.items.episode.repository.EpisodeRepository
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class EpisodeRepositoryImpl(
     private val handler: AnimeDatabaseHandler,
 ) : EpisodeRepository {
@@ -16,7 +26,7 @@ class EpisodeRepositoryImpl(
         return try {
             handler.await(inTransaction = true) {
                 episodes.map { episode ->
-                    episodesQueries.insert(
+                    val lastInsertId = episodesQueries.insertReturningId(
                         episode.animeId,
                         episode.url,
                         episode.name,
@@ -34,8 +44,8 @@ class EpisodeRepositoryImpl(
                         episode.previewUrl,
                         episode.fillermark,
                         episode.dateUploadOverride,
-                    )
-                    val lastInsertId = episodesQueries.selectLastInsertedRowId().executeAsOne()
+                        episode.memo,
+                    ).awaitAsOne()
                     episode.copy(id = lastInsertId)
                 }
             }
@@ -76,6 +86,7 @@ class EpisodeRepositoryImpl(
                     previewUrl = episodeUpdate.previewUrl,
                     fillermark = episodeUpdate.fillermark,
                     dateUploadOverride = episodeUpdate.dateUploadOverride,
+                    memo = episodeUpdate.memo?.let(MemoColumnAdapter::encode),
                 )
             }
         }
@@ -147,6 +158,7 @@ class EpisodeRepositoryImpl(
         previewUrl: String?,
         fillermark: Boolean,
         dateUploadOverride: Long,
+        memo: JsonObject,
     ): Episode = Episode(
         id = id,
         animeId = animeId,
@@ -167,5 +179,6 @@ class EpisodeRepositoryImpl(
         lastModifiedAt = lastModifiedAt,
         version = version,
         dateUploadOverride = dateUploadOverride,
+        memo = memo,
     )
 }

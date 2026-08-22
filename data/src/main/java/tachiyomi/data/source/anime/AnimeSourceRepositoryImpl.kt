@@ -1,6 +1,9 @@
 package tachiyomi.data.source.anime
 
-import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
@@ -14,13 +17,16 @@ import tachiyomi.domain.source.anime.repository.AnimeSourceRepository
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.source.anime.model.AnimeSource as DomainSource
 
+@Inject
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
 class AnimeSourceRepositoryImpl(
     private val sourceManager: AnimeSourceManager,
     private val handler: AnimeDatabaseHandler,
 ) : AnimeSourceRepository {
 
     override fun getAnimeSources(): Flow<List<DomainSource>> {
-        return sourceManager.catalogueSources.map { sources ->
+        return sourceManager.sources.map { sources ->
             sources.map {
                 mapSourceToDomainSource(it).copy(
                     supportsLatest = it.supportsLatest,
@@ -30,7 +36,7 @@ class AnimeSourceRepositoryImpl(
     }
 
     override fun getOnlineAnimeSources(): Flow<List<DomainSource>> {
-        return sourceManager.catalogueSources.map { sources ->
+        return sourceManager.sources.map { sources ->
             sources
                 .filterIsInstance<AnimeHttpSource>()
                 .map(::mapSourceToDomainSource)
@@ -40,7 +46,7 @@ class AnimeSourceRepositoryImpl(
     override fun getAnimeSourcesWithFavoriteCount(): Flow<List<Pair<DomainSource, Long>>> {
         return combine(
             handler.subscribeToList { animesQueries.getAnimeSourceIdWithFavoriteCount() },
-            sourceManager.catalogueSources,
+            sourceManager.sources,
         ) { sourceIdWithFavoriteCount, _ -> sourceIdWithFavoriteCount }
             .map {
                 it.map { (sourceId, count) ->
@@ -58,18 +64,15 @@ class AnimeSourceRepositoryImpl(
         query: String,
         filterList: AnimeFilterList,
     ): AnimeSourcePagingSourceType {
-        val source = sourceManager.get(sourceId) as AnimeCatalogueSource
-        return AnimeSourceSearchPagingSource(source, query, filterList)
+        return AnimeSourceSearchPagingSource(sourceManager.getOrStub(sourceId), query, filterList)
     }
 
     override fun getPopularAnime(sourceId: Long): AnimeSourcePagingSourceType {
-        val source = sourceManager.get(sourceId) as AnimeCatalogueSource
-        return AnimeSourcePopularPagingSource(source)
+        return AnimeSourcePopularPagingSource(sourceManager.getOrStub(sourceId))
     }
 
     override fun getLatestAnime(sourceId: Long): AnimeSourcePagingSourceType {
-        val source = sourceManager.get(sourceId) as AnimeCatalogueSource
-        return AnimeSourceLatestPagingSource(source)
+        return AnimeSourceLatestPagingSource(sourceManager.getOrStub(sourceId))
     }
 }
 

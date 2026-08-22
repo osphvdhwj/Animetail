@@ -18,11 +18,13 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,6 +37,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.secondaryItemAlpha
@@ -49,6 +52,7 @@ internal class PermissionStep : OnboardingStep {
     @Composable
     override fun Content() {
         val context = LocalContext.current
+        val privacyPreferences = remember { context.appGraph.privacyPreferences }
         val lifecycleOwner = LocalLifecycleOwner.current
 
         val installGranted = rememberRequestPackageInstallsPermissionState()
@@ -136,8 +140,6 @@ internal class PermissionStep : OnboardingStep {
     ) {
         ListItem(
             modifier = modifier,
-            headlineContent = { Text(text = title) },
-            supportingContent = { Text(text = subtitle) },
             trailingContent = {
                 OutlinedButton(
                     enabled = !granted,
@@ -154,7 +156,31 @@ internal class PermissionStep : OnboardingStep {
                     }
                 }
             },
+            supportingContent = { Text(text = subtitle) },
             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            content = { Text(text = title) },
+        )
+    }
+
+    @Composable
+    private fun PermissionSwitch(
+        title: String,
+        subtitle: String,
+        granted: Boolean,
+        modifier: Modifier = Modifier,
+        onToggleChange: (Boolean) -> Unit,
+    ) {
+        ListItem(
+            modifier = modifier,
+            trailingContent = {
+                Switch(
+                    checked = granted,
+                    onCheckedChange = onToggleChange,
+                )
+            },
+            supportingContent = { Text(text = subtitle) },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            content = { Text(text = title) },
         )
     }
 }

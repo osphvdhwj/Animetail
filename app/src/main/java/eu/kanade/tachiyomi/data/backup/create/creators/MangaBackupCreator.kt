@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.data.backup.create.creators
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.backup.create.BackupOptions
 import eu.kanade.tachiyomi.data.backup.models.BackupChapter
 import eu.kanade.tachiyomi.data.backup.models.BackupHistory
@@ -7,17 +8,17 @@ import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.models.backupChapterMapper
 import eu.kanade.tachiyomi.data.backup.models.backupMangaTrackMapper
 import eu.kanade.tachiyomi.ui.reader.setting.ReadingMode
+import tachiyomi.data.MemoColumnAdapter
 import tachiyomi.data.handlers.manga.MangaDatabaseHandler
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.history.manga.interactor.GetMangaHistory
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
 class MangaBackupCreator(
-    private val handler: MangaDatabaseHandler = Injekt.get(),
-    private val getCategories: GetMangaCategories = Injekt.get(),
-    private val getHistory: GetMangaHistory = Injekt.get(),
+    private val handler: MangaDatabaseHandler,
+    private val getCategories: GetMangaCategories,
+    private val getHistory: GetMangaHistory,
 ) {
 
     suspend operator fun invoke(mangas: List<Manga>, options: BackupOptions): List<BackupManga> {
@@ -100,4 +101,6 @@ private fun Manga.toBackupManga() =
         favoriteModifiedAt = this.favoriteModifiedAt,
         version = this.version,
         notes = this.notes,
+        initialized = this.initialized,
+        memo = MemoColumnAdapter.encode(this.memo),
     )

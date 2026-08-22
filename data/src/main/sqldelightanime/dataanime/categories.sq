@@ -68,25 +68,37 @@ JOIN animes_categories AC
 ON C._id = AC.category_id
 WHERE AC.anime_id = :animeId AND C.hidden = 0;
 
-insert:
+insert {
 INSERT INTO categories(name, sort, flags)
 VALUES (:name, :order, :flags);
+
+SELECT last_insert_rowid();
+}
 
 delete:
 DELETE FROM categories
 WHERE _id = :categoryId;
 
-update:
+updateName:
 UPDATE categories
-SET name = coalesce(:name, name),
-    sort = coalesce(:order, sort),
-    flags = coalesce(:flags, flags),
-    hidden = coalesce(:hidden, hidden)
+SET name = :name
+WHERE _id = :categoryId;
+
+updateOrder:
+UPDATE categories
+SET sort = :order
+WHERE _id = :categoryId;
+
+updateFlags:
+UPDATE categories
+SET flags = :flags
+WHERE _id = :categoryId;
+
+updateHidden:
+UPDATE categories
+SET hidden = :hidden
 WHERE _id = :categoryId;
 
 updateAllFlags:
 UPDATE categories SET
-flags = coalesce(?, flags);
-
-selectLastInsertedRowId:
-SELECT last_insert_rowid();
+flags = coalesce(:flags, flags);

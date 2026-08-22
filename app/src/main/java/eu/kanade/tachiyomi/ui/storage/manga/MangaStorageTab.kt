@@ -3,10 +3,10 @@ package eu.kanade.tachiyomi.ui.storage.manga
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.presentation.more.storage.StorageScreenContent
 import tachiyomi.i18n.aniyomi.AYMR
@@ -15,8 +15,8 @@ import tachiyomi.i18n.aniyomi.AYMR
 fun Screen.mangaStorageTab(): TabContent {
     val navigator = LocalNavigator.currentOrThrow
 
-    val screenModel = rememberScreenModel { MangaStorageScreenModel() }
-    val state by screenModel.state.collectAsState()
+    val viewModel = metroViewModel<MangaStorageViewModel>()
+    val state by viewModel.state.collectAsState()
 
     return TabContent(
         titleRes = AYMR.strings.label_manga,
@@ -25,8 +25,8 @@ fun Screen.mangaStorageTab(): TabContent {
                 state = state,
                 isManga = true,
                 contentPadding = contentPadding,
-                onCategorySelected = screenModel::setSelectedCategory,
-                onDelete = screenModel::deleteEntry,
+                onCategorySelected = viewModel::setSelectedCategory,
+                onDelete = viewModel::deleteEntry,
             )
         },
         navigateUp = navigator::pop,

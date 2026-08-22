@@ -1,8 +1,12 @@
 package eu.kanade.domain.entries.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.manga.model.hasCustomCover
 import eu.kanade.tachiyomi.data.cache.MangaCoverCache
 import eu.kanade.tachiyomi.source.model.SManga
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import tachiyomi.domain.entries.manga.interactor.MangaFetchInterval
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.entries.manga.model.MangaUpdate
@@ -11,14 +15,15 @@ import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.source.local.entries.manga.isLocal
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.time.Instant
-import java.time.ZonedDateTime
+import kotlin.time.Clock
 
+@Inject
 class UpdateManga(
     private val mangaRepository: MangaRepository,
     private val mangaFetchInterval: MangaFetchInterval,
+    private val libraryPreferences: LibraryPreferences,
+    private val coverCache: MangaCoverCache,
 ) {
-    private val libraryPreferences: LibraryPreferences = Injekt.get()
 
     suspend fun await(mangaUpdate: MangaUpdate): Boolean {
         return mangaRepository.updateManga(mangaUpdate)
@@ -32,7 +37,7 @@ class UpdateManga(
         localManga: Manga,
         remoteManga: SManga,
         manualFetch: Boolean,
-        coverCache: MangaCoverCache = Injekt.get(),
+        coverCache: MangaCoverCache = this.coverCache,
     ): Boolean {
         val remoteTitle = try {
             remoteManga.title
@@ -55,7 +60,7 @@ class UpdateManga(
 
                 !manualFetch && localManga.thumbnailUrl == remoteManga.thumbnail_url -> null
 
-                localManga.isLocal() -> Instant.now().toEpochMilli()
+                localManga.isLocal() -> Clock.System.now().toEpochMilliseconds()
 
                 localManga.hasCustomCover(coverCache) -> {
                     coverCache.deleteFromCache(localManga, false)
@@ -64,7 +69,7 @@ class UpdateManga(
 
                 else -> {
                     coverCache.deleteFromCache(localManga, false)
-                    Instant.now().toEpochMilli()
+                    Clock.System.now().toEpochMilliseconds()
                 }
             }
 
@@ -83,32 +88,38 @@ class UpdateManga(
                 status = remoteManga.status.toLong(),
                 updateStrategy = remoteManga.update_strategy,
                 initialized = true,
+                memo = remoteManga.memo,
             ),
         )
     }
 
     suspend fun awaitUpdateFetchInterval(
         manga: Manga,
-        dateTime: ZonedDateTime = ZonedDateTime.now(),
-        window: Pair<Long, Long> = mangaFetchInterval.getWindow(dateTime),
+        timeZone: TimeZone = TimeZone.currentSystemDefault(),
+        dateTime: LocalDateTime = Clock.System.now().toLocalDateTime(timeZone),
+        window: Pair<Long, Long> = mangaFetchInterval.getWindow(dateTime.date, timeZone),
     ): Boolean {
         return mangaRepository.updateManga(
-            mangaFetchInterval.toMangaUpdate(manga, dateTime, window),
+            mangaFetchInterval.toMangaUpdate(manga, dateTime, timeZone, window),
         )
     }
 
     suspend fun awaitUpdateLastUpdate(mangaId: Long): Boolean {
-        return mangaRepository.updateManga(MangaUpdate(id = mangaId, lastUpdate = Instant.now().toEpochMilli()))
+        return mangaRepository.updateManga(
+            MangaUpdate(id = mangaId, lastUpdate = Clock.System.now().toEpochMilliseconds()),
+        )
     }
 
     suspend fun awaitUpdateCoverLastModified(mangaId: Long): Boolean {
-        return mangaRepository.updateManga(MangaUpdate(id = mangaId, coverLastModified = Instant.now().toEpochMilli()))
+        return mangaRepository.updateManga(
+            MangaUpdate(id = mangaId, coverLastModified = Clock.System.now().toEpochMilliseconds()),
+        )
     }
 
     suspend fun awaitUpdateFavorite(mangaId: Long, favorite: Boolean): Boolean {
         val dateAdded = when (favorite) {
-            true -> Instant.now().toEpochMilli()
-            false -> 0
+            true -> Clock.System.now().toEpochMilliseconds()
+            false -> 0L
         }
         return mangaRepository.updateManga(
             MangaUpdate(id = mangaId, favorite = favorite, dateAdded = dateAdded),

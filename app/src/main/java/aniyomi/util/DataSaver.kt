@@ -27,11 +27,15 @@ interface DataSaver {
             }
         }
 
-        suspend fun HttpSource.getImage(page: Page, dataSaver: DataSaver): Response {
-            val imageUrl = page.imageUrl ?: return getImage(page)
+        suspend fun HttpSource.getImage(
+            page: Page,
+            dataSaver: DataSaver,
+            existingSize: Long = 0L,
+        ): Response {
+            val imageUrl = page.imageUrl ?: return getImage(page, existingSize)
             page.imageUrl = dataSaver.compress(imageUrl)
             return try {
-                getImage(page)
+                getImage(page, existingSize)
             } finally {
                 page.imageUrl = imageUrl
             }
@@ -116,26 +120,27 @@ private class WsrvNlDataSaver(preferences: SourcePreferences) : DataSaver {
 
     private fun getUrl(imageUrl: String): String {
         // Network Request sent to wsrv
-        return "https://wsrv.nl/?url=$imageUrl" + if (imageUrl.contains(".webp", true) ||
-            imageUrl.contains(
-                ".gif",
-                true,
-            )
-        ) {
-            if (!format) {
-                // Preserve output image extension for animated images(.webp and .gif)
-                "&q=$quality&n=-1"
+        return "https://wsrv.nl/?url=$imageUrl" +
+            if (imageUrl.contains(".webp", true) ||
+                imageUrl.contains(
+                    ".gif",
+                    true,
+                )
+            ) {
+                if (!format) {
+                    // Preserve output image extension for animated images(.webp and .gif)
+                    "&q=$quality&n=-1"
+                } else {
+                    // Do not preserve output Extension if User asked to convert into Jpeg
+                    "&output=jpg&q=$quality&n=-1"
+                }
             } else {
-                // Do not preserve output Extension if User asked to convert into Jpeg
-                "&output=jpg&q=$quality&n=-1"
+                if (format) {
+                    "&output=jpg&q=$quality"
+                } else {
+                    "&output=webp&q=$quality"
+                }
             }
-        } else {
-            if (format) {
-                "&output=jpg&q=$quality"
-            } else {
-                "&output=webp&q=$quality"
-            }
-        }
     }
 }
 

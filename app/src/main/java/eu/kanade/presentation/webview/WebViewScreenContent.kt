@@ -31,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.stack.mutableStateStackOf
@@ -46,17 +45,13 @@ import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.AppBarActions
 import eu.kanade.presentation.components.WarningBanner
 import eu.kanade.tachiyomi.BuildConfig
-import eu.kanade.tachiyomi.network.NetworkHelper
-import eu.kanade.tachiyomi.util.system.WebViewUtil
 import eu.kanade.tachiyomi.util.system.getHtml
 import eu.kanade.tachiyomi.util.system.setDefaultSettings
-import kotlinx.collections.immutable.persistentListOf
+import eu.kanade.tachiyomi.util.system.setUserAgent
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 class WebViewWindow(webContent: WebContent) {
     var state by mutableStateOf(WebViewState(webContent))
@@ -74,6 +69,7 @@ fun WebViewScreenContent(
     onNavigateUp: () -> Unit,
     initialTitle: String?,
     url: String,
+    defaultUserAgentProvider: () -> String,
     onShare: (String) -> Unit,
     onOpenInBrowser: (String) -> Unit,
     onClearCookies: (String) -> Unit,
@@ -122,11 +118,8 @@ fun WebViewScreenContent(
     }
 
     val navigator = rememberWebViewNavigator()
-    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()
-    val network = remember { Injekt.get<NetworkHelper>() }
-    val spoofedPackageName = remember { WebViewUtil.spoofedPackageName(context) }
 
     var currentUrl by remember { mutableStateOf(url) }
     var showCloudflareHelp by remember { mutableStateOf(false) }
@@ -267,7 +260,7 @@ fun WebViewScreenContent(
                         navigationIcon = Icons.Outlined.Close,
                         actions = {
                             AppBarActions(
-                                persistentListOf(
+                                listOf(
                                     AppBar.Action(
                                         title = stringResource(MR.strings.action_webview_back),
                                         icon = Icons.AutoMirrored.Outlined.ArrowBack,
@@ -365,11 +358,7 @@ fun WebViewScreenContent(
                         WebView.setWebContentsDebuggingEnabled(true)
                     }
 
-                    headers.entries.find {
-                        it.key.lowercase(java.util.Locale.ENGLISH) == "user-agent"
-                    }?.value?.let {
-                        webView.settings.userAgentString = it
-                    }
+                    webView.setUserAgent(headers["user-agent"] ?: defaultUserAgentProvider())
                 },
                 onDispose = { webView ->
                     val window = windowStack.items.find { it.webView == webView }

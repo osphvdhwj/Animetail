@@ -25,8 +25,6 @@ import androidx.core.net.toUri
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.domain.base.BasePreferences
-import eu.kanade.domain.extension.anime.interactor.TrustAnimeExtension
-import eu.kanade.domain.extension.manga.interactor.TrustMangaExtension
 import eu.kanade.domain.source.service.SourcePreferences
 import eu.kanade.domain.source.service.SourcePreferences.DataSaver
 import eu.kanade.presentation.more.settings.Preference
@@ -60,23 +58,18 @@ import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.interceptor.FlareSolverrInterceptor
 import eu.kanade.tachiyomi.network.parseAs
 import eu.kanade.tachiyomi.ui.more.OnboardingScreen
-import eu.kanade.tachiyomi.util.CrashLogUtil
-import eu.kanade.tachiyomi.util.system.GLUtil
 import eu.kanade.tachiyomi.util.system.isReleaseBuildType
 import eu.kanade.tachiyomi.util.system.isShizukuInstalled
 import eu.kanade.tachiyomi.util.system.powerManager
 import eu.kanade.tachiyomi.util.system.setDefaultSettings
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.toImmutableMap
-import kotlinx.collections.immutable.toPersistentMap
+import eu.kanade.tachiyomi.util.system.workManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
-import mihon.core.migration.Migrator.scope
+import mihon.app.di.appGraph
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -93,9 +86,6 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import uy.kohesive.injekt.injectLazy
 import java.io.File
 import java.net.InetAddress
 import tachiyomi.core.common.preference.Preference as BasePreference
@@ -112,8 +102,11 @@ object SettingsAdvancedScreen : SearchableSettings {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val basePreferences = remember { Injekt.get<BasePreferences>() }
-        val networkPreferences = remember { Injekt.get<NetworkPreferences>() }
+        val graph = remember { context.appGraph }
+        val basePreferences = remember { graph.basePreferences }
+        val networkPreferences = remember { graph.networkPreferences }
+        val libraryPreferences = remember { graph.libraryPreferences }
+        val crashLogUtil = remember { graph.crashLogUtil }
 
         return listOf(
             Preference.PreferenceItem.TextPreference(
@@ -121,7 +114,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                 subtitle = stringResource(MR.strings.pref_dump_crash_logs_summary),
                 onClick = {
                     scope.launch {
-                        CrashLogUtil(context).dumpLogs()
+                        crashLogUtil.dumpLogs()
                     }
                 },
             ),
@@ -154,7 +147,7 @@ object SettingsAdvancedScreen : SearchableSettings {
             getBackgroundActivityGroup(),
             getDataGroup(),
             getNetworkGroup(networkPreferences = networkPreferences),
-            getLibraryGroup(),
+            getLibraryGroup(libraryPreferences = libraryPreferences),
             getReaderGroup(basePreferences = basePreferences),
             getExtensionsGroup(basePreferences = basePreferences),
             // SY -->
@@ -170,7 +163,7 @@ object SettingsAdvancedScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_background_activity),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_disable_battery_optimization),
                     subtitle = stringResource(MR.strings.pref_disable_battery_optimization_summary),
@@ -209,13 +202,13 @@ object SettingsAdvancedScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_data),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_invalidate_download_cache),
                     subtitle = stringResource(AYMR.strings.pref_invalidate_download_cache_summary),
                     onClick = {
-                        Injekt.get<MangaDownloadCache>().invalidateCache()
-                        Injekt.get<AnimeDownloadCache>().invalidateCache()
+                        context.appGraph.mangaDownloadCache.invalidateCache()
+                        context.appGraph.animeDownloadCache.invalidateCache()
                         context.toast(MR.strings.download_cache_invalidated)
                     },
                 ),
@@ -237,8 +230,9 @@ object SettingsAdvancedScreen : SearchableSettings {
     private fun getNetworkGroup(
         networkPreferences: NetworkPreferences,
     ): Preference.PreferenceGroup {
+        val scope = rememberCoroutineScope()
         val context = LocalContext.current
-        val networkHelper = remember { Injekt.get<NetworkHelper>() }
+        val networkHelper = remember { context.appGraph.networkHelper }
 
         val userAgentPref = networkPreferences.defaultUserAgent()
         val userAgent by userAgentPref.collectAsState()
@@ -257,7 +251,7 @@ object SettingsAdvancedScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_network),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_clear_cookies),
                     onClick = {
@@ -287,7 +281,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = networkPreferences.dohProvider(),
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         -1 to stringResource(MR.strings.disabled),
                         PREF_DOH_CLOUDFLARE to "Cloudflare",
                         PREF_DOH_GOOGLE to "Google",
@@ -393,7 +387,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = flareSolverrTimeoutPref,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         10000 to "10s",
                         30000 to "30s",
                         60000 to "1m",
@@ -425,14 +419,15 @@ object SettingsAdvancedScreen : SearchableSettings {
     }
 
     @Composable
-    private fun getLibraryGroup(): Preference.PreferenceGroup {
+    private fun getLibraryGroup(
+        libraryPreferences: LibraryPreferences,
+    ): Preference.PreferenceGroup {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
-        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_library),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_refresh_library_covers),
                     onClick = {
@@ -447,7 +442,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                     subtitle = stringResource(MR.strings.pref_reset_viewer_flags_summary),
                     onClick = {
                         scope.launchNonCancellable {
-                            val success = Injekt.get<ResetMangaViewerFlags>().await()
+                            val success = context.appGraph.resetMangaViewerFlags.await()
                             withUIContext {
                                 val message = if (success) {
                                     MR.strings.pref_reset_viewer_flags_success
@@ -478,49 +473,12 @@ object SettingsAdvancedScreen : SearchableSettings {
         basePreferences: BasePreferences,
     ): Preference.PreferenceGroup {
         val context = LocalContext.current
-        val chooseColorProfile = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.OpenDocument(),
-        ) { uri ->
-            uri?.let {
-                val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                context.contentResolver.takePersistableUriPermission(uri, flags)
-                basePreferences.displayProfile.set(uri.toString())
-            }
-        }
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_reader),
-            preferenceItems = persistentListOf(
-                Preference.PreferenceItem.ListPreference(
-                    preference = basePreferences.hardwareBitmapThreshold,
-                    entries = GLUtil.CUSTOM_TEXTURE_LIMIT_OPTIONS
-                        .mapIndexed { index, option ->
-                            val display = if (index == 0) {
-                                stringResource(MR.strings.pref_hardware_bitmap_threshold_default, option)
-                            } else {
-                                option.toString()
-                            }
-                            option to display
-                        }
-                        .toMap()
-                        .toImmutableMap(),
-                    title = stringResource(MR.strings.pref_hardware_bitmap_threshold),
-                    subtitleProvider = { value, options ->
-                        stringResource(MR.strings.pref_hardware_bitmap_threshold_summary, options[value].orEmpty())
-                    },
-                    enabled = !ImageUtil.HARDWARE_BITMAP_UNSUPPORTED &&
-                        GLUtil.DEVICE_TEXTURE_LIMIT > GLUtil.SAFE_TEXTURE_LIMIT,
-                ),
+            preferenceItems = listOf(
                 Preference.PreferenceItem.SwitchPreference(
-                    preference = basePreferences.alwaysDecodeLongStripWithSSIV,
-                    title = stringResource(MR.strings.pref_always_decode_long_strip_with_ssiv_2),
-                    subtitle = stringResource(MR.strings.pref_always_decode_long_strip_with_ssiv_summary),
-                ),
-                Preference.PreferenceItem.TextPreference(
-                    title = stringResource(MR.strings.pref_display_profile),
-                    subtitle = basePreferences.displayProfile.get(),
-                    onClick = {
-                        chooseColorProfile.launch(arrayOf("*/*"))
-                    },
+                    preference = basePreferences.highQualityRenderer,
+                    title = stringResource(MR.strings.pref_high_quality_renderer),
                 ),
             ),
         )
@@ -534,8 +492,8 @@ object SettingsAdvancedScreen : SearchableSettings {
         val uriHandler = LocalUriHandler.current
         val extensionInstallerPref = basePreferences.extensionInstaller
         var shizukuMissing by rememberSaveable { mutableStateOf(false) }
-        val trustAnimeExtension = remember { Injekt.get<TrustAnimeExtension>() }
-        val trustMangaExtension = remember { Injekt.get<TrustMangaExtension>() }
+        val trustAnimeExtension = remember { context.appGraph.trustAnimeExtension }
+        val trustMangaExtension = remember { context.appGraph.trustMangaExtension }
 
         if (shizukuMissing) {
             val dismiss = { shizukuMissing = false }
@@ -566,7 +524,7 @@ object SettingsAdvancedScreen : SearchableSettings {
         }
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_extensions),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = extensionInstallerPref,
                     entries = extensionInstallerPref.entries
@@ -579,7 +537,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                             }
                         }
                         .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(MR.strings.ext_installer_pref),
                     onValueChanged = {
                         if (it == BasePreferences.ExtensionInstaller.SHIZUKU &&
@@ -607,14 +565,15 @@ object SettingsAdvancedScreen : SearchableSettings {
     // SY -->
     @Composable
     private fun getDataSaverGroup(): Preference.PreferenceGroup {
-        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
+        val context = LocalContext.current
+        val sourcePreferences = remember { context.appGraph.sourcePreferences }
         val dataSaver by sourcePreferences.dataSaver.collectAsState()
         return Preference.PreferenceGroup(
             title = stringResource(AYMR.strings.data_saver),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = sourcePreferences.dataSaver,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         DataSaver.NONE to stringResource(MR.strings.disabled),
                         DataSaver.BANDWIDTH_HERO to stringResource(AYMR.strings.bandwidth_hero),
                         DataSaver.WSRV_NL to stringResource(AYMR.strings.wsrv),
@@ -655,7 +614,7 @@ object SettingsAdvancedScreen : SearchableSettings {
                         "80%",
                         "90%",
                         "95%",
-                    ).associateBy { it.trimEnd('%').toInt() }.toPersistentMap(),
+                    ).associateBy { it.trimEnd('%').toInt() }.toMap(),
                     title = stringResource(AYMR.strings.data_saver_image_quality),
                     subtitle = stringResource(AYMR.strings.data_saver_image_quality_summary),
                     enabled = dataSaver != DataSaver.NONE,
@@ -690,7 +649,7 @@ object SettingsAdvancedScreen : SearchableSettings {
         userAgentPref: BasePreference<String>,
         context: android.content.Context,
     ) {
-        val json: Json by injectLazy()
+        val json: Json = context.appGraph.json
         val jsonMediaType = "application/json".toMediaType()
         val timeout = flareSolverrTimeoutPref.get() + 10000
         val client = OkHttpClient.Builder()

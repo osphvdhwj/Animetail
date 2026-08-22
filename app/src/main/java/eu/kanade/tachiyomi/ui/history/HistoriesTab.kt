@@ -5,15 +5,16 @@ import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.NavStyle
@@ -21,10 +22,10 @@ import eu.kanade.presentation.components.TabbedScreen
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenModel
-import eu.kanade.tachiyomi.ui.history.anime.AnimeHistoryScreenModel
+import eu.kanade.tachiyomi.ui.history.anime.AnimeHistoryViewModel
 import eu.kanade.tachiyomi.ui.history.anime.animeHistoryTab
 import eu.kanade.tachiyomi.ui.history.anime.resumeLastEpisodeSeenEvent
-import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryScreenModel
+import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryViewModel
 import eu.kanade.tachiyomi.ui.history.manga.mangaHistoryTab
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import kotlinx.collections.immutable.persistentListOf
@@ -71,13 +72,15 @@ data object HistoriesTab : Tab {
         val context = LocalContext.current
         val fromMore = currentNavigationStyle() == NavStyle.MOVE_HISTORY_TO_MORE
         // Hoisted for history tab's search bar
-        val mangaHistoryScreenModel = rememberScreenModel { MangaHistoryScreenModel() }
-        val mangaSearchQuery by mangaHistoryScreenModel.query.collectAsState()
+        val mangaHistoryViewModel = metroViewModel<MangaHistoryViewModel>()
+        val mangaHistoryState by mangaHistoryViewModel.state.collectAsStateWithLifecycle()
+        val mangaSearchQuery = mangaHistoryState.searchQuery
         // KMK -->
         val feedScreenModel = rememberScreenModel { FeedScreenModel() }
         // KMK <--
-        val animeHistoryScreenModel = rememberScreenModel { AnimeHistoryScreenModel() }
-        val animeSearchQuery by animeHistoryScreenModel.query.collectAsState()
+        val animeHistoryViewModel = metroViewModel<AnimeHistoryViewModel>()
+        val animeHistoryState by animeHistoryViewModel.state.collectAsStateWithLifecycle()
+        val animeSearchQuery = animeHistoryState.searchQuery
 
         TabbedScreen(
             titleRes = MR.strings.label_recent_manga,
@@ -86,9 +89,11 @@ data object HistoriesTab : Tab {
                 mangaHistoryTab(context, fromMore),
             ),
             mangaSearchQuery = mangaSearchQuery,
-            onChangeMangaSearchQuery = mangaHistoryScreenModel::search,
+            onChangeMangaSearchQuery = mangaHistoryViewModel::updateSearchQuery,
             animeSearchQuery = animeSearchQuery,
-            onChangeAnimeSearchQuery = animeHistoryScreenModel::search,
+            onChangeAnimeSearchQuery = animeHistoryViewModel::search,
+            animeExtensionsTabIndex = TAB_ANIME,
+            mangaExtensionsTabIndex = TAB_MANGA,
             // KMK -->
             feedScreenModel = feedScreenModel,
             // KMK <--

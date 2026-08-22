@@ -69,13 +69,13 @@ import eu.kanade.tachiyomi.data.sync.service.GoogleDriveSyncService
 import eu.kanade.tachiyomi.ui.storage.StorageTab
 import eu.kanade.tachiyomi.util.system.DeviceUtil
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.persistentMapOf
+import eu.kanade.tachiyomi.util.system.workManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import logcat.LogPriority
+import mihon.app.di.appGraph
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.core.common.storage.displayablePath
 import tachiyomi.core.common.util.lang.launchNonCancellable
@@ -91,8 +91,6 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 @Suppress("TooManyFunctions")
 object SettingsDataScreen : SearchableSettings {
@@ -117,13 +115,14 @@ object SettingsDataScreen : SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val backupPreferences = Injekt.get<BackupPreferences>()
-        val storagePreferences = Injekt.get<StoragePreferences>()
+        val context = LocalContext.current
+        val backupPreferences = remember { context.appGraph.backupPreferences }
+        val storagePreferences = remember { context.appGraph.storagePreferences }
 
-        val syncPreferences = remember { Injekt.get<SyncPreferences>() }
+        val syncPreferences = remember { context.appGraph.syncPreferences }
         val syncService by syncPreferences.syncService().collectAsState()
 
-        return persistentListOf(
+        return listOf(
             getStorageLocationPref(storagePreferences = storagePreferences),
             Preference.PreferenceItem.InfoPreference(stringResource(MR.strings.pref_storage_location_info)),
             getBackupAndRestoreGroup(backupPreferences = backupPreferences),
@@ -227,7 +226,7 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.label_backup),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 // Manual actions
                 Preference.PreferenceItem.CustomPreference(
                     title = stringResource(restorePreferenceKeyString),
@@ -252,7 +251,7 @@ object SettingsDataScreen : SearchableSettings {
                                     modifier = Modifier.fillMaxHeight(),
                                     checked = false,
                                     onCheckedChange = {
-                                        if (!BackupRestoreJob.isRunning(context)) {
+                                        if (!BackupRestoreJob.isRunning(context.workManager)) {
                                             if (DeviceUtil.isMiui && DeviceUtil.isMiuiOptimizationDisabled()) {
                                                 context.toast(MR.strings.restore_miui_warning)
                                             }
@@ -275,7 +274,7 @@ object SettingsDataScreen : SearchableSettings {
                 // Automatic backups
                 Preference.PreferenceItem.ListPreference(
                     preference = backupPreferences.backupInterval,
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         0 to stringResource(MR.strings.off),
                         6 to stringResource(MR.strings.update_6hour),
                         12 to stringResource(MR.strings.update_12hour),
@@ -290,7 +289,8 @@ object SettingsDataScreen : SearchableSettings {
                     },
                 ),
                 Preference.PreferenceItem.InfoPreference(
-                    stringResource(MR.strings.backup_info) + "\n\n" +
+                    stringResource(MR.strings.backup_info) +
+                        "\n\n" +
                         stringResource(MR.strings.last_auto_backup_info, relativeTimeSpanString(lastAutoBackup)),
                 ),
             ),
@@ -302,9 +302,9 @@ object SettingsDataScreen : SearchableSettings {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
-        val libraryPreferences = remember { Injekt.get<LibraryPreferences>() }
+        val libraryPreferences = remember { context.appGraph.libraryPreferences }
 
-        val chapterCache = remember { Injekt.get<ChapterCache>() }
+        val chapterCache = remember { context.appGraph.chapterCache }
         var cacheReadableSizeSema by remember { mutableIntStateOf(0) }
         val cacheReadableSize = remember(cacheReadableSizeSema) { chapterCache.readableSize }
 
@@ -314,7 +314,7 @@ object SettingsDataScreen : SearchableSettings {
                 .drop(1)
                 .collectLatest { value ->
                     if (value) {
-                        Injekt.get<AnimeDownloadCache>().invalidateCache()
+                        context.appGraph.animeDownloadCache.invalidateCache()
                     }
                 }
         }
@@ -322,7 +322,7 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_storage_usage),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.CustomPreference(
                     title = stringResource(MR.strings.pref_storage_usage),
                 ) {
@@ -393,8 +393,8 @@ object SettingsDataScreen : SearchableSettings {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
 
-        val getAnimeFavorites = remember { Injekt.get<GetAnimeFavorites>() }
-        val getMangaFavorites = remember { Injekt.get<GetMangaFavorites>() }
+        val getAnimeFavorites = remember { context.appGraph.getAnimeFavorites }
+        val getMangaFavorites = remember { context.appGraph.getMangaFavorites }
 
         var favorites by remember { mutableStateOf<List<ExportEntry>>(emptyList()) }
         LaunchedEffect(Unit) {
@@ -435,7 +435,7 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.export),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.library_list),
                     onClick = { showDialog = true },
@@ -535,11 +535,11 @@ object SettingsDataScreen : SearchableSettings {
         return listOf(
             Preference.PreferenceGroup(
                 title = stringResource(TLMR.strings.pref_sync_service_category),
-                preferenceItems = persistentListOf(
+                preferenceItems = listOf(
                     Preference.PreferenceItem.ListPreference(
                         preference = syncPreferences.syncService(),
                         title = stringResource(TLMR.strings.pref_sync_service),
-                        entries = persistentMapOf(
+                        entries = mapOf(
                             SyncManager.SyncService.NONE.value to stringResource(MR.strings.off),
                             SyncManager.SyncService.SYNCYOMI.value to stringResource(TLMR.strings.syncyomi),
                             SyncManager.SyncService.GOOGLE_DRIVE.value to stringResource(TLMR.strings.google_drive),
@@ -584,7 +584,7 @@ object SettingsDataScreen : SearchableSettings {
     @Composable
     private fun getGoogleDrivePreferences(): List<Preference> {
         val context = LocalContext.current
-        val googleDriveSync = Injekt.get<GoogleDriveService>()
+        val googleDriveSync = remember { GoogleDriveService(context) }
         return listOf(
             Preference.PreferenceItem.TextPreference(
                 title = stringResource(TLMR.strings.pref_google_drive_sign_in),
@@ -601,7 +601,8 @@ object SettingsDataScreen : SearchableSettings {
     private fun getGoogleDrivePurge(): Preference.PreferenceItem.TextPreference {
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
-        val googleDriveSync = remember { GoogleDriveSyncService(context) }
+        val googleDriveSync =
+            remember { GoogleDriveSyncService(context, context.appGraph.json, context.appGraph.syncPreferences) }
         var showPurgeDialog by remember { mutableStateOf(false) }
 
         if (showPurgeDialog) {
@@ -696,7 +697,7 @@ object SettingsDataScreen : SearchableSettings {
         val navigator = LocalNavigator.currentOrThrow
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_sync_now_group_title),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 getSyncOptionsPref(),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(TLMR.strings.pref_sync_now),
@@ -728,11 +729,11 @@ object SettingsDataScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_sync_automatic_category),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.ListPreference(
                     preference = syncIntervalPref,
                     title = stringResource(TLMR.strings.pref_sync_interval),
-                    entries = persistentMapOf(
+                    entries = mapOf(
                         0 to stringResource(MR.strings.off),
                         30 to stringResource(TLMR.strings.update_30min),
                         60 to stringResource(TLMR.strings.update_1hour),

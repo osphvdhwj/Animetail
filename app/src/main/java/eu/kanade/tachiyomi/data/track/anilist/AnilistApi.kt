@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import eu.kanade.tachiyomi.animesource.model.Credit
 import eu.kanade.tachiyomi.data.database.models.anime.AnimeTrack
 import eu.kanade.tachiyomi.data.database.models.manga.MangaTrack
+import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALAddEntryResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALAnimeMetadata
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALCurrentUserResult
@@ -15,6 +16,7 @@ import eu.kanade.tachiyomi.data.track.anilist.dto.ALOAuth
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchItem
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
+import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserViewerData
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
@@ -25,6 +27,9 @@ import eu.kanade.tachiyomi.network.interceptor.rateLimit
 import eu.kanade.tachiyomi.network.jsonMime
 import eu.kanade.tachiyomi.network.parseAs
 import eu.kanade.tachiyomi.util.lang.htmlDecode
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.number
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -37,10 +42,8 @@ import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
 import uy.kohesive.injekt.injectLazy
-import java.time.Instant
-import java.time.ZoneId
-import java.time.ZonedDateTime
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
@@ -50,6 +53,10 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
 
     private val authClient = client.newBuilder()
         .addInterceptor(interceptor)
+        .rateLimit(permits = 85, period = 1.minutes)
+        .build()
+
+    private val publicClient = client.newBuilder()
         .rateLimit(permits = 85, period = 1.minutes)
         .build()
 
@@ -260,6 +267,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                             |}
                         |}
                         |title {
+                            |english
+                            |romaji
+                            |native
                             |userPreferred
                         |}
                         |coverImage {
@@ -318,6 +328,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                             |}
                         |}
                         |title {
+                            |english
+                            |romaji
+                            |native
                             |userPreferred
                         |}
                         |coverImage {
@@ -471,6 +484,209 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .awaitSuccess()
                     .parseAs<ALSearchResult>()
                     .data.page.media
+<<<<<<< HEAD
+=======
+                    .firstOrNull()
+                    ?.toALManga()
+                    ?.toTrack()
+            }
+        }
+    }
+
+    suspend fun getAnimeDetails(id: Int): AnimeTrackSearch? {
+        return withIOContext {
+            val query = $$"""
+            |query Search($anime_id: Int) {
+                |Page (perPage: 1) {
+                    |media(id: $anime_id, type: ANIME) {
+                        |id
+                        |staff {
+                            |edges {
+                                |role
+                                |id
+                                |node {
+                                    |name {
+                                        |full
+                                        |userPreferred
+                                        |native
+                                    |}
+                                |}
+                            |}
+                        |}
+                        |characters {
+                            |edges {
+                                |isMain
+                                |node {
+                                    |name
+                                |}
+                            |}
+                        |}
+                        |title {
+                            |english
+                            |romaji
+                            |native
+                            |userPreferred
+                        |}
+                        |coverImage {
+                            |large
+                        |}
+                        |format
+                        |status
+                        |episodes
+                        |description
+                        |startDate {
+                            |year
+                            |month
+                            |day
+                        |}
+                        |averageScore
+                    |}
+                |}
+            |}
+            |
+            """.trimMargin()
+
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("anime_id", id)
+                }
+            }
+
+            with(json) {
+                authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<ALSearchResult>()
+                    .data.page.media
+                    .firstOrNull()
+                    ?.toALAnime()
+                    ?.toTrack()
+            }
+        }
+    }
+
+    suspend fun getPopularAnime(): List<AnimeTrackSearch> {
+        return withIOContext {
+            val query = """
+            query PopularAnime {
+                Page (perPage: 15) {
+                    media(sort: TRENDING_DESC, type: ANIME, isAdult: false) {
+                        id
+                        title {
+                            english
+                            romaji
+                            native
+                            userPreferred
+                        }
+                        coverImage {
+                            large
+                        }
+                        format
+                        status
+                        episodes
+                        description
+                        averageScore
+                        startDate {
+                            year
+                            month
+                            day
+                        }
+                    }
+                }
+            }
+            """.trimIndent()
+            val payload = buildJsonObject {
+                put("query", query)
+            }
+            with(json) {
+                publicClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<ALSearchResult>()
+                    .data.page.media
+                    .map { item ->
+                        AnimeTrackSearch.create(TrackerManager.ANILIST).apply {
+                            remote_id = item.id
+                            title = item.title.preferred
+                            total_episodes = item.episodes ?: 0
+                            cover_url = item.coverImage.large
+                            summary = item.description?.htmlDecode() ?: ""
+                            score = (item.averageScore ?: 0).toDouble()
+                            tracking_url = AnilistApi.animeUrl(remote_id)
+                            publishing_status = item.status ?: ""
+                            publishing_type = item.format?.replace("_", "-") ?: ""
+                        }
+                    }
+            }
+        }
+    }
+
+    suspend fun getPopularManga(): List<MangaTrackSearch> {
+        return withIOContext {
+            val query = """
+            query PopularManga {
+                Page (perPage: 15) {
+                    media(sort: TRENDING_DESC, type: MANGA, format_not_in: [NOVEL], isAdult: false) {
+                        id
+                        title {
+                            english
+                            romaji
+                            native
+                            userPreferred
+                        }
+                        coverImage {
+                            large
+                        }
+                        format
+                        status
+                        chapters
+                        description
+                        averageScore
+                        startDate {
+                            year
+                            month
+                            day
+                        }
+                    }
+                }
+            }
+            """.trimIndent()
+            val payload = buildJsonObject {
+                put("query", query)
+            }
+            with(json) {
+                publicClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<ALSearchResult>()
+                    .data.page.media
+                    .map { item ->
+                        MangaTrackSearch.create(TrackerManager.ANILIST).apply {
+                            remote_id = item.id
+                            title = item.title.preferred
+                            total_chapters = item.chapters ?: 0
+                            cover_url = item.coverImage.large
+                            summary = item.description?.htmlDecode() ?: ""
+                            score = (item.averageScore ?: 0).toDouble()
+                            tracking_url = AnilistApi.mangaUrl(remote_id)
+                            publishing_status = item.status ?: ""
+                            publishing_type = item.format?.replace("_", "-") ?: ""
+                        }
+                    }
+>>>>>>> d5b5c39181e570abe6f0a394f7b50098807acc0d
             }
         }
     }
@@ -499,6 +715,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         |media {
                             |id
                             |title {
+                                |english
+                                |romaji
+                                |native
                                 |userPreferred
                             |}
                             |coverImage {
@@ -580,6 +799,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         |media {
                             |id
                             |title {
+                                |english
+                                |romaji
+                                |native
                                 |userPreferred
                             |}
                             |coverImage {
@@ -644,12 +866,13 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         return ALOAuth(token, "Bearer", System.currentTimeMillis() + 31536000000, 31536000000)
     }
 
-    suspend fun getCurrentUser(): Pair<Int, String> {
+    suspend fun getCurrentUser(): ALUserViewerData {
         return withIOContext {
             val query = """
             |query User {
                 |Viewer {
                     |id
+                    |name
                     |mediaListOptions {
                         |scoreFormat
                     |}
@@ -669,10 +892,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                 )
                     .awaitSuccess()
                     .parseAs<ALCurrentUserResult>()
-                    .let {
-                        val viewer = it.data.viewer
-                        Pair(viewer.id, viewer.mediaListOptions.scoreFormat)
-                    }
+                    .data.viewer
             }
         }
     }
@@ -684,6 +904,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                 |Media (id: ${'$'}animeid) {
                     |id
                     |title {
+                        |english
+                        |romaji
+                        |native
                         |userPreferred
                     |}
                     |coverImage {
@@ -731,7 +954,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         val media = it.data.media
                         TrackAnimeMetadata(
                             remoteId = media.id,
-                            title = media.title.userPreferred,
+                            title = media.title.preferred,
                             thumbnailUrl = media.coverImage.large,
                             description = media.description?.htmlDecode()?.ifEmpty { null },
                             authors = media.staff.edges
@@ -756,6 +979,9 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                 |Media (id: ${'$'}mangaId) {
                     |id
                     |title {
+                        |english
+                        |romaji
+                        |native
                         |userPreferred
                     |}
                     |coverImage {
@@ -795,7 +1021,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                         val media = it.data.media
                         TrackMangaMetadata(
                             remoteId = media.id,
-                            title = media.title.userPreferred,
+                            title = media.title.preferred,
                             thumbnailUrl = media.coverImage.large,
                             description = media.description?.htmlDecode()?.ifEmpty { null },
                             authors = media.staff.edges
@@ -859,92 +1085,79 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     }
                 }
 
-                with(json) {
-                    authClient.newCall(
-                        POST(
-                            API_URL,
-                            body = payload.toString().toRequestBody(jsonMime),
-                        ),
-                    )
-                        .awaitSuccess()
-                        .parseAs<JsonObject>()
-                        .let { root ->
+                val credits = mutableListOf<Credit>()
+                try {
+                    val search = client.newCall(
+                        POST(API_URL, body = payload.toString().toRequestBody(jsonMime)),
+                    ).execute()
+                    val bodyStr = search.body.string()
+                    // Use kotlinx.serialization Json object parsing
+                    val parsed = json.parseToJsonElement(bodyStr).jsonObject
+                    val page = parsed["data"]?.jsonObject?.get("Page")?.jsonObject
+                    val mediaArr = page?.get("media")?.jsonArray ?: return@withIOContext null
+                    if (mediaArr.isEmpty()) return@withIOContext null
+                    val first = mediaArr[0].jsonObject
 
-                            val credits = mutableListOf<Credit>()
-                            try {
-                                val search = this@AnilistApi.client.newCall(
-                                    POST(API_URL, body = payload.toString().toRequestBody(jsonMime)),
-                                ).execute()
-                                val bodyStr = search.body.string()
-                                // Use kotlinx.serialization Json object parsing
-                                val parsed = json.parseToJsonElement(bodyStr).jsonObject
-                                val page = parsed["data"]?.jsonObject?.get("Page")?.jsonObject
-                                val mediaArr = page?.get("media")?.jsonArray ?: return@withIOContext null
-                                if (mediaArr.isEmpty()) return@withIOContext null
-                                val first = mediaArr[0].jsonObject
-
-                                // Parse characters
-                                val characters = first["characters"]?.jsonObject
-                                    ?.get("edges")?.jsonArray
-                                characters?.forEach { edgeEl ->
-                                    val edge = edgeEl.jsonObject
-                                    val node = edge["node"]?.jsonObject
-                                    val charName = node?.get("name")?.jsonObject
-                                        ?.get("userPreferred")?.toString()?.trim('"')
-                                    val charImage = node?.get("image")?.jsonObject
-                                        ?.get("large")?.toString()?.trim('"')
-                                    val vas = edge["voiceActors"]?.jsonArray
-                                    val vaNames = mutableListOf<String>()
-                                    var vaImage: String? = null
-                                    vas?.forEach { vaEl ->
-                                        val va = vaEl.jsonObject
-                                        val vaName = va["name"]?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
-                                        val vaLang = va["language"]?.toString()?.trim('"')
-                                        if (!vaName.isNullOrBlank()) {
-                                            vaNames.add(if (!vaLang.isNullOrBlank()) "$vaName ($vaLang)" else vaName)
-                                        }
-                                        if (vaImage == null) {
-                                            vaImage = va["image"]?.jsonObject?.get("large")?.toString()?.trim('"')
-                                        }
-                                    }
-                                    val roleText = vaNames.joinToString(", ")
-                                    var finalImage: String? = charImage ?: vaImage
-                                    if (!finalImage.isNullOrBlank() && finalImage.startsWith("//")) {
-                                        finalImage = "https:$finalImage"
-                                    }
-                                    if (!charName.isNullOrBlank()) {
-                                        credits.add(
-                                            Credit(
-                                                name = charName,
-                                                role = roleText.ifBlank { null },
-                                                character = charName,
-                                                image_url = finalImage,
-                                            ),
-                                        )
-                                    }
-                                }
-
-                                // Parse staff
-                                val staff = first["staff"]?.jsonObject?.get("edges")?.jsonArray
-                                staff?.forEach { stEl ->
-                                    val sedge = stEl.jsonObject
-                                    val srole = sedge["role"]?.toString()?.trim('"')
-                                    val snode = sedge["node"]?.jsonObject
-                                    val sname = snode?.get(
-                                        "name",
-                                    )?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
-                                    var sImage = snode?.get("image")?.jsonObject?.get("large")?.toString()?.trim('"')
-                                    if (!sImage.isNullOrBlank() && sImage.startsWith("//")) sImage = "https:$sImage"
-                                    if (!sname.isNullOrBlank()) {
-                                        credits.add(Credit(name = sname, role = srole, image_url = sImage))
-                                    }
-                                }
-
-                                credits.ifEmpty { null }
-                            } catch (_: Exception) {
-                                null
+                    // Parse characters
+                    val characters = first["characters"]?.jsonObject
+                        ?.get("edges")?.jsonArray
+                    characters?.forEach { edgeEl ->
+                        val edge = edgeEl.jsonObject
+                        val node = edge["node"]?.jsonObject
+                        val charName = node?.get("name")?.jsonObject
+                            ?.get("userPreferred")?.toString()?.trim('"')
+                        val charImage = node?.get("image")?.jsonObject
+                            ?.get("large")?.toString()?.trim('"')
+                        val vas = edge["voiceActors"]?.jsonArray
+                        val vaNames = mutableListOf<String>()
+                        var vaImage: String? = null
+                        vas?.forEach { vaEl ->
+                            val va = vaEl.jsonObject
+                            val vaName = va["name"]?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
+                            val vaLang = va["language"]?.toString()?.trim('"')
+                            if (!vaName.isNullOrBlank()) {
+                                vaNames.add(if (!vaLang.isNullOrBlank()) "$vaName ($vaLang)" else vaName)
+                            }
+                            if (vaImage == null) {
+                                vaImage = va["image"]?.jsonObject?.get("large")?.toString()?.trim('"')
                             }
                         }
+                        val roleText = vaNames.joinToString(", ")
+                        var finalImage: String? = charImage ?: vaImage
+                        if (!finalImage.isNullOrBlank() && finalImage.startsWith("//")) {
+                            finalImage = "https:$finalImage"
+                        }
+                        if (!charName.isNullOrBlank()) {
+                            credits.add(
+                                Credit(
+                                    name = charName,
+                                    role = roleText.ifBlank { null },
+                                    character = charName,
+                                    image_url = finalImage,
+                                ),
+                            )
+                        }
+                    }
+
+                    // Parse staff
+                    val staff = first["staff"]?.jsonObject?.get("edges")?.jsonArray
+                    staff?.forEach { stEl ->
+                        val sedge = stEl.jsonObject
+                        val srole = sedge["role"]?.toString()?.trim('"')
+                        val snode = sedge["node"]?.jsonObject
+                        val sname = snode?.get(
+                            "name",
+                        )?.jsonObject?.get("userPreferred")?.toString()?.trim('"')
+                        var sImage = snode?.get("image")?.jsonObject?.get("large")?.toString()?.trim('"')
+                        if (!sImage.isNullOrBlank() && sImage.startsWith("//")) sImage = "https:$sImage"
+                        if (!sname.isNullOrBlank()) {
+                            credits.add(Credit(name = sname, role = srole, image_url = sImage))
+                        }
+                    }
+
+                    credits.ifEmpty { null }
+                } catch (_: Exception) {
+                    null
                 }
             } catch (_: Exception) {
                 null
@@ -1009,11 +1222,11 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
             }
         }
 
-        val dateTime = ZonedDateTime.ofInstant(Instant.ofEpochMilli(dateValue), ZoneId.systemDefault())
+        val dateTime = Instant.fromEpochMilliseconds(dateValue).toLocalDateTime(TimeZone.currentSystemDefault())
         return buildJsonObject {
             put("year", dateTime.year)
-            put("month", dateTime.monthValue)
-            put("day", dateTime.dayOfMonth)
+            put("month", dateTime.month.number)
+            put("day", dateTime.day)
         }
     }
 
@@ -1038,3 +1251,4 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
             .build()
     }
 }
+

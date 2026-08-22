@@ -1,12 +1,21 @@
 package eu.kanade.tachiyomi.data.backup.restore.restorers
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
 import eu.kanade.tachiyomi.data.backup.models.BackupCategory
 import eu.kanade.tachiyomi.data.backup.models.BackupChapter
 import eu.kanade.tachiyomi.data.backup.models.BackupHistory
 import eu.kanade.tachiyomi.data.backup.models.BackupManga
 import eu.kanade.tachiyomi.data.backup.models.BackupTracking
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import tachiyomi.data.Database
 import tachiyomi.data.MangaUpdateStrategyColumnAdapter
+import tachiyomi.data.MemoColumnAdapter
+import tachiyomi.data.MemoColumnAdapter.encode
 import tachiyomi.data.handlers.manga.MangaDatabaseHandler
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.entries.manga.interactor.GetMangaByUrlAndSourceId
@@ -17,31 +26,24 @@ import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.track.manga.interactor.GetMangaTracks
 import tachiyomi.domain.track.manga.interactor.InsertMangaTrack
 import tachiyomi.domain.track.manga.model.MangaTrack
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import java.time.ZonedDateTime
 import java.util.Date
 import kotlin.math.max
+import kotlin.time.Clock
 
+@Inject
 class MangaRestorer(
-    private var isSync: Boolean = false,
-
-    private val handler: MangaDatabaseHandler = Injekt.get(),
-    private val getCategories: GetMangaCategories = Injekt.get(),
-    private val getMangaByUrlAndSourceId: GetMangaByUrlAndSourceId = Injekt.get(),
-    private val getChaptersByMangaId: GetChaptersByMangaId = Injekt.get(),
-    private val updateManga: UpdateManga = Injekt.get(),
-    private val getTracks: GetMangaTracks = Injekt.get(),
-    private val insertTrack: InsertMangaTrack = Injekt.get(),
-    fetchInterval: MangaFetchInterval = Injekt.get(),
+    private val handler: MangaDatabaseHandler,
+    private val getCategories: GetMangaCategories,
+    private val getMangaByUrlAndSourceId: GetMangaByUrlAndSourceId,
+    private val getChaptersByMangaId: GetChaptersByMangaId,
+    private val updateManga: UpdateManga,
+    private val getTracks: GetMangaTracks,
+    private val insertTrack: InsertMangaTrack,
+    fetchInterval: MangaFetchInterval,
 ) {
-    private var now = ZonedDateTime.now()
-    private var currentFetchWindow = fetchInterval.getWindow(now)
-
-    init {
-        now = ZonedDateTime.now()
-        currentFetchWindow = fetchInterval.getWindow(now)
-    }
+    private val timeZone = TimeZone.currentSystemDefault()
+    private val now = Clock.System.now().toLocalDateTime(timeZone)
+    private val currentFetchWindow = fetchInterval.getWindow(now.date, timeZone)
 
     suspend fun sortByNew(backupMangas: List<BackupManga>): List<BackupManga> {
         val urlsBySource = handler.awaitList { mangasQueries.getAllMangaSourceAndUrl() }
@@ -57,6 +59,7 @@ class MangaRestorer(
     suspend fun restore(
         backupManga: BackupManga,
         backupCategories: List<BackupCategory>,
+        isSync: Boolean = false,
     ) {
         handler.await(inTransaction = true) {
             val dbManga = findExistingManga(backupManga)
@@ -75,6 +78,7 @@ class MangaRestorer(
                 history = backupManga.history,
                 tracks = backupManga.tracking,
                 excludedScanlators = backupManga.excludedScanlators,
+                isSync = isSync,
             )
 
             if (isSync) {
@@ -90,9 +94,9 @@ class MangaRestorer(
 
     private suspend fun restoreExistingManga(manga: Manga, dbManga: Manga): Manga {
         return if (manga.version > dbManga.version) {
-            updateManga(dbManga.copyFrom(manga).copy(id = dbManga.id))
+            updateMangaInDb(dbManga.copyFrom(manga).copy(id = dbManga.id))
         } else {
-            updateManga(manga.copyFrom(dbManga).copy(id = dbManga.id))
+            updateMangaInDb(manga.copyFrom(dbManga).copy(id = dbManga.id))
         }
     }
 
@@ -110,7 +114,7 @@ class MangaRestorer(
         )
     }
 
-    suspend fun updateManga(manga: Manga): Manga {
+    suspend fun updateMangaInDb(manga: Manga): Manga {
         handler.await(true) {
             mangasQueries.update(
                 source = manga.source,
@@ -136,6 +140,7 @@ class MangaRestorer(
                 version = manga.version,
                 isSyncing = 1,
                 notes = manga.notes,
+                memo = manga.memo.let(MemoColumnAdapter::encode),
             )
         }
         return manga
@@ -151,7 +156,7 @@ class MangaRestorer(
         )
     }
 
-    private suspend fun restoreChapters(manga: Manga, backupChapters: List<BackupChapter>) {
+    private suspend fun restoreChapters(manga: Manga, backupChapters: List<BackupChapter>, isSync: Boolean = false) {
         val dbChaptersByUrl = getChaptersByMangaId.await(manga.id)
             .associateBy { it.url }
 
@@ -168,7 +173,7 @@ class MangaRestorer(
                     chapter.forComparison() == dbChapter.forComparison() -> null
 
                     // Same state; skip
-                    else -> updateChapterBasedOnSyncState(chapter, dbChapter)
+                    else -> updateChapterBasedOnSyncState(chapter, dbChapter, isSync)
                 }
             }
             .partition { it.id > 0 }
@@ -177,7 +182,7 @@ class MangaRestorer(
         updateExistingChapters(existingChapters)
     }
 
-    private fun updateChapterBasedOnSyncState(chapter: Chapter, dbChapter: Chapter): Chapter {
+    private fun updateChapterBasedOnSyncState(chapter: Chapter, dbChapter: Chapter, isSync: Boolean): Chapter {
         return if (isSync) {
             chapter.copy(
                 id = dbChapter.id,
@@ -186,7 +191,10 @@ class MangaRestorer(
                 lastPageRead = chapter.lastPageRead,
             )
         } else {
-            chapter.copyFrom(dbChapter).let {
+            chapter.copyFrom(dbChapter).copy(
+                id = dbChapter.id,
+                bookmark = chapter.bookmark || dbChapter.bookmark,
+            ).let {
                 when {
                     dbChapter.read && !it.read -> it.copy(read = true, lastPageRead = dbChapter.lastPageRead)
 
@@ -220,6 +228,7 @@ class MangaRestorer(
                     chapter.dateUpload,
                     chapter.version,
                     chapter.dateUploadOverride,
+                    chapter.memo,
                 )
             }
         }
@@ -244,6 +253,7 @@ class MangaRestorer(
                     version = chapter.version,
                     isSyncing = 0,
                     dateUploadOverride = chapter.dateUploadOverride,
+                    memo = chapter.memo.let(MemoColumnAdapter::encode),
                 )
             }
         }
@@ -256,7 +266,7 @@ class MangaRestorer(
      */
     private suspend fun insertManga(manga: Manga): Long {
         return handler.awaitOneExecutable(true) {
-            mangasQueries.insert(
+            mangasQueries.insertReturningId(
                 source = manga.source,
                 url = manga.url,
                 artist = manga.artist,
@@ -278,8 +288,8 @@ class MangaRestorer(
                 updateStrategy = manga.updateStrategy,
                 version = manga.version,
                 notes = manga.notes,
+                memo = manga.memo,
             )
-            mangasQueries.selectLastInsertedRowId()
         }
     }
 
@@ -291,13 +301,14 @@ class MangaRestorer(
         history: List<BackupHistory>,
         tracks: List<BackupTracking>,
         excludedScanlators: List<String>,
+        isSync: Boolean = false,
     ): Manga {
         restoreCategories(manga, categories, backupCategories)
-        restoreChapters(manga, chapters)
+        restoreChapters(manga, chapters, isSync)
         restoreTracking(manga, tracks)
-        restoreHistory(history)
+        restoreHistory(manga, history)
         restoreExcludedScanlators(manga, excludedScanlators)
-        updateManga.awaitUpdateFetchInterval(manga, now, currentFetchWindow)
+        updateManga.awaitUpdateFetchInterval(manga, timeZone, now, currentFetchWindow)
         return manga
     }
 
@@ -317,7 +328,7 @@ class MangaRestorer(
 
         val backupCategoriesByOrder = backupCategories.associateBy { it.order }
 
-        val mangaCategoriesToUpdate = categories.mapNotNull { backupCategoryOrder ->
+        val mangaCategoriesToUpdate: List<Pair<Long, Long>> = categories.mapNotNull { backupCategoryOrder ->
             backupCategoriesByOrder[backupCategoryOrder]?.let { backupCategory ->
                 dbCategoriesByName[backupCategory.name]?.let { dbCategory ->
                     Pair(manga.id, dbCategory.id)
@@ -335,13 +346,17 @@ class MangaRestorer(
         }
     }
 
-    private suspend fun restoreHistory(backupHistory: List<BackupHistory>) {
+    private suspend fun restoreHistory(manga: Manga, backupHistory: List<BackupHistory>) {
         val toUpdate = backupHistory.mapNotNull { history ->
-            val dbHistory = handler.awaitOneOrNull { historyQueries.getHistoryByChapterUrl(history.url) }
+            val dbHistory = handler.awaitOneOrNull {
+                historyQueries.getHistoryByChapterUrlAndMangaId(history.url, manga.id)
+            }
             val item = history.getHistoryImpl()
 
             if (dbHistory == null) {
-                val chapter = handler.awaitOneOrNull { chaptersQueries.getChapterByUrl(history.url) }
+                val chapter = handler.awaitOneOrNull {
+                    chaptersQueries.getChapterByUrlAndMangaId(history.url, manga.id)
+                }
                 return@mapNotNull if (chapter == null) {
                     // Chapter doesn't exist; skip
                     null

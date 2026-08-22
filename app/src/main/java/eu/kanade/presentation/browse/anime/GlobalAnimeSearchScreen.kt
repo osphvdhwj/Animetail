@@ -10,9 +10,9 @@ import eu.kanade.presentation.browse.GlobalSearchLoadingResultItem
 import eu.kanade.presentation.browse.GlobalSearchResultItem
 import eu.kanade.presentation.browse.anime.components.GlobalAnimeSearchCardRow
 import eu.kanade.presentation.browse.anime.components.GlobalAnimeSearchToolbar
-import eu.kanade.tachiyomi.animesource.AnimeCatalogueSource
+import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSearchItemResult
-import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSearchScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSearchViewModel
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.AnimeSourceFilter
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import tachiyomi.domain.entries.anime.model.Anime
@@ -20,14 +20,14 @@ import tachiyomi.presentation.core.components.material.Scaffold
 
 @Composable
 fun GlobalAnimeSearchScreen(
-    state: AnimeSearchScreenModel.State,
+    state: AnimeSearchViewModel.State,
     navigateUp: () -> Unit,
     onChangeSearchQuery: (String?) -> Unit,
     onSearch: (String) -> Unit,
     onChangeSearchFilter: (AnimeSourceFilter) -> Unit,
     onToggleResults: () -> Unit,
     getAnime: @Composable (Anime) -> State<Anime>,
-    onClickSource: (AnimeCatalogueSource) -> Unit,
+    onClickSource: (AnimeSource) -> Unit,
     onClickItem: (Anime) -> Unit,
     onLongClickItem: (Anime) -> Unit,
 ) {
@@ -61,10 +61,10 @@ fun GlobalAnimeSearchScreen(
 
 @Composable
 internal fun GlobalSearchContent(
-    items: Map<AnimeCatalogueSource, AnimeSearchItemResult>,
+    items: Map<AnimeSource, AnimeSearchItemResult>,
     contentPadding: PaddingValues,
     getAnime: @Composable (Anime) -> State<Anime>,
-    onClickSource: (AnimeCatalogueSource) -> Unit,
+    onClickSource: (AnimeSource) -> Unit,
     onClickItem: (Anime) -> Unit,
     onLongClickItem: (Anime) -> Unit,
     fromSourceId: Long? = null,

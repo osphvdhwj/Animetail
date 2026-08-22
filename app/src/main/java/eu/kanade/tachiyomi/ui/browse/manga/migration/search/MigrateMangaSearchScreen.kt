@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.browse.manga.MigrateMangaSearchScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
@@ -16,7 +17,9 @@ class MigrateMangaSearchScreen(private val mangaId: Long) : Screen() {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { MigrateMangaSearchScreenModel(mangaId = mangaId) }
+        val screenModel = assistedMetroViewModel<MigrateMangaSearchViewModel, MigrateMangaSearchViewModel.Factory> {
+            create(mangaId = mangaId, initialExtensionFilter = null)
+        }
         val state by screenModel.state.collectAsState()
 
         val dialogScreenModel = rememberScreenModel {
@@ -40,10 +43,18 @@ class MigrateMangaSearchScreen(private val mangaId: Long) : Screen() {
                     MangaSourceSearchScreen(dialogState.manga!!, it.id, state.searchQuery),
                 )
             },
-            onClickItem = {
-                dialogScreenModel.setDialog(
-                    MangaMigrateSearchScreenDialogScreenModel.Dialog.Migrate(it),
-                )
+            onClickItem = { targetManga ->
+                val migrationListScreen = navigator.items
+                    .filterIsInstance<mihon.feature.migration.list.MangaMigrationListScreen>()
+                    .firstOrNull()
+                if (migrationListScreen != null) {
+                    migrationListScreen.addMatchOverride(mangaId, targetManga.id)
+                    navigator.pop()
+                } else {
+                    dialogScreenModel.setDialog(
+                        MangaMigrateSearchScreenDialogScreenModel.Dialog.Migrate(targetManga),
+                    )
+                }
             },
             onLongClickItem = { navigator.push(MangaScreen(it.id, true)) },
         )

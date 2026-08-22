@@ -25,16 +25,16 @@ import eu.kanade.presentation.more.settings.screen.appearance.AppLanguageScreen
 import eu.kanade.presentation.more.settings.widget.AppThemeModePreferenceWidget
 import eu.kanade.presentation.more.settings.widget.AppThemePreferenceWidget
 import eu.kanade.tachiyomi.util.system.toast
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toLocalDateTime
+import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
-import java.time.LocalDate
+import kotlin.time.Clock
 
 object SettingsAppearanceScreen : SearchableSettings {
 
@@ -44,7 +44,8 @@ object SettingsAppearanceScreen : SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val uiPreferences = remember { Injekt.get<UiPreferences>() }
+        val context = LocalContext.current
+        val uiPreferences = remember { context.appGraph.uiPreferences }
 
         return listOf(
             getThemeGroup(uiPreferences = uiPreferences),
@@ -99,7 +100,7 @@ object SettingsAppearanceScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_theme),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.CustomPreference(
                     title = stringResource(MR.strings.pref_app_theme),
                 ) {
@@ -135,7 +136,7 @@ object SettingsAppearanceScreen : SearchableSettings {
 
     // KMK -->
     @Composable
-    private fun paletteStyleEntries(): kotlinx.collections.immutable.ImmutableMap<PaletteStyle, String> {
+    private fun paletteStyleEntries(): Map<PaletteStyle, String> {
         return mapOf(
             PaletteStyle.TonalSpot to stringResource(TLMR.strings.pref_theme_cover_based_style_tonalspot),
             PaletteStyle.Neutral to stringResource(TLMR.strings.pref_theme_cover_based_style_neutral),
@@ -146,7 +147,7 @@ object SettingsAppearanceScreen : SearchableSettings {
             PaletteStyle.Monochrome to stringResource(TLMR.strings.pref_theme_cover_based_style_monochrome),
             PaletteStyle.Fidelity to stringResource(TLMR.strings.pref_theme_cover_based_style_fidelity),
             PaletteStyle.Content to stringResource(TLMR.strings.pref_theme_cover_based_style_content),
-        ).toImmutableMap()
+        )
     }
 
     @Composable
@@ -157,7 +158,7 @@ object SettingsAppearanceScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(TLMR.strings.pref_anime_info),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.themeCoverBased,
                     title = stringResource(TLMR.strings.pref_theme_cover_based),
@@ -190,7 +191,7 @@ object SettingsAppearanceScreen : SearchableSettings {
         val context = LocalContext.current
         val navigator = LocalNavigator.currentOrThrow
 
-        val now = remember { LocalDate.now() }
+        val now = remember { Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).toJavaLocalDateTime() }
 
         val dateFormat by uiPreferences.dateFormat.collectAsState()
         val formattedNow = remember(dateFormat) {
@@ -199,7 +200,7 @@ object SettingsAppearanceScreen : SearchableSettings {
 
         return Preference.PreferenceGroup(
             title = stringResource(MR.strings.pref_category_display),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.pref_app_language),
                     onClick = { navigator.push(AppLanguageScreen()) },
@@ -207,8 +208,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                 Preference.PreferenceItem.ListPreference(
                     preference = uiPreferences.tabletUiMode,
                     entries = TabletUiMode.entries
-                        .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
+                        .associateWith { stringResource(it.titleRes) },
                     title = stringResource(MR.strings.pref_tablet_ui_mode),
                     onValueChanged = {
                         context.toast(MR.strings.requires_app_restart)
@@ -219,7 +219,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                     preference = uiPreferences.startScreen,
                     entries = StartScreen.entries
                         .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
+                        .toMap(),
                     title = stringResource(AYMR.strings.pref_start_screen),
                     onValueChanged = {
                         context.toast(MR.strings.requires_app_restart)
@@ -230,9 +230,13 @@ object SettingsAppearanceScreen : SearchableSettings {
                     preference = uiPreferences.navStyle,
                     entries = NavStyle.entries
                         .associateWith { stringResource(it.titleRes) }
-                        .toImmutableMap(),
-                    title = "Navigation Style",
+                        .toMap(),
+                    title = stringResource(MR.strings.pref_navigation_style),
                     onValueChanged = { true },
+                ),
+                Preference.PreferenceItem.SwitchPreference(
+                    preference = uiPreferences.showHomeTab,
+                    title = stringResource(MR.strings.pref_show_home_tab),
                 ),
                 Preference.PreferenceItem.ListPreference(
                     preference = uiPreferences.dateFormat,
@@ -240,8 +244,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                         .associateWith {
                             val formattedDate = UiPreferences.dateFormat(it).format(now)
                             "${it.ifEmpty { stringResource(MR.strings.label_default) }} ($formattedDate)"
-                        }
-                        .toImmutableMap(),
+                        },
                     title = stringResource(MR.strings.pref_date_format),
                 ),
                 Preference.PreferenceItem.SwitchPreference(
@@ -276,14 +279,16 @@ object SettingsAppearanceScreen : SearchableSettings {
     fun getForkGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
 //        val previewsRowCount by uiPreferences.previewsRowCount().collectAsState()
         // KMK -->
-        val sourcePreferences = remember { Injekt.get<SourcePreferences>() }
+        val context = LocalContext.current
+        val sourcePreferences = remember { context.appGraph.sourcePreferences }
+        val relatedAnimes by sourcePreferences.relatedAnimes.collectAsState()
         val relatedMangasInOverflow by uiPreferences.expandRelatedAnimes.collectAsState()
         val showCast by uiPreferences.showCast.collectAsState()
         // KMK <--
 
         return Preference.PreferenceGroup(
             stringResource(TLMR.strings.pref_category_fork),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 // KMK -->
 //                Preference.PreferenceItem.SwitchPreference(
 //                    pref = uiPreferences.usePanoramaCoverFlow(),
@@ -300,7 +305,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                     preference = uiPreferences.expandRelatedAnimes,
                     title = stringResource(TLMR.strings.pref_expand_related_animes),
                     subtitle = stringResource(TLMR.strings.pref_expand_related_animes_summary),
-                    enabled = sourcePreferences.relatedAnimes.get(),
+                    enabled = relatedAnimes,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.relatedAnimesInOverflow,
@@ -312,7 +317,7 @@ object SettingsAppearanceScreen : SearchableSettings {
                     preference = uiPreferences.showHomeOnRelatedAnimes,
                     title = stringResource(TLMR.strings.pref_show_home_on_related_animes),
                     subtitle = stringResource(TLMR.strings.pref_show_home_on_related_animes_summary),
-                    enabled = sourcePreferences.relatedAnimes.get(),
+                    enabled = relatedAnimes,
                 ),
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.showCast,
@@ -357,7 +362,7 @@ object SettingsAppearanceScreen : SearchableSettings {
     fun getNavbarGroup(uiPreferences: UiPreferences): Preference.PreferenceGroup {
         return Preference.PreferenceGroup(
             stringResource(TLMR.strings.pref_category_navbar),
-            preferenceItems = persistentListOf(
+            preferenceItems = listOf(
                 Preference.PreferenceItem.SwitchPreference(
                     preference = uiPreferences.showNavAnime,
                     title = "Show Anime library button",

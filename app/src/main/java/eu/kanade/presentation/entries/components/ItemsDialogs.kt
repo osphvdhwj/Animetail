@@ -22,7 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.util.system.isReleaseBuildType
-import kotlinx.collections.immutable.toImmutableList
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.daysUntil
+import kotlinx.datetime.toLocalDateTime
 import tachiyomi.domain.entries.anime.interactor.AnimeFetchInterval
 import tachiyomi.domain.entries.manga.interactor.MangaFetchInterval
 import tachiyomi.i18n.MR
@@ -32,14 +35,10 @@ import tachiyomi.presentation.core.components.WheelTextPicker
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
-import java.time.Instant
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.ZoneOffset
-import java.time.format.TextStyle
-import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.absoluteValue
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 @Composable
 fun DeleteItemsDialog(
@@ -86,8 +85,8 @@ fun SetIntervalDialog(
 
     val nextUpdateDays = remember(nextUpdate) {
         return@remember if (nextUpdate != null) {
-            val now = Instant.now()
-            now.until(nextUpdate, ChronoUnit.DAYS).toInt().coerceAtLeast(0)
+            val now = Clock.System.now()
+            now.daysUntil(nextUpdate, TimeZone.currentSystemDefault()).coerceAtLeast(0)
         } else {
             null
         }
@@ -152,7 +151,7 @@ fun SetIntervalDialog(
                                     it.toString()
                                 }
                             }
-                            .toImmutableList()
+                            .toList()
                         WheelTextPicker(
                             items = items,
                             size = size,
@@ -186,22 +185,23 @@ fun SetDateDialog(
     onRemove: () -> Unit,
     initialDateMillis: Long = 0,
 ) {
+    val timeZone = TimeZone.currentSystemDefault()
     val initialDate = remember {
         if (initialDateMillis > 0) {
-            Instant.ofEpochMilli(initialDateMillis).atZone(ZoneOffset.UTC).toLocalDate()
+            Instant.fromEpochMilliseconds(initialDateMillis).toLocalDateTime(TimeZone.UTC).date
         } else {
-            LocalDate.now()
+            Clock.System.now().toLocalDateTime(timeZone).date
         }
     }
-    val years = remember { (1900..LocalDate.now().year + 1).toList() }
+    val years = remember { (1900..Clock.System.now().toLocalDateTime(timeZone).date.year + 1).toList() }
     val months = remember { (1..12).toList() }
 
     var selectedYear by rememberSaveable { mutableIntStateOf(initialDate.year) }
-    var selectedMonth by rememberSaveable { mutableIntStateOf(initialDate.monthValue) }
+    var selectedMonth by rememberSaveable { mutableIntStateOf(initialDate.monthNumber) }
     var selectedDay by rememberSaveable { mutableIntStateOf(initialDate.dayOfMonth) }
 
     val daysInMonth = remember(selectedYear, selectedMonth) {
-        YearMonth.of(selectedYear, selectedMonth).lengthOfMonth()
+        java.time.YearMonth.of(selectedYear, selectedMonth).lengthOfMonth()
     }
     val effectiveDay = selectedDay.coerceAtMost(daysInMonth)
 
@@ -215,13 +215,13 @@ fun SetDateDialog(
             ) {
                 val locale = Locale.getDefault()
                 val monthNames = remember(locale) {
-                    months.map { java.time.Month.of(it).getDisplayName(TextStyle.SHORT, locale) }
-                        .toImmutableList()
+                    months.map { java.time.Month.of(it).getDisplayName(java.time.format.TextStyle.SHORT, locale) }
+                        .toList()
                 }
 
                 WheelTextPicker(
                     modifier = Modifier.weight(1f),
-                    items = remember { years.map { it.toString() }.toImmutableList() },
+                    items = remember { years.map { it.toString() }.toList() },
                     startIndex = years.indexOf(selectedYear),
                     size = DpSize(64.dp, 128.dp),
                     onSelectionChanged = { selectedYear = years[it] },
@@ -235,7 +235,7 @@ fun SetDateDialog(
                 )
                 WheelTextPicker(
                     modifier = Modifier.weight(1f),
-                    items = remember(daysInMonth) { (1..daysInMonth).map { it.toString() }.toImmutableList() },
+                    items = remember(daysInMonth) { (1..daysInMonth).map { it.toString() }.toList() },
                     startIndex = effectiveDay - 1,
                     size = DpSize(64.dp, 128.dp),
                     onSelectionChanged = { selectedDay = it + 1 },
@@ -255,10 +255,8 @@ fun SetDateDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                val millis = LocalDate.of(selectedYear, selectedMonth, effectiveDay)
-                    .atStartOfDay(ZoneOffset.UTC)
-                    .toInstant()
-                    .toEpochMilli()
+                val date = kotlinx.datetime.LocalDate(selectedYear, selectedMonth, effectiveDay)
+                val millis = date.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds()
                 onConfirm(millis)
                 onDismissRequest()
             }) {

@@ -7,9 +7,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.core.util.ifAnimeSourcesLoaded
 import eu.kanade.presentation.browse.anime.GlobalAnimeSearchScreen
 import eu.kanade.presentation.util.Screen
@@ -31,13 +31,10 @@ class GlobalAnimeSearchScreen(
 
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel {
-            GlobalAnimeSearchScreenModel(
-                initialQuery = searchQuery,
-                initialExtensionFilter = extensionFilter,
-            )
+        val viewModel = assistedMetroViewModel<GlobalAnimeSearchViewModel, GlobalAnimeSearchViewModel.Factory> {
+            create(searchQuery, extensionFilter)
         }
-        val state by screenModel.state.collectAsState()
+        val state by viewModel.state.collectAsState()
         var showSingleLoadingScreen by remember {
             mutableStateOf(
                 searchQuery.isNotEmpty() && !extensionFilter.isNullOrEmpty() && state.total == 1,
@@ -64,21 +61,28 @@ class GlobalAnimeSearchScreen(
                     else -> showSingleLoadingScreen = false
                 }
             }
-        } else {
-            GlobalAnimeSearchScreen(
-                state = state,
-                navigateUp = navigator::pop,
-                onChangeSearchQuery = screenModel::updateSearchQuery,
-                onSearch = { screenModel.search() },
-                getAnime = { screenModel.getAnime(it) },
-                onChangeSearchFilter = screenModel::setSourceFilter,
-                onToggleResults = screenModel::toggleFilterResults,
-                onClickSource = {
-                    navigator.push(BrowseAnimeSourceScreen(it.id, state.searchQuery))
-                },
-                onClickItem = { navigator.push(AnimeScreen(it.id, true)) },
-                onLongClickItem = { navigator.push(AnimeScreen(it.id, true)) },
-            )
+
+            return
         }
+
+        GlobalAnimeSearchScreen(
+            state = state,
+            navigateUp = navigator::pop,
+            onChangeSearchQuery = viewModel::updateSearchQuery,
+            onSearch = { viewModel.search() },
+            getAnime = viewModel::getAnime,
+            onChangeSearchFilter = viewModel::setSourceFilter,
+            onToggleResults = viewModel::toggleFilterResults,
+            onClickSource = { source ->
+                navigator.push(
+                    BrowseAnimeSourceScreen(
+                        source.id,
+                        viewModel.state.value.searchQuery,
+                    ),
+                )
+            },
+            onClickItem = { navigator.push(AnimeScreen(it.id, true)) },
+            onLongClickItem = { navigator.push(AnimeScreen(it.id, true)) },
+        )
     }
 }

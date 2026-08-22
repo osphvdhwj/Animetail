@@ -30,23 +30,24 @@ import cafe.adriel.voyager.core.model.StateScreenModel
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.hasCustomBackground
 import eu.kanade.domain.entries.anime.model.hasCustomCover
-import eu.kanade.domain.entries.anime.model.toSAnime
-import eu.kanade.domain.items.episode.interactor.SyncEpisodesWithSource
 import eu.kanade.presentation.components.IndicatorSize
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.FetchType
-import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.data.cache.AnimeBackgroundCache
 import eu.kanade.tachiyomi.data.cache.AnimeCoverCache
 import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.track.EnhancedAnimeTracker
 import eu.kanade.tachiyomi.data.track.TrackerManager
 import eu.kanade.tachiyomi.ui.browse.anime.migration.AnimeMigrationFlags
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.update
+import logcat.LogPriority
+import mihon.domain.source.interactor.UpdateAnimeFromRemote
 import tachiyomi.core.common.preference.Preference
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.withUIContext
+import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.anime.interactor.SetAnimeCategories
 import tachiyomi.domain.entries.anime.model.Anime
@@ -203,7 +204,6 @@ internal class MigrateAnimeDialogScreenModel(
     private val downloadManager: AnimeDownloadManager = Injekt.get(),
     private val updateAnime: UpdateAnime = Injekt.get(),
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId = Injekt.get(),
-    private val syncEpisodesWithSource: SyncEpisodesWithSource = Injekt.get(),
     private val updateEpisode: UpdateEpisode = Injekt.get(),
     private val getCategories: GetAnimeCategories = Injekt.get(),
     private val setAnimeCategories: SetAnimeCategories = Injekt.get(),
@@ -212,6 +212,7 @@ internal class MigrateAnimeDialogScreenModel(
     private val coverCache: AnimeCoverCache = Injekt.get(),
     private val backgroundCache: AnimeBackgroundCache = Injekt.get(),
     private val preferenceStore: PreferenceStore = Injekt.get(),
+    private val updateAnimeFromRemote: UpdateAnimeFromRemote = Injekt.get(),
 ) : StateScreenModel<MigrateAnimeDialogScreenModel.State>(State()) {
 
     val migrateFlags: Preference<Int> by lazy {
@@ -235,20 +236,17 @@ internal class MigrateAnimeDialogScreenModel(
         mutableState.update { it.copy(isMigrating = true) }
 
         try {
-            val episodes = source.getEpisodeList(newAnime.toSAnime())
-
             migrateAnimeInternal(
                 oldSource = prevSource,
                 newSource = source,
                 oldAnime = oldAnime,
                 newAnime = newAnime,
-                sourceEpisodes = episodes,
                 replace = replace,
                 flags = flags,
             )
-        } catch (_: Throwable) {
-            // Explicitly stop if an error occurred; the dialog normally gets popped at the end
-            // anyway
+        } catch (e: Throwable) {
+            if (e is CancellationException) throw e
+            logcat(LogPriority.ERROR, e)
             mutableState.update { it.copy(isMigrating = false) }
         }
     }
@@ -258,7 +256,6 @@ internal class MigrateAnimeDialogScreenModel(
         newSource: AnimeSource,
         oldAnime: Anime,
         newAnime: Anime,
-        sourceEpisodes: List<SEpisode>,
         replace: Boolean,
         flags: Int,
     ) {
@@ -269,11 +266,11 @@ internal class MigrateAnimeDialogScreenModel(
         val deleteDownloaded = AnimeMigrationFlags.hasDeleteDownloaded(flags)
         val migrateNotes = AnimeMigrationFlags.hasNotes(flags)
 
-        try {
-            syncEpisodesWithSource.await(sourceEpisodes, newAnime, newSource)
-        } catch (_: Exception) {
-            // Worst case, chapters won't be synced
-        }
+        updateAnimeFromRemote.awaitEpisodesUpdate(
+            source = newSource,
+            anime = newAnime,
+            fetchEpisodes = true,
+        ).getOrThrow()
 
         // Update chapters read, bookmark and dateFetch
         if (migrateEpisodes) {
@@ -294,10 +291,15 @@ internal class MigrateAnimeDialogScreenModel(
                         updatedEpisode = updatedEpisode.copy(
                             dateFetch = prevEpisode.dateFetch,
                             bookmark = prevEpisode.bookmark,
+                            fillermark = prevEpisode.fillermark,
+                            lastSecondSeen = prevEpisode.lastSecondSeen,
+                            totalSeconds = prevEpisode.totalSeconds,
                         )
                     }
 
-                    if (maxEpisodeSeen != null && updatedEpisode.episodeNumber <= maxEpisodeSeen) {
+                    if (prevEpisode?.seen == true ||
+                        (maxEpisodeSeen != null && updatedEpisode.episodeNumber <= maxEpisodeSeen)
+                    ) {
                         updatedEpisode = updatedEpisode.copy(seen = true)
                     }
                 }
@@ -323,7 +325,13 @@ internal class MigrateAnimeDialogScreenModel(
                 .firstOrNull { it.isTrackFrom(updatedTrack, oldAnime, oldSource) }
 
             if (service != null) {
-                service.migrateTrack(updatedTrack, newAnime, newSource)
+                try {
+                    service.migrateTrack(updatedTrack, newAnime, newSource)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                    updatedTrack
+                }
             } else {
                 updatedTrack
             }
@@ -334,7 +342,12 @@ internal class MigrateAnimeDialogScreenModel(
         // Delete downloaded
         if (deleteDownloaded) {
             if (oldSource != null) {
-                downloadManager.deleteAnime(oldAnime, oldSource)
+                try {
+                    downloadManager.deleteAnime(oldAnime, oldSource)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    logcat(LogPriority.ERROR, e)
+                }
             }
         }
 
@@ -344,18 +357,28 @@ internal class MigrateAnimeDialogScreenModel(
 
         // Update custom cover (recheck if custom cover exists)
         if (migrateCustomCover && oldAnime.hasCustomCover()) {
-            coverCache.setCustomCoverToCache(
-                newAnime,
-                coverCache.getCustomCoverFile(oldAnime.id).inputStream(),
-            )
+            try {
+                coverCache.setCustomCoverToCache(
+                    newAnime,
+                    coverCache.getCustomCoverFile(oldAnime.id).inputStream(),
+                )
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+            }
         }
 
         // Update custom background (recheck if custom background exists)
         if (migrateCustomBackground && oldAnime.hasCustomBackground()) {
-            backgroundCache.setCustomBackgroundToCache(
-                newAnime,
-                backgroundCache.getCustomBackgroundFile(oldAnime.id).inputStream(),
-            )
+            try {
+                backgroundCache.setCustomBackgroundToCache(
+                    newAnime,
+                    backgroundCache.getCustomBackgroundFile(oldAnime.id).inputStream(),
+                )
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                logcat(LogPriority.ERROR, e)
+            }
         }
 
         updateAnime.await(

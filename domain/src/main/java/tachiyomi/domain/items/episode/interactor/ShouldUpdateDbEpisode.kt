@@ -1,7 +1,9 @@
 package tachiyomi.domain.items.episode.interactor
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.domain.items.episode.model.Episode
 
+@Inject
 class ShouldUpdateDbEpisode {
 
     fun await(dbEpisode: Episode, sourceEpisode: Episode): Boolean {
@@ -12,6 +14,7 @@ class ShouldUpdateDbEpisode {
             dbEpisode.sourceOrder != sourceEpisode.sourceOrder ||
             dbEpisode.summary != sourceEpisode.summary ||
             dbEpisode.fillermark != sourceEpisode.fillermark ||
-            dbEpisode.previewUrl != sourceEpisode.previewUrl
+            dbEpisode.previewUrl != sourceEpisode.previewUrl ||
+            dbEpisode.memo != sourceEpisode.memo
     }
 }

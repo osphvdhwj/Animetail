@@ -46,13 +46,12 @@ import eu.kanade.presentation.browse.manga.ExtensionHeader
 import eu.kanade.presentation.browse.manga.ExtensionTrustDialog
 import eu.kanade.presentation.components.WarningBanner
 import eu.kanade.presentation.entries.components.DotSeparatorNoSpaceText
-import eu.kanade.presentation.more.settings.screen.browse.AnimeExtensionReposScreen
-import eu.kanade.presentation.util.animateItemFastScroll
+import eu.kanade.presentation.more.settings.screen.browse.ExtensionStoresScreen
 import eu.kanade.presentation.util.rememberRequestPackageInstallsPermissionState
 import eu.kanade.tachiyomi.extension.InstallStep
 import eu.kanade.tachiyomi.extension.anime.model.AnimeExtension
 import eu.kanade.tachiyomi.ui.browse.anime.extension.AnimeExtensionUiModel
-import eu.kanade.tachiyomi.ui.browse.anime.extension.AnimeExtensionsScreenModel
+import eu.kanade.tachiyomi.ui.browse.anime.extension.AnimeExtensionsViewModel
 import eu.kanade.tachiyomi.util.system.LocaleHelper
 import eu.kanade.tachiyomi.util.system.launchRequestPackageInstallsPermission
 import kotlinx.collections.immutable.persistentListOf
@@ -70,7 +69,7 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 @Composable
 fun AnimeExtensionScreen(
-    state: AnimeExtensionsScreenModel.State,
+    state: AnimeExtensionsViewModel.State,
     contentPadding: PaddingValues,
     searchQuery: String?,
     onLongClickItem: (AnimeExtension) -> Unit,
@@ -105,9 +104,9 @@ fun AnimeExtensionScreen(
                     modifier = Modifier.padding(contentPadding),
                     actions = persistentListOf(
                         EmptyScreenAction(
-                            stringRes = MR.strings.label_extension_repos,
+                            stringRes = MR.strings.extensionStores,
                             icon = Icons.Outlined.Settings,
-                            onClick = { navigator.push(AnimeExtensionReposScreen()) },
+                            onClick = { navigator.push(ExtensionStoresScreen(isManga = false)) },
                         ),
                     ),
                 )
@@ -134,7 +133,7 @@ fun AnimeExtensionScreen(
 
 @Composable
 private fun AnimeExtensionContent(
-    state: AnimeExtensionsScreenModel.State,
+    state: AnimeExtensionsViewModel.State,
     contentPadding: PaddingValues,
     onLongClickItem: (AnimeExtension) -> Unit,
     onOpenWebView: (AnimeExtension.Available) -> Unit,
@@ -188,7 +187,7 @@ private fun AnimeExtensionContent(
                             }
                         ExtensionHeader(
                             textRes = header.textRes,
-                            modifier = Modifier.animateItemFastScroll(),
+                            modifier = Modifier.animateItem(),
                             action = action,
                         )
                     }
@@ -196,7 +195,7 @@ private fun AnimeExtensionContent(
                     is AnimeExtensionUiModel.Header.Text -> {
                         ExtensionHeader(
                             text = header.text,
-                            modifier = Modifier.animateItemFastScroll(),
+                            modifier = Modifier.animateItem(),
                         )
                     }
                 }
@@ -215,7 +214,7 @@ private fun AnimeExtensionContent(
             ) { item ->
                 AnimeExtensionItem(
                     item = item,
-                    modifier = Modifier.animateItemFastScroll(),
+                    modifier = Modifier.animateItem(),
                     onClickItem = {
                         when (it) {
                             is AnimeExtension.Available -> onInstallExtension(it)

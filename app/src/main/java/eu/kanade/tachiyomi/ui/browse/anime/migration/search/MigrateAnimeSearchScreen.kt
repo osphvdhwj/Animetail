@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 import eu.kanade.presentation.browse.anime.MigrateAnimeSearchScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
@@ -17,8 +18,10 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
 
-        val screenModel = rememberScreenModel { MigrateAnimeSearchScreenModel(animeId = animeId) }
-        val state by screenModel.state.collectAsState()
+        val viewModel = assistedMetroViewModel<MigrateAnimeSearchViewModel, MigrateAnimeSearchViewModel.Factory> {
+            create(animeId = animeId, initialExtensionFilter = null)
+        }
+        val state by viewModel.state.collectAsState()
 
         val dialogScreenModel = rememberScreenModel {
             AnimeMigrateSearchScreenDialogScreenModel(
@@ -31,20 +34,28 @@ class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
             state = state,
             fromSourceId = dialogState.anime?.source,
             navigateUp = navigator::pop,
-            onChangeSearchQuery = screenModel::updateSearchQuery,
-            onSearch = { screenModel.search() },
-            getAnime = { screenModel.getAnime(it) },
-            onChangeSearchFilter = screenModel::setSourceFilter,
-            onToggleResults = screenModel::toggleFilterResults,
+            onChangeSearchQuery = viewModel::updateSearchQuery,
+            onSearch = { viewModel.search() },
+            getAnime = viewModel::getAnime,
+            onChangeSearchFilter = viewModel::setSourceFilter,
+            onToggleResults = viewModel::toggleFilterResults,
             onClickSource = {
                 navigator.push(
                     AnimeSourceSearchScreen(dialogState.anime!!, it.id, state.searchQuery),
                 )
             },
-            onClickItem = {
-                dialogScreenModel.setDialog(
-                    (AnimeMigrateSearchScreenDialogScreenModel.Dialog.Migrate(it)),
-                )
+            onClickItem = { targetAnime ->
+                val migrationListScreen = navigator.items
+                    .filterIsInstance<mihon.feature.migration.list.AnimeMigrationListScreen>()
+                    .firstOrNull()
+                if (migrationListScreen != null) {
+                    migrationListScreen.addMatchOverride(animeId, targetAnime.id)
+                    navigator.pop()
+                } else {
+                    dialogScreenModel.setDialog(
+                        (AnimeMigrateSearchScreenDialogScreenModel.Dialog.Migrate(targetAnime)),
+                    )
+                }
             },
             onLongClickItem = { navigator.push(AnimeScreen(it.id, true)) },
         )

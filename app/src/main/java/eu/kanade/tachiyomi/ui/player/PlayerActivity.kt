@@ -29,6 +29,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.res.AssetManager
 import android.content.res.Configuration
 import android.graphics.Rect
 import android.media.AudioManager
@@ -41,6 +42,7 @@ import android.util.Rational
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.ui.Modifier
@@ -55,11 +57,16 @@ import androidx.lifecycle.viewModelScope
 import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
 import androidx.media.AudioManagerCompat
+import aniyomi.core.common.torrent.TorrentPreferences
+import aniyomi.core.common.torrent.TorrentServerApi
+import aniyomi.core.common.torrent.TorrentServerUtils
 import com.hippo.unifile.UniFile
+import dev.zacsweers.metro.Inject
 import eu.kanade.domain.connections.service.ConnectionsPreferences
 import eu.kanade.presentation.theme.TachiyomiTheme
 import eu.kanade.tachiyomi.animesource.model.ChapterType
 import eu.kanade.tachiyomi.animesource.model.Hoster
+import eu.kanade.tachiyomi.animesource.model.HttpServer
 import eu.kanade.tachiyomi.animesource.model.SerializableHoster.Companion.serialize
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
@@ -67,12 +74,10 @@ import eu.kanade.tachiyomi.data.connections.discord.DiscordRPCService
 import eu.kanade.tachiyomi.data.connections.discord.PlayerData
 import eu.kanade.tachiyomi.data.notification.NotificationReceiver
 import eu.kanade.tachiyomi.data.notification.Notifications
-import eu.kanade.tachiyomi.data.torrentServer.service.TorrentServerService
+import eu.kanade.tachiyomi.data.torrent.service.TorrentServerService
 import eu.kanade.tachiyomi.databinding.PlayerLayoutBinding
 import eu.kanade.tachiyomi.network.NetworkPreferences
 import eu.kanade.tachiyomi.source.anime.isNsfw
-import eu.kanade.tachiyomi.torrentServer.TorrentServerApi
-import eu.kanade.tachiyomi.torrentServer.TorrentServerUtils
 import eu.kanade.tachiyomi.ui.base.activity.BaseActivity
 import eu.kanade.tachiyomi.ui.player.controls.PlayerControls
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
@@ -80,6 +85,7 @@ import eu.kanade.tachiyomi.ui.player.settings.AdvancedPlayerPreferences
 import eu.kanade.tachiyomi.ui.player.settings.AudioPreferences
 import eu.kanade.tachiyomi.ui.player.settings.GesturePreferences
 import eu.kanade.tachiyomi.ui.player.settings.PlayerPreferences
+import eu.kanade.tachiyomi.ui.player.settings.SubtitlePreferences
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils
 import eu.kanade.tachiyomi.ui.player.utils.ChapterUtils.Companion.getStringRes
 import eu.kanade.tachiyomi.util.system.powerManager
@@ -90,28 +96,38 @@ import `is`.xyz.mpv.MPVNode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import logcat.LogPriority
+import mihon.app.di.AppGraph
+import mihon.core.metro.metroGraph
 import tachiyomi.core.common.i18n.stringResource
+import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.lang.launchUI
 import tachiyomi.core.common.util.lang.withUIContext
 import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.storage.service.StorageManager
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.util.Calendar
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.time.Duration.Companion.seconds
 
 class PlayerActivity : BaseActivity() {
-    private val viewModel by viewModels<PlayerViewModel>(factoryProducer = { PlayerViewModelProviderFactory(this) })
+    private val graph: AppGraph by lazy { metroGraph() }
+    private val viewModel by viewModels<PlayerViewModel> { graph.viewModelFactory }
     private val binding by lazy { PlayerLayoutBinding.inflate(layoutInflater) }
     private val playerObserver by lazy { PlayerObserver(this) }
     val player by lazy { binding.player }
@@ -122,13 +138,25 @@ class PlayerActivity : BaseActivity() {
     private var mediaSession: MediaSession? = null
     private val gesturePreferences: GesturePreferences by lazy { viewModel.gesturePreferences }
     private val playerPreferences: PlayerPreferences by lazy { viewModel.playerPreferences }
-    private val audioPreferences: AudioPreferences = Injekt.get()
-    private val advancedPlayerPreferences: AdvancedPlayerPreferences = Injekt.get()
-    private val networkPreferences: NetworkPreferences = Injekt.get()
 
-    // Cast -->
-    val castManager: CastManager by lazy { CastManager(this, Injekt.get()) }
-    // <-- Cast
+    @Inject private lateinit var audioPreferences: AudioPreferences
+
+    @Inject private lateinit var advancedPlayerPreferences: AdvancedPlayerPreferences
+
+    @Inject private lateinit var networkPreferences: NetworkPreferences
+
+    @Inject private lateinit var subtitlePreferences: SubtitlePreferences
+
+    @Inject private lateinit var preferenceStore: PreferenceStore
+    val castManager: CastManager by lazy { CastManager(this, preferenceStore) }
+
+    @Inject private lateinit var storageManager: StorageManager
+
+    @Inject private lateinit var torrentServerApi: TorrentServerApi
+
+    @Inject private lateinit var torrentServerUtils: TorrentServerUtils
+
+    @Inject private lateinit var torrentPreferences: TorrentPreferences
 
     private var audioFocusRequest: AudioFocusRequestCompat? = null
     private var restoreAudioFocus: () -> Unit = {}
@@ -140,6 +168,7 @@ class PlayerActivity : BaseActivity() {
     }
 
     private var pipReceiver: BroadcastReceiver? = null
+    private var httpServer: HttpServer? = null
 
     // Hold for 2X State
     private var isHolding = false
@@ -197,7 +226,7 @@ class PlayerActivity : BaseActivity() {
     }
 
     // AM (CONNECTIONS) -->
-    private val connectionsPreferences: ConnectionsPreferences = Injekt.get()
+    @Inject private lateinit var connectionsPreferences: ConnectionsPreferences
     // <-- AM (CONNECTIONS)
 
     @SuppressLint("MissingSuperCall")
@@ -271,6 +300,7 @@ class PlayerActivity : BaseActivity() {
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
+        graph.inject(this)
         enableEdgeToEdge()
         registerSecureActivity(this)
         super.onCreate(savedInstanceState)
@@ -304,9 +334,63 @@ class PlayerActivity : BaseActivity() {
                     is PlayerViewModel.Event.SetArtResult -> {
                         onSetAsArtResult(event.result, event.artType)
                     }
+
+                    is PlayerViewModel.Event.ShowToast -> {
+                        showToast(event.text)
+                    }
+
+                    is PlayerViewModel.Event.ChangeEpisode -> {
+                        changeEpisode(event.episodeId, event.autoPlay)
+                    }
+
+                    is PlayerViewModel.Event.SetVideo -> {
+                        setVideo(event.video)
+                    }
+
+                    is PlayerViewModel.Event.SetKeyboardVisibility -> {
+                        when (event.visible) {
+                            true -> showSoftwareKeyboard()
+
+                            false -> hideSoftwareKeyboard()
+
+                            null -> {
+                                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+                                if (imm?.isActive == true) {
+                                    hideSoftwareKeyboard()
+                                } else {
+                                    showSoftwareKeyboard()
+                                }
+                            }
+                        }
+                    }
                 }
             }
             .launchIn(lifecycleScope)
+
+        val showStatusBar = playerPreferences.showSystemStatusBar().get()
+        viewModel.controlsShown
+            .onEach { shown ->
+                if (shown && showStatusBar) {
+                    windowInsetsController.show(WindowInsetsCompat.Type.statusBars())
+                } else {
+                    windowInsetsController.hide(WindowInsetsCompat.Type.statusBars())
+                }
+            }
+            .launchIn(lifecycleScope)
+
+        viewModel.currentBrightness
+            .onEach { brightness ->
+                window.attributes = window.attributes.apply {
+                    screenBrightness = brightness.coerceIn(0f, 1f)
+                }
+            }
+            .launchIn(lifecycleScope)
+
+        playerPreferences.defaultPlayerOrientationType().changes()
+            .drop(1)
+            .onEach { setupPlayerOrientation() }
+            .launchIn(lifecycleScope)
+
         viewModel.viewModelScope.launchIO {
             // AM (DISCORD) -->
             updateDiscordRPC(exitingPlayer = false)
@@ -352,6 +436,9 @@ class PlayerActivity : BaseActivity() {
     override fun onDestroy() {
         player.isExiting = true
 
+        httpServer?.stop()
+        httpServer = null
+
         audioFocusRequest?.let {
             AudioManagerCompat.abandonAudioFocusRequest(audioManager, it)
         }
@@ -371,6 +458,7 @@ class PlayerActivity : BaseActivity() {
         mpv.removeObserver(playerObserver)
         Thread { runCatching { mpv.close() } }.start()
         castManager.cleanup()
+        viewModel.stopHttpServer()
 
         // AM (DISCORD) -->
         updateDiscordRPC(exitingPlayer = true)
@@ -420,11 +508,12 @@ class PlayerActivity : BaseActivity() {
         if (isPipSupportedAndEnabled && mpv.getPropertyBoolean("pause") == false &&
             playerPreferences.pipOnExit().get()
         ) {
-            enterPictureInPictureMode()
+            enterPictureInPictureMode(android.app.PictureInPictureParams.Builder().build())
         }
         super.onUserLeaveHint()
     }
 
+    @Suppress("DEPRECATION")
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (isPipSupportedAndEnabled && mpv.getPropertyBoolean("pause") == false &&
@@ -434,7 +523,7 @@ class PlayerActivity : BaseActivity() {
                 viewModel.panelShown.value == Panels.None &&
                 viewModel.dialogShown.value == Dialogs.None
             ) {
-                enterPictureInPictureMode()
+                enterPictureInPictureMode(android.app.PictureInPictureParams.Builder().build())
             }
         } else {
             super.onBackPressed()
@@ -450,11 +539,6 @@ class PlayerActivity : BaseActivity() {
             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
         )
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        binding.root.systemUiVisibility =
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
-            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
-            View.SYSTEM_UI_FLAG_LOW_PROFILE
         windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
         windowInsetsController.hide(WindowInsetsCompat.Type.navigationBars())
         windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -503,17 +587,41 @@ class PlayerActivity : BaseActivity() {
         val mpvInputFile = mpvDir.createFile("input.conf")!!
         advancedPlayerPreferences.mpvInput().get().let { mpvInputFile.writeText(it) }
 
-        val fontsDirectory = mpvDir.createDirectory(MPV_FONTS_DIR)!!
+        copyAssets(mpvDir)
 
-        mpv.setOptionString("sub-ass-force-margins", "yes")
-        mpv.setOptionString("sub-use-margins", "yes")
+        val showBlackBars = if (subtitlePreferences.subtitleBlackBars().get()) "yes" else "no"
+        mpv.setOptionString("sub-ass-force-margins", showBlackBars)
+        mpv.setOptionString("sub-use-margins", showBlackBars)
 
         player.init(mpv)
 
-        mpv.setPropertyString("sub-fonts-dir", fontsDirectory.filePath!!)
-        mpv.setPropertyString("osd-fonts-dir", fontsDirectory.filePath!!)
         mpv.addLogObserver(playerObserver)
         mpv.addObserver(playerObserver)
+    }
+
+    private fun copyAssets(mpvDir: UniFile) {
+        val assetManager = assets
+        val files = arrayOf("subfont.ttf", "cacert.pem")
+        for (filename in files) {
+            var ins: InputStream? = null
+            var out: OutputStream? = null
+            try {
+                ins = assetManager.open(filename, AssetManager.ACCESS_STREAMING)
+                val outFile = mpvDir.createFile(filename)!!
+                // Skip if the file already exists with the same size
+                if (outFile.length() == ins.available().toLong()) {
+                    continue
+                }
+                out = outFile.openOutputStream()
+                ins.copyTo(out)
+                logcat(LogPriority.WARN) { "Copied asset file: $filename" }
+            } catch (e: IOException) {
+                logcat(LogPriority.ERROR, e) { "Failed to copy asset file: $filename" }
+            } finally {
+                ins?.close()
+                out?.close()
+            }
+        }
     }
 
     private fun setupPlayerAudio() {
@@ -600,6 +708,18 @@ class PlayerActivity : BaseActivity() {
 
     fun showToast(message: String) {
         runOnUiThread { toast(message) }
+    }
+
+    fun showSoftwareKeyboard() {
+        val view = currentFocus ?: window.decorView
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    fun hideSoftwareKeyboard() {
+        val view = currentFocus ?: window.decorView
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     // A bunch of observers
@@ -1033,7 +1153,7 @@ class PlayerActivity : BaseActivity() {
         viewModel.panelShown.update { _ -> Panels.None }
         viewModel.pause()
         viewModel.isLoading.update { _ -> true }
-        viewModel.resetHosterState()
+        viewModel.resetState()
 
         lifecycleScope.launch {
             viewModel.updateIsLoadingEpisode(true)
@@ -1095,6 +1215,8 @@ class PlayerActivity : BaseActivity() {
     fun setVideo(video: Video?, position: Long? = null) {
         if (player.isExiting) return
         if (video == null) return
+        httpServer?.stop()
+        httpServer = null
 
         setHttpOptions(video)
 
@@ -1114,57 +1236,54 @@ class PlayerActivity : BaseActivity() {
                 mpv.command("set", "start", "$it")
             }
         }
-        if (video.videoUrl.startsWith(TorrentServerUtils.hostUrl) ||
-            video.videoUrl.startsWith("magnet") ||
-            video.videoUrl.endsWith(".torrent")
+
+        val videoOptions = video.mpvArgs.joinToString(",") { (option, value) ->
+            "$option=\"$value\""
+        }
+
+        if (torrentPreferences.torrServerEnable().get() &&
+            (
+                video.videoUrl.startsWith(torrentServerApi.hostUrl) ||
+                    video.videoUrl.startsWith("magnet") ||
+                    video.videoUrl.endsWith("torrent")
+                )
         ) {
-            launchIO {
+            lifecycleScope.launchIO {
                 TorrentServerService.start()
-                TorrentServerService.wait(10)
-                torrentLinkHandler(video.videoUrl, video.videoTitle)
+                torrentLinkHandler(video.videoUrl, video.videoTitle, videoOptions)
             }
         } else {
-            val videoOptions = video.mpvArgs.joinToString(",") { (option, value) ->
-                "$option=\"$value\""
-            }
+            lifecycleScope.launchIO {
+                val httpSource = viewModel.currentSource.value as? AnimeHttpSource
+                var videoUrl: String = video.videoUrl
+                if (video.usesHttpServer() && httpSource != null) {
+                    val port = try {
+                        httpServer = httpSource.createHttpServer()
+                        httpServer?.start()
+                        httpServer?.listeningPort ?: 0
+                    } catch (e: Exception) {
+                        logcat(LogPriority.ERROR, e) { "Failed to start http server" }
+                        launchUI {
+                            toast(AYMR.strings.http_server_start_failure)
+                        }
+                        return@launchIO
+                    }
 
-            mpv.command(
-                "loadfile",
-                parseVideoUrl(video.videoUrl) ?: return,
-                "replace",
-                "0",
-                videoOptions,
-            )
+                    val newVideo = video.copyHttpServer(port)
+                    videoUrl = newVideo.videoUrl
+                    viewModel.updateVideo(newVideo)
+                }
+
+                mpv.command(
+                    "loadfile",
+                    parseVideoUrl(videoUrl) ?: return@launchIO,
+                    "replace",
+                    "0",
+                    videoOptions,
+                )
+            }
         }
         updateDiscordRPC(exitingPlayer = false)
-    }
-
-    private fun torrentLinkHandler(videoUrl: String, quality: String) {
-        var index = 0
-
-        // check if link is from localSource
-        if (videoUrl.startsWith("content://")) {
-            val videoInputStream = applicationContext.contentResolver.openInputStream(Uri.parse(videoUrl))
-            val torrent = TorrentServerApi.uploadTorrent(videoInputStream!!, quality, "", "", false)
-            val torrentUrl = TorrentServerUtils.getTorrentPlayLink(torrent, 0)
-            mpv.command("loadfile", torrentUrl)
-            return
-        }
-
-        // check if link is from magnet, in that check if index is present
-        if (videoUrl.startsWith("magnet")) {
-            if (videoUrl.contains("index=")) {
-                index = try {
-                    videoUrl.substringAfter("index=").toInt()
-                } catch (e: NumberFormatException) {
-                    0
-                }
-            }
-        }
-
-        val currentTorrent = TorrentServerApi.addTorrent(videoUrl, quality, "", "", false)
-        val videoTorrentUrl = TorrentServerUtils.getTorrentPlayLink(currentTorrent, index)
-        mpv.command("loadfile", videoTorrentUrl)
     }
 
     /**
@@ -1188,7 +1307,59 @@ class PlayerActivity : BaseActivity() {
         }
     }
 
-    private fun parseVideoUrl(videoUrl: String?): String? {
+    private suspend fun torrentLinkHandler(videoUrl: String, title: String, videoOptions: String) {
+        var index = 0
+
+        // Wait for torrent server to be ready
+        if (!TorrentServerService.wait(20)) {
+            withUIContext<Unit> { toast(MR.strings.unknown_error) }
+            return
+        }
+
+        if (torrentServerApi.getPort() == 0) {
+            val preferredPort = torrentPreferences.torrServerPort().get().toIntOrNull() ?: 8090
+            torrentServerApi.setPort(preferredPort)
+        }
+        // check if link is from localSource
+        if (videoUrl.startsWith("content://")) {
+            val videoInputStream = applicationContext.contentResolver.openInputStream(videoUrl.toUri())
+            val torrent = torrentServerApi.uploadTorrent(videoInputStream!!, title, false)
+            val torrentUrl = torrentServerUtils.getTorrentPlayLink(torrent, 0)
+
+            mpv.command(
+                "loadfile",
+                torrentUrl,
+                "replace",
+                "0",
+                videoOptions,
+            )
+            return
+        }
+
+        // check if link is from magnet, in that check if index is present
+        if (videoUrl.startsWith("magnet")) {
+            if (videoUrl.contains("index=")) {
+                index = try {
+                    videoUrl.substringAfter("index=").substringBefore("&").toInt()
+                } catch (_: NumberFormatException) {
+                    0
+                }
+            }
+        }
+
+        val currentTorrent = torrentServerApi.addTorrent(videoUrl, title, "", "", false)
+        val videoTorrentUrl = torrentServerUtils.getTorrentPlayLink(currentTorrent, index)
+
+        mpv.command(
+            "loadfile",
+            videoTorrentUrl,
+            "replace",
+            "0",
+            videoOptions,
+        )
+    }
+
+    fun parseVideoUrl(videoUrl: String?): String? {
         return videoUrl?.toUri()?.resolveUri(this)
             ?: videoUrl
     }
@@ -1443,6 +1614,10 @@ class PlayerActivity : BaseActivity() {
                             } else {
                                 episode.episode_number.toString()
                             },
+                            episodeProgress = Pair(
+                                viewModel.getCurrentEpisodeIndex() + 1,
+                                viewModel.currentPlaylist.value.size,
+                            ),
                             startTimestamp = startTimestamp.timeInMillis,
                             endTimestamp = endTimestamp.timeInMillis,
                         ),

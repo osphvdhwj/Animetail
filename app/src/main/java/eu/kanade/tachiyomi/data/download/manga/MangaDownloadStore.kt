@@ -3,6 +3,9 @@ package eu.kanade.tachiyomi.data.download.manga
 import android.content.Context
 import androidx.core.content.edit
 import kotlinx.coroutines.runBlocking
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.source.online.HttpSource
 import kotlinx.serialization.Serializable
@@ -11,15 +14,15 @@ import tachiyomi.domain.entries.manga.interactor.GetManga
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.interactor.GetChapter
 import tachiyomi.domain.source.manga.service.MangaSourceManager
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
+@SingleIn(AppScope::class)
 class MangaDownloadStore(
     context: Context,
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val json: Json = Injekt.get(),
-    private val getManga: GetManga = Injekt.get(),
-    private val getChapter: GetChapter = Injekt.get(),
+    private val sourceManager: MangaSourceManager,
+    private val json: Json,
+    private val getManga: GetManga,
+    private val getChapter: GetChapter,
 ) {
 
     private val preferences = context.getSharedPreferences("active_downloads", Context.MODE_PRIVATE)
@@ -101,3 +104,4 @@ class MangaDownloadStore(
 
 @Serializable
 private data class MangaDownloadObject(val mangaId: Long, val chapterId: Long, val order: Int, val status: Int = 0)
+

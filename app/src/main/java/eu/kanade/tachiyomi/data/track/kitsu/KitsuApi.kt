@@ -10,13 +10,18 @@ import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuListSearchResult
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuMangaMetadata
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuOAuth
 import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuSearchResult
+import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuSingleAnime
+import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuSingleManga
+import eu.kanade.tachiyomi.data.track.kitsu.dto.KitsuUser
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.network.DELETE
 import eu.kanade.tachiyomi.network.GET
+import eu.kanade.tachiyomi.network.HttpException
 import eu.kanade.tachiyomi.network.POST
+import eu.kanade.tachiyomi.network.await
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.jsonMime
 import eu.kanade.tachiyomi.network.parseAs
@@ -145,7 +150,7 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
                     putJsonObject("attributes") {
                         put("status", track.toApiStatus())
                         put("progress", track.last_chapter_read.toInt())
-                        put("ratingTwenty", track.toApiScore())
+                        put("ratingTwenty", track.score.takeIf { it > 0 }?.toInt())
                         put("startedAt", KitsuDateHelper.convert(track.started_reading_date))
                         put("finishedAt", KitsuDateHelper.convert(track.finished_reading_date))
                         put("private", track.private)
@@ -177,7 +182,7 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
                     putJsonObject("attributes") {
                         put("status", track.toApiStatus())
                         put("progress", track.last_episode_seen.toInt())
-                        put("ratingTwenty", track.toApiScore())
+                        put("ratingTwenty", track.score.takeIf { it > 0 }?.toInt())
                         put("startedAt", KitsuDateHelper.convert(track.started_watching_date))
                         put("finishedAt", KitsuDateHelper.convert(track.finished_watching_date))
                         put("private", track.private)
@@ -246,6 +251,46 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
                     .let {
                         algoliaSearchAnime(it.media.key, query)
                     }
+            }
+        }
+    }
+
+    suspend fun getMangaDetails(id: Int): MangaTrackSearch? {
+        return withIOContext {
+            val url = "$BASE_URL/manga/$id"
+            try {
+                with(json) {
+                    authClient.newCall(GET(url))
+                        .await()
+                        .parseAs<KitsuSingleManga>()
+                        .toTrackSearch()
+                }
+            } catch (e: HttpException) {
+                if (e.code == 404) {
+                    null
+                } else {
+                    throw e
+                }
+            }
+        }
+    }
+
+    suspend fun getAnimeDetails(id: Int): AnimeTrackSearch? {
+        return withIOContext {
+            val url = "$BASE_URL/anime/$id"
+            try {
+                with(json) {
+                    authClient.newCall(GET(url))
+                        .await()
+                        .parseAs<KitsuSingleAnime>()
+                        .toTrackSearch()
+                }
+            } catch (e: HttpException) {
+                if (e.code == 404) {
+                    null
+                } else {
+                    throw e
+                }
             }
         }
     }
@@ -413,7 +458,7 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
         }
     }
 
-    suspend fun getCurrentUser(): String {
+    suspend fun getCurrentUser(): KitsuUser {
         return withIOContext {
             val url = "${BASE_URL}users".toUri().buildUpon()
                 .encodedQuery("filter[self]=true")
@@ -423,7 +468,6 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
                     .awaitSuccess()
                     .parseAs<KitsuCurrentUserResult>()
                     .data[0]
-                    .id
             }
         }
     }

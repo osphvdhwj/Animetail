@@ -19,13 +19,9 @@ import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.serialization.json.Json
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
-import uy.kohesive.injekt.injectLazy
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
@@ -55,9 +51,11 @@ class Anilist(id: Long) :
         const val POINT_10_DECIMAL = "POINT_10_DECIMAL"
         const val POINT_5 = "POINT_5"
         const val POINT_3 = "POINT_3"
+
+        private const val SEARCH_ID_PREFIX = "id:"
     }
 
-    private val json: Json by injectLazy()
+    private val json: Json by lazy { appGraph.json }
 
     private val interceptor by lazy { AnilistInterceptor(this, getPassword()) }
 
@@ -67,7 +65,7 @@ class Anilist(id: Long) :
 
     override val supportsPrivateTracking: Boolean = true
 
-    private val scorePreference = trackPreferences.anilistScoreType
+    private val scorePreference by lazy { trackPreferences.anilistScoreType }
 
     init {
         // If the preference is an int from APIv1, logout user to force using APIv2
@@ -121,22 +119,22 @@ class Anilist(id: Long) :
 
     override fun getCompletionStatus(): Long = COMPLETED
 
-    override fun getScoreList(): ImmutableList<String> {
+    override fun getScoreList(): List<String> {
         return when (scorePreference.get()) {
             // 10 point
-            POINT_10 -> IntRange(0, 10).map(Int::toString).toImmutableList()
+            POINT_10 -> IntRange(0, 10).map(Int::toString).toList()
 
             // 100 point
-            POINT_100 -> IntRange(0, 100).map(Int::toString).toImmutableList()
+            POINT_100 -> IntRange(0, 100).map(Int::toString).toList()
 
             // 5 stars
-            POINT_5 -> IntRange(0, 5).map { "$it ★" }.toImmutableList()
+            POINT_5 -> IntRange(0, 5).map { "$it ★" }.toList()
 
             // Smiley
-            POINT_3 -> persistentListOf("-", "😦", "😐", "😊")
+            POINT_3 -> listOf("-", "😦", "😐", "😊")
 
             // 10 point decimal
-            POINT_10_DECIMAL -> IntRange(0, 100).map { (it / 10f).toString() }.toImmutableList()
+            POINT_10_DECIMAL -> IntRange(0, 100).map { (it / 10f).toString() }.toList()
 
             else -> throw Exception("Unknown score type")
         }
@@ -195,7 +193,7 @@ class Anilist(id: Long) :
                 else -> "😊"
             }
 
-            else -> track.toApiScore()
+            else -> track.toApiScore(appGraph.trackPreferences)
         }
     }
 
@@ -215,7 +213,7 @@ class Anilist(id: Long) :
                 else -> "😊"
             }
 
-            else -> track.toApiScore()
+            else -> track.toApiScore(appGraph.trackPreferences)
         }
     }
 
@@ -336,11 +334,31 @@ class Anilist(id: Long) :
     }
 
     override suspend fun searchManga(query: String): List<MangaTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+                return api.getMangaDetails(id)?.let { listOf(it) } ?: emptyList()
+            }
+        }
+
         return api.search(query)
     }
 
     override suspend fun searchAnime(query: String): List<AnimeTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            query.substringAfter(SEARCH_ID_PREFIX).trim().toIntOrNull()?.let { id ->
+                return api.getAnimeDetails(id)?.let { listOf(it) } ?: emptyList()
+            }
+        }
+
         return api.searchAnime(query)
+    }
+
+    suspend fun getPopularAnime(): List<AnimeTrackSearch> {
+        return api.getPopularAnime()
+    }
+
+    suspend fun getPopularManga(): List<MangaTrackSearch> {
+        return api.getPopularManga()
     }
 
     override suspend fun refresh(track: MangaTrack): MangaTrack {
@@ -365,9 +383,10 @@ class Anilist(id: Long) :
         try {
             val oauth = api.createOAuth(token)
             interceptor.setAuth(oauth)
-            val (username, scoreType) = api.getCurrentUser()
-            scorePreference.set(scoreType)
-            saveCredentials(username.toString(), oauth.accessToken)
+            val currentUser = api.getCurrentUser()
+            scorePreference.set(currentUser.mediaListOptions.scoreFormat)
+            saveDisplayUsername(currentUser.name)
+            saveCredentials(currentUser.id.toString(), oauth.accessToken)
         } catch (e: Throwable) {
             logout()
         }

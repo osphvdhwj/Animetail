@@ -15,8 +15,6 @@ import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
 import eu.kanade.tachiyomi.data.track.model.TrackMangaMetadata
 import eu.kanade.tachiyomi.util.lang.htmlDecode
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.i18n.MR
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainTrack
@@ -42,7 +40,9 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
                     }
                 }
             }
-            .toImmutableList()
+            .toList()
+
+        private const val SEARCH_ID_PREFIX = "id:"
     }
 
     private val interceptor by lazy { MangaUpdatesInterceptor(this) }
@@ -72,7 +72,7 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
 
     override fun getCompletionStatus(): Long = COMPLETE_LIST
 
-    override fun getScoreList(): ImmutableList<String> = SCORE_LIST
+    override fun getScoreList(): List<String> = SCORE_LIST
 
     override fun indexToScore(index: Int): Double = if (index == 0) 0.0 else SCORE_LIST[index].toDouble()
 
@@ -102,6 +102,17 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
     }
 
     override suspend fun searchManga(query: String): List<MangaTrackSearch> {
+        if (query.startsWith(SEARCH_ID_PREFIX)) {
+            return try {
+                val stringId = query.substringAfter(SEARCH_ID_PREFIX).trim()
+                val searchId = stringId.toLongOrNull() ?: stringId.toLong(36)
+
+                api.getSeriesDetails(searchId)?.let { listOf(it.toTrackSearch(id)) } ?: emptyList()
+            } catch (_: NumberFormatException) {
+                emptyList()
+            }
+        }
+
         return api.search(query)
             .map {
                 it.toTrackSearch(id)
@@ -137,11 +148,11 @@ class MangaUpdates(id: Long) : BaseTracker(id, "MangaUpdates"), MangaTracker, De
     }
 
     override suspend fun login(username: String, password: String) {
-        val authenticated = api.authenticate(username, password) ?: throw Throwable(
-            "Unable to login",
-        )
-        saveCredentials(authenticated.uid.toString(), authenticated.sessionToken)
+        val authenticated = api.authenticate(username, password)
         interceptor.newAuth(authenticated.sessionToken)
+        val currentUser = api.getCurrentUser()
+        saveDisplayUsername(currentUser.username)
+        saveCredentials(authenticated.uid.toString(), authenticated.sessionToken)
     }
 
     fun restoreSession(): String? {

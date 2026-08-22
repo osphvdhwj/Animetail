@@ -1,10 +1,15 @@
 package eu.kanade.tachiyomi.data.download.manga
 
 import android.content.Context
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.data.download.manga.model.MangaDownload
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.model.Page
-import kotlinx.coroutines.DelicateCoroutinesApi
+import eu.kanade.tachiyomi.source.online.HttpSource
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.drop
@@ -22,30 +27,37 @@ import tachiyomi.core.common.util.system.ImageUtil
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.category.manga.interactor.GetMangaCategories
 import tachiyomi.domain.download.service.DownloadPreferences
+import tachiyomi.domain.entries.manga.interactor.GetManga
 import tachiyomi.domain.entries.manga.model.Manga
+import tachiyomi.domain.items.chapter.interactor.GetChapter
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 import tachiyomi.i18n.MR
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
-@OptIn(DelicateCoroutinesApi::class)
+/**
+ * This class is used to manage chapter downloads in the application. It must be instantiated once
+ * and retrieved through dependency injection. You can use this class to queue new chapters or query
+ * downloaded chapters.
+ */
+@Inject
+@SingleIn(AppScope::class)
 class MangaDownloadManager(
     private val context: Context,
-    private val provider: MangaDownloadProvider = Injekt.get(),
-    private val cache: MangaDownloadCache = Injekt.get(),
-    private val getCategories: GetMangaCategories = Injekt.get(),
-    private val sourceManager: MangaSourceManager = Injekt.get(),
-    private val downloadPreferences: DownloadPreferences = Injekt.get(),
+    private val provider: MangaDownloadProvider,
+    private val cache: MangaDownloadCache,
+    private val getCategories: GetMangaCategories,
+    private val getManga: GetManga,
+    private val getChapter: GetChapter,
+    private val sourceManager: MangaSourceManager,
+    private val downloadPreferences: DownloadPreferences,
+    private val downloader: MangaDownloader,
+    private val pendingDeleter: MangaDownloadPendingDeleter,
 ) {
 
-    private val downloader = MangaDownloader(context, provider, cache)
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     val isRunning: Boolean
         get() = downloader.isRunning
-
-    private val pendingDeleter = MangaDownloadPendingDeleter(context)
-
     val queueState
         get() = downloader.queueState
 
@@ -98,7 +110,7 @@ class MangaDownloadManager(
     fun startDownloadNow(chapterId: Long) {
         val existingDownload = getQueuedDownloadOrNull(chapterId)
         // If not in queue try to start a new download
-        val toAdd = existingDownload ?: runBlocking { MangaDownload.fromChapterId(chapterId) } ?: return
+        val toAdd = existingDownload ?: runBlocking { downloadFromChapterId(chapterId) } ?: return
         queueState.value.toMutableList().apply {
             existingDownload?.let { remove(it) }
             add(0, toAdd)
@@ -107,6 +119,19 @@ class MangaDownloadManager(
         startDownloads()
     }
 
+    private suspend fun downloadFromChapterId(chapterId: Long): MangaDownload? {
+        val chapter = getChapter.await(chapterId) ?: return null
+        val manga = getManga.await(chapter.mangaId) ?: return null
+        val source = sourceManager.get(manga.source) as? HttpSource ?: return null
+
+        return MangaDownload(source, manga, chapter)
+    }
+
+    /**
+     * Reorders the download queue.
+     *
+     * @param downloads value to set the download queue to
+     */
     fun reorderQueue(downloads: List<MangaDownload>) {
         downloader.updateQueue(downloads)
     }
@@ -184,7 +209,7 @@ class MangaDownloadManager(
     }
 
     fun deleteChapters(chapters: List<Chapter>, manga: Manga, source: MangaSource) {
-        launchIO {
+        scope.launchIO {
             val filteredChapters = getChaptersToDelete(chapters, manga)
             if (filteredChapters.isEmpty()) {
                 return@launchIO
@@ -203,7 +228,7 @@ class MangaDownloadManager(
     }
 
     fun deleteManga(manga: Manga, source: MangaSource, removeQueued: Boolean = true) {
-        launchIO {
+        scope.launchIO {
             if (removeQueued) {
                 downloader.removeFromQueue(manga)
             }

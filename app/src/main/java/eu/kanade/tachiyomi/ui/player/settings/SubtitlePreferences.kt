@@ -9,11 +9,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import dev.icerock.moko.resources.StringResource
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.ui.player.controls.components.panels.SubtitlesBorderStyle
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.preference.getEnum
 import tachiyomi.i18n.tail.TLMR
 
+@Inject
+@SingleIn(AppScope::class)
 class SubtitlePreferences(
     private val preferenceStore: PreferenceStore,
 ) {
@@ -25,7 +30,7 @@ class SubtitlePreferences(
 
     fun screenshotSubtitles() = preferenceStore.getBoolean("pref_screenshot_subtitles", false)
 
-    fun subtitleFont() = preferenceStore.getString("pref_subtitle_font", "Sans Serif")
+    fun subtitleFont() = preferenceStore.getString("pref_subtitle_font", "sans-serif")
     fun subtitleFontSize() = preferenceStore.getInt("pref_subtitles_font_size", 55)
     fun subtitleFontScale() = preferenceStore.getFloat("pref_sub_scale", 1f)
     fun subtitleBorderSize() = preferenceStore.getInt("pref_sub_border_size", 3)
@@ -48,7 +53,8 @@ class SubtitlePreferences(
     fun subtitleJustification() = preferenceStore.getEnum("pref_sub_justify", SubtitleJustification.Auto)
     fun subtitlePos() = preferenceStore.getInt("pref_sub_pos", 100)
 
-    fun overrideSubsASS() = preferenceStore.getEnum("pref_override_subtitles_ass_enum", SubtitleAssOverride.No)
+    fun overrideSubsASS() = preferenceStore.getEnum("pref_override_subtitles_ass_enum", SubtitleAssOverride.Force)
+    fun subtitleBlackBars() = preferenceStore.getBoolean("pref_subtitle_black_bars", false)
 
     fun subtitlesDelay() = preferenceStore.getInt("pref_subtitles_delay", 0)
     fun subtitlesSpeed() = preferenceStore.getFloat("pref_subtitles_speed", 1f)

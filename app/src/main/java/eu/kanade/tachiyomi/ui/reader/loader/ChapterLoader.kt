@@ -1,12 +1,15 @@
 package eu.kanade.tachiyomi.ui.reader.loader
 
 import android.content.Context
+import eu.kanade.domain.source.service.SourcePreferences
+import eu.kanade.tachiyomi.data.cache.ChapterCache
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadProvider
 import eu.kanade.tachiyomi.source.MangaSource
 import eu.kanade.tachiyomi.source.online.HttpSource
 import eu.kanade.tachiyomi.ui.reader.model.ReaderChapter
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
+import kotlinx.coroutines.CoroutineScope
 import mihon.core.archive.archiveReader
 import mihon.core.archive.epubReader
 import tachiyomi.core.common.i18n.stringResource
@@ -17,20 +20,21 @@ import tachiyomi.domain.source.manga.model.StubMangaSource
 import tachiyomi.i18n.MR
 import tachiyomi.source.local.entries.manga.LocalMangaSource
 import tachiyomi.source.local.io.Format
-import uy.kohesive.injekt.injectLazy
 
 /**
  * Loader used to retrieve the [PageLoader] for a given chapter.
  */
 class ChapterLoader(
     private val context: Context,
+    private val scope: CoroutineScope,
     private val downloadManager: MangaDownloadManager,
     private val downloadProvider: MangaDownloadProvider,
+    private val chapterCache: ChapterCache,
     private val manga: Manga,
     private val source: MangaSource,
+    private val readerPreferences: ReaderPreferences,
+    private val sourcePreferences: SourcePreferences,
 ) {
-
-    private val readerPreferences: ReaderPreferences by injectLazy()
 
     /**
      * Assigns the chapter's page loader and loads the its pages. Returns immediately if the chapter
@@ -106,7 +110,14 @@ class ChapterLoader(
                 }
             }
 
-            source is HttpSource -> HttpPageLoader(chapter, source)
+            source is HttpSource -> HttpPageLoader(
+                chapter,
+                source,
+                scope,
+                chapterCache,
+                readerPreferences,
+                sourcePreferences,
+            )
 
             source is StubMangaSource -> error(
                 context.stringResource(MR.strings.source_not_installed, source.toString()),

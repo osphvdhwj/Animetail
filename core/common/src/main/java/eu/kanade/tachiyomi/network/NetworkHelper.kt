@@ -1,22 +1,29 @@
 package eu.kanade.tachiyomi.network
 
 import android.content.Context
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import eu.kanade.tachiyomi.network.interceptor.CloudflareInterceptor
 import eu.kanade.tachiyomi.network.interceptor.FlareSolverrInterceptor
-import eu.kanade.tachiyomi.network.interceptor.IgnoreGzipInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UncaughtExceptionInterceptor
 import eu.kanade.tachiyomi.network.interceptor.UserAgentInterceptor
+import kotlinx.coroutines.CoroutineScope
 import okhttp3.Cache
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.brotli.BrotliInterceptor
 import okhttp3.logging.HttpLoggingInterceptor
 import java.io.File
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
+@Inject
+@SingleIn(AppScope::class)
 class NetworkHelper(
     private val context: Context,
     private val preferences: NetworkPreferences,
+    scope: CoroutineScope,
 ) {
 
     val cookieJar = AndroidCookieJar()
@@ -24,22 +31,19 @@ class NetworkHelper(
     private val clientBuilder: OkHttpClient.Builder = run {
         val builder = OkHttpClient.Builder()
             .cookieJar(cookieJar)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .callTimeout(2, TimeUnit.MINUTES)
+            .connectTimeout(30.seconds)
+            .readTimeout(30.seconds)
+            .callTimeout(2.minutes)
             .cache(
                 Cache(
                     directory = File(context.cacheDir, "network_cache"),
                     maxSize = 5L * 1024 * 1024, // 5 MiB
                 ),
             )
+            .addInterceptor(BrotliInterceptor)
             .addInterceptor(UncaughtExceptionInterceptor())
             .addInterceptor(UserAgentInterceptor(::defaultUserAgentProvider))
-            .addNetworkInterceptor(IgnoreGzipInterceptor())
-            .addNetworkInterceptor(BrotliInterceptor)
-            // TLMR -->
             .addInterceptor(FlareSolverrInterceptor(preferences))
-        // <-- TLMR
 
         if (preferences.verboseLogging.get()) {
             val httpLoggingInterceptor = HttpLoggingInterceptor().apply {
@@ -47,12 +51,6 @@ class NetworkHelper(
             }
             builder.addNetworkInterceptor(httpLoggingInterceptor)
         }
-
-        builder.addInterceptor(
-            // TLMR -->
-            CloudflareInterceptor(context, cookieJar, preferences) { defaultUserAgentProvider() },
-            // <-- TLMR
-        )
 
         when (preferences.dohProvider.get()) {
             PREF_DOH_CLOUDFLARE -> builder.dohCloudflare()
@@ -106,23 +104,21 @@ class NetworkHelper(
 
                         builder.dohCustom(custom, bootstrapHosts)
                     } catch (e: Exception) {
-                        // Invalid URL: fall back to no DoH
-                        builder
+                        // Invalid URL: fall back to system DNS with sinkhole bypass
+                        builder.systemDnsWithDohFallback()
                     }
                 } else {
-                    builder
+                    builder.systemDnsWithDohFallback()
                 }
             }
 
-            else -> builder
+            else -> builder.systemDnsWithDohFallback()
         }
     }
 
-    val nonCloudflareClient = clientBuilder.build()
-
     val client = clientBuilder
         .addInterceptor(
-            CloudflareInterceptor(context, cookieJar, preferences) { defaultUserAgentProvider() },
+            CloudflareInterceptor(context, cookieJar, preferences, scope) { defaultUserAgentProvider() },
         )
         .build()
 

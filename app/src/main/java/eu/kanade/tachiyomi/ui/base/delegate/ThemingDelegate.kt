@@ -1,11 +1,9 @@
 package eu.kanade.tachiyomi.ui.base.delegate
 
 import android.app.Activity
-import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.domain.ui.model.AppTheme
 import eu.kanade.tachiyomi.R
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
+import mihon.app.di.appGraph
 
 interface ThemingDelegate {
     fun applyAppTheme(activity: Activity)
@@ -22,11 +20,8 @@ interface ThemingDelegate {
 
 class ThemingDelegateImpl : ThemingDelegate {
     override fun applyAppTheme(activity: Activity) {
-        val uiPreferences = Injekt.get<UiPreferences>()
-        ThemingDelegate.getThemeResIds(
-            uiPreferences.appTheme.get(),
-            uiPreferences.themeDarkAmoled.get(),
-        )
+        val uiPreferences = activity.appGraph.uiPreferences
+        ThemingDelegate.getThemeResIds(uiPreferences.appTheme.get(), uiPreferences.themeDarkAmoled.get())
             .forEach(activity::setTheme)
     }
 }
@@ -35,6 +30,7 @@ private val themeResources: Map<AppTheme, Int> = mapOf(
     AppTheme.MONET to R.style.Theme_Tachiyomi_Monet,
     AppTheme.CUSTOM to R.style.Theme_Tachiyomi_Custom,
     AppTheme.COTTONCANDY to R.style.Theme_Tachiyomi_CottonCandy,
+    AppTheme.TOKYONIGHT to R.style.Theme_Tachiyomi_TokyoNight,
     AppTheme.GREEN_APPLE to R.style.Theme_Tachiyomi_GreenApple,
     AppTheme.LAVENDER to R.style.Theme_Tachiyomi_Lavender,
     AppTheme.MIDNIGHT_DUSK to R.style.Theme_Tachiyomi_MidnightDusk,

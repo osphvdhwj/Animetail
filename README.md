@@ -29,6 +29,10 @@ Discover and watch anime, cartoons, series, and more – easier than ever on you
 
 Features include:
 * Animetail:
+    * Multimedia Home Feed with Movies, Series, Anime, and Manga recommendations
+    * Hero Media Carousel with auto-scrolling (4s), indicator dots, and TMDB/AniList trends integration
+    * Direct launch from "Continue watching & reading" cards with exact progress formatting
+    * Real tracking scores (MAL/AniList/TMDB) and rating badges on media items
     * Support for Cast functionality
     * Support themes monet
     * Android tv compatibility (only banner)
@@ -43,13 +47,21 @@ Features include:
 * Aniyomi:
     * Watching videos
     * View images
+    * Torrent streaming support
+    * Support for thumbnail preview when seeking in player
+    * Embedded HTTP server for extensions
     * Local reading/watching of downloaded content
     * A configurable reader with multiple viewers, reading directions and other settings.
     * A configurable player built on mpv-android with multiple options and settings
-    * Tracker support: [MyAnimeList](https://myanimelist.net/), [AniList](https://anilist.co/), [Kitsu](https://kitsu.app/), [MangaUpdates](https://mangaupdates.com), [Shikimori](https://shikimori.one), and [Bangumi](https://bgm.tv/)
+    * Tracker support: [MyAnimeList](https://myanimelist.net/), [AniList](https://anilist.co/), [Kitsu](https://kitsu.app/), [MangaUpdates](https://mangaupdates.com), [Shikimori](https://shikimori.one), [Bangumi](https://bgm.tv/), and [Hikka](https://hikka.io/)
     * Categories to organize your library
     * Light and dark themes
     * Create backups locally to read/watch offline or to your desired cloud service
+* Mihon:
+    * Advanced library search supporting logical/comparison operators, field-specific prefixes, and nested expressions
+    * Vertical chapter navigator for long strip mode with customizable height and reader settings
+    * Resumable image downloads
+    * Split extension lists support with `index.pb` format
 * Other fork features:
     * TachiyomiSY:
         * Data Saver

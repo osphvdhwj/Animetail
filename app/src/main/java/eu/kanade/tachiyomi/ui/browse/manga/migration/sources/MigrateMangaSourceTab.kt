@@ -3,18 +3,18 @@ package eu.kanade.tachiyomi.ui.browse.manga.migration.sources
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalUriHandler
-import cafe.adriel.voyager.core.model.rememberScreenModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.presentation.browse.manga.MigrateMangaSourceScreen
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.tachiyomi.ui.browse.manga.migration.manga.MigrateMangaScreen
-import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -22,12 +22,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 fun Screen.migrateMangaSourceTab(): TabContent {
     val uriHandler = LocalUriHandler.current
     val navigator = LocalNavigator.currentOrThrow
-    val screenModel = rememberScreenModel { MigrateMangaSourceScreenModel() }
-    val state by screenModel.state.collectAsState()
+    val viewModel = metroViewModel<MigrateMangaSourceViewModel>()
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
     return TabContent(
         titleRes = MR.strings.label_migration,
-        actions = persistentListOf(
+        actions = listOf(
             AppBar.Action(
                 title = stringResource(MR.strings.migration_help_guide),
                 icon = Icons.AutoMirrored.Outlined.HelpOutline,
@@ -43,8 +43,8 @@ fun Screen.migrateMangaSourceTab(): TabContent {
                 onClickItem = { source ->
                     navigator.push(MigrateMangaScreen(source.id))
                 },
-                onToggleSortingDirection = screenModel::toggleSortingDirection,
-                onToggleSortingMode = screenModel::toggleSortingMode,
+                onToggleSortingDirection = viewModel::toggleSortingDirection,
+                onToggleSortingMode = viewModel::toggleSortingMode,
             )
         },
     )

@@ -1,14 +1,14 @@
 package eu.kanade.tachiyomi.data.backup.restore.restorers
 
+import dev.zacsweers.metro.Inject
 import eu.kanade.tachiyomi.data.backup.models.BackupCustomButtons
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.custombuttons.interactor.GetCustomButtons
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
+@Inject
 class CustomButtonRestorer(
-    private val handler: AnimeDatabaseHandler = Injekt.get(),
-    private val getCustomButtons: GetCustomButtons = Injekt.get(),
+    private val handler: AnimeDatabaseHandler,
+    private val getCustomButtons: GetCustomButtons,
 ) {
     suspend operator fun invoke(
         backupCustomButtons: List<BackupCustomButtons>,
@@ -35,7 +35,6 @@ class CustomButtonRestorer(
                             it.longPressContent,
                             it.onStartup,
                         )
-                        custom_buttonsQueries.selectLastInsertedRowId()
                     }
                 }
         }

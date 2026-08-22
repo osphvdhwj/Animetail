@@ -33,7 +33,7 @@ fun Screen.animeStatsTab(): TabContent {
             eu.kanade.presentation.components.AppBar.Action(
                 title = "Export CSV",
                 icon = androidx.compose.material.icons.Icons.Default.Share,
-                onClick = { screenModel.exportToCsv(context) },
+                onClick = { viewModel.exportToCsv(context) },
             ),
         ),
         content = { contentPadding, _ ->

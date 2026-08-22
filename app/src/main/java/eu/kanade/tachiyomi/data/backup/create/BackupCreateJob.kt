@@ -69,7 +69,7 @@ class BackupCreateJob(private val context: Context, workerParams: WorkerParamete
             }
             
             try {
-                val syncPreferences = Injekt.get<eu.kanade.domain.sync.SyncPreferences>()
+                val syncPreferences = context.appGraph.syncPreferences
                 if (syncPreferences.googleDriveRefreshToken().get().isNotEmpty()) {
                     val service = eu.kanade.tachiyomi.data.sync.service.GoogleDriveSyncService(context)
                     service.uploadBackupFile(location.toUri())

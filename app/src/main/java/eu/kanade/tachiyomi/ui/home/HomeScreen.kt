@@ -4,6 +4,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
@@ -422,22 +428,19 @@ object HomeScreen : Screen() {
                 }
             },
         ) {
-                        val isTrackingTab = eu.kanade.tachiyomi.ui.discover.TrackingTab::class.isInstance(tab)
+            val isTrackingTab = eu.kanade.tachiyomi.ui.discover.TrackingTab::class.isInstance(tab)
             val tabNavigator = cafe.adriel.voyager.navigator.tab.LocalTabNavigator.current
             val isSelected = tabNavigator.current::class == tab::class
-            val rotation = if (isTrackingTab && isSelected) {
-                val transition = androidx.compose.animation.core.rememberInfiniteTransition()
-                transition.animateFloat(
-                    initialValue = 0f,
-                    targetValue = -360f,
-                    animationSpec = androidx.compose.animation.core.infiniteRepeatable(
-                        animation = androidx.compose.animation.core.tween(2000, easing = androidx.compose.animation.core.LinearEasing),
-                        repeatMode = androidx.compose.animation.core.RepeatMode.Restart
-                    )
-                ).value
-            } else {
-                0f
-            }
+            val transition = rememberInfiniteTransition(label = "tracking_tab_rot")
+            val rotation by transition.animateFloat(
+                initialValue = 0f,
+                targetValue = if (isTrackingTab && isSelected) -360f else 0f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(2000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart,
+                ),
+                label = "tracking_rot_val",
+            )
 
             Icon(
                 painter = if (isTrackingTab) androidx.compose.ui.res.painterResource(id = eu.kanade.tachiyomi.R.drawable.ic_sync_24dp) else tab.options.icon!!,

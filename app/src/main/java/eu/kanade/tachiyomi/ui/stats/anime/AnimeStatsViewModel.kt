@@ -177,7 +177,7 @@ class AnimeStatsViewModel(
     }
 
     fun exportToCsv(context: android.content.Context) {
-        screenModelScope.launchIO {
+        viewModelScope.launchIO {
             try {
                 val animelibAnime = getAnimelibAnime.await()
                 val distinctLibraryAnime = animelibAnime.fastDistinctBy { it.id }

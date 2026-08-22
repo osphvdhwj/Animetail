@@ -1,9 +1,12 @@
 package mihon.gradle
 
 import org.gradle.api.Project
-import kotlin.time.Clock
-import kotlin.time.Duration.Companion.nanoseconds
-import kotlin.time.Instant
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+
+private val BUILD_TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
 // Git is needed in your system PATH for these commands to work.
 // If it's not installed, you can return a random value as a workaround
@@ -48,4 +51,3 @@ fun Project.exec(command: String): String {
         ""
     }
 }
-

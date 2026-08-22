@@ -78,9 +78,9 @@ class AnimeDownloadHolder(private val view: View, val adapter: AnimeDownloadAdap
         binding.downloadProgressText.text = if (download.status == AnimeDownload.State.DOWNLOADING && download.speed.isNotEmpty()) {
             "${download.progress}% (${download.speed})"
         } else if (download.progress == 0) {
-            view.context.stringResource(MR.strings.update_check_notification_download_in_progress)
+            view.context.stringResource(AYMR.strings.downloading)
         } else {
-            view.context.stringResource(AYMR.strings.episode_download_progress, download.progress)
+            view.context.stringResource(AYMR.strings.episode_downloading_progress, download.progress)
         }
     }
 

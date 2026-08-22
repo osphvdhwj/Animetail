@@ -104,7 +104,7 @@ data object TrackingTab : Tab {
                     },
                     searchEnabled = isSearchMode,
                     searchQuery = searchQuery,
-                    onChangeSearchQuery = { screenModel.updateSearchQuery(it) },
+                    onChangeSearchQuery = { screenModel.updateSearchQuery(it.orEmpty()) },
                     onSearch = { screenModel.loadTracking(searchQuery) },
                     actions = {
                         IconButton(onClick = { isSearchMode = !isSearchMode }) {

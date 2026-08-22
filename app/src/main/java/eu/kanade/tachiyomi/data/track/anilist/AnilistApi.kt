@@ -414,7 +414,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                 }
             }
             with(json) {
-                authClient.newCall(
+                client.newCall(
                     POST(
                         API_URL,
                         body = payload.toString().toRequestBody(jsonMime),
@@ -475,7 +475,7 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                 }
             }
             with(json) {
-                authClient.newCall(
+                client.newCall(
                     POST(
                         API_URL,
                         body = payload.toString().toRequestBody(jsonMime),
@@ -1251,4 +1251,6 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
             .build()
     }
 }
+
+
 

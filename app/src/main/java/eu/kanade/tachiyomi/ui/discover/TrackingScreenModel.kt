@@ -13,37 +13,38 @@ import kotlinx.coroutines.launch
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
-class DiscoverScreenModel(
+class TrackingScreenModel(
     private val trackerManager: TrackerManager = Injekt.get()
 ) : ScreenModel {
 
-    private val _state = MutableStateFlow<DiscoverState>(DiscoverState.Loading)
-    val state: StateFlow<DiscoverState> = _state.asStateFlow()
+    private val _state = MutableStateFlow<TrackingState>(TrackingState.Loading)
+    val state: StateFlow<TrackingState> = _state.asStateFlow()
 
     init {
-        loadDiscover()
+        loadTracking()
     }
 
-    fun loadDiscover() {
+    fun loadTracking() {
         screenModelScope.launch {
-            _state.update { DiscoverState.Loading }
+            _state.update { TrackingState.Loading }
             val anilist = trackerManager.aniList
             try {
                 val trendingAnime = anilist.getTrendingAnime(1)
                 val trendingManga = anilist.getTrendingManga(1)
-                _state.update { DiscoverState.Success(trendingAnime, trendingManga) }
+                _state.update { TrackingState.Success(trendingAnime, trendingManga) }
             } catch (e: Exception) {
-                _state.update { DiscoverState.Error(e.message ?: "Unknown error") }
+                _state.update { TrackingState.Error(e.message ?: "Unknown error") }
             }
         }
     }
 }
 
-sealed interface DiscoverState {
-    data object Loading : DiscoverState
+sealed interface TrackingState {
+    data object Loading : TrackingState
     data class Success(
         val trendingAnime: List<AnimeTrackSearch>,
         val trendingManga: List<MangaTrackSearch>
-    ) : DiscoverState
-    data class Error(val message: String) : DiscoverState
+    ) : TrackingState
+    data class Error(val message: String) : TrackingState
 }
+

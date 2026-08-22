@@ -284,6 +284,8 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data android:scheme="animetail" />
+                <data android:scheme="aniyomi" />
+                <data android:scheme="tachiyomi" />
 
                 <data android:host="anilist-auth" />
                 <data android:host="bangumi-auth" />
@@ -406,3 +408,4 @@
     </application>
 
 </manifest>
+

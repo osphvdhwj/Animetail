@@ -38,15 +38,15 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.TabText
 import tachiyomi.presentation.core.screens.LoadingScreen
 
-data object DiscoverTab : Tab {
-    private fun readResolve(): Any = DiscoverTab
+data object TrackingTab : Tab {
+    private fun readResolve(): Any = TrackingTab
 
     override val options: TabOptions
         @Composable
         get() {
             return TabOptions(
                 index = 2u,
-                title = "Discover",
+                title = "Tracking",
                 icon = rememberVectorPainter(Icons.Outlined.Explore),
             )
         }
@@ -68,7 +68,7 @@ data object DiscoverTab : Tab {
     @Composable
     override fun Content() {
         val navigator = cafe.adriel.voyager.navigator.LocalNavigator.currentOrThrow
-        val screenModel = rememberScreenModel { DiscoverScreenModel() }
+        val screenModel = rememberScreenModel { TrackingScreenModel() }
         val state by screenModel.state.collectAsState()
         var selectedTabIndex by remember { mutableStateOf(0) }
 
@@ -76,7 +76,7 @@ data object DiscoverTab : Tab {
             topBar = {
                 SearchToolbar(
                     titleContent = {
-                        AppBarTitle("Discover")
+                        AppBarTitle("Tracking")
                     },
                     searchEnabled = false,
                     searchQuery = null,
@@ -113,10 +113,10 @@ data object DiscoverTab : Tab {
                         .weight(1f)
                 ) {
                     when (val currentState = state) {
-                        is DiscoverState.Loading -> {
+                        is TrackingState.Loading -> {
                             LoadingScreen()
                         }
-                        is DiscoverState.Error -> {
+                        is TrackingState.Error -> {
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
@@ -136,12 +136,12 @@ data object DiscoverTab : Tab {
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
-                                Button(onClick = { screenModel.loadDiscover() }) {
+                                Button(onClick = { screenModel.loadTracking() }) {
                                     Text("Retry")
                                 }
                             }
                         }
-                        is DiscoverState.Success -> {
+                        is TrackingState.Success -> {
                             if (selectedTabIndex == 0) {
                                 LazyVerticalGrid(
                                     columns = GridCells.Adaptive(minSize = 110.dp),
@@ -151,7 +151,7 @@ data object DiscoverTab : Tab {
                                     modifier = Modifier.fillMaxSize()
                                 ) {
                                     items(currentState.trendingAnime) { anime ->
-                                        DiscoverCard(
+                                        TrackingCard(
                                             title = anime.title,
                                             imageUrl = anime.cover_url,
                                             score = if (anime.score > 0) String.format("%.1f", anime.score / 10f) else null,
@@ -170,7 +170,7 @@ data object DiscoverTab : Tab {
                                     modifier = Modifier.fillMaxSize()
                                 ) {
                                     items(currentState.trendingManga) { manga ->
-                                        DiscoverCard(
+                                        TrackingCard(
                                             title = manga.title,
                                             imageUrl = manga.cover_url,
                                             score = if (manga.score > 0) String.format("%.1f", manga.score / 10f) else null,
@@ -190,7 +190,7 @@ data object DiscoverTab : Tab {
 }
 
 @Composable
-private fun DiscoverCard(
+private fun TrackingCard(
     title: String,
     imageUrl: String?,
     score: String?,
@@ -257,3 +257,4 @@ private fun DiscoverCard(
         }
     }
 }
+

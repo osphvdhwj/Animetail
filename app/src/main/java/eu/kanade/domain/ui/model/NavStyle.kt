@@ -16,7 +16,7 @@ import eu.kanade.tachiyomi.ui.library.anime.AnimeLibraryTab
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibraryTab
 import eu.kanade.tachiyomi.ui.more.MoreTab
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
-import eu.kanade.tachiyomi.ui.discover.DiscoverTab
+import eu.kanade.tachiyomi.ui.discover.TrackingTab
 import tachiyomi.i18n.aniyomi.AYMR
 
 enum class NavStyle(
@@ -46,9 +46,10 @@ enum class NavStyle(
                 MangaLibraryTab,
                 UpdatesTab,
                 HistoriesTab,
-                DiscoverTab,
+                TrackingTab,
                 BrowseTab,
                 MoreTab,
             ).apply { remove(this@NavStyle.moreTab) }
         }
 }
+

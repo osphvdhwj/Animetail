@@ -34,6 +34,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -51,7 +52,7 @@ import eu.kanade.tachiyomi.ui.browse.BrowseTab
 import eu.kanade.tachiyomi.ui.download.DownloadsTab
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
-import eu.kanade.tachiyomi.ui.discover.DiscoverTab
+import eu.kanade.tachiyomi.ui.discover.TrackingTab
 import eu.kanade.tachiyomi.ui.history.HistoriesTab
 import eu.kanade.tachiyomi.ui.library.anime.AnimeLibraryTab
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibraryTab
@@ -235,7 +236,7 @@ object HomeScreen : Screen() {
 
                             is Tab.History -> HistoriesTab
 
-                            is Tab.Discover -> DiscoverTab
+                            is Tab.Discover -> TrackingTab
 
                             is Tab.Browse -> {
                                 if (it.toExtensions) {
@@ -421,11 +422,28 @@ object HomeScreen : Screen() {
                 }
             },
         ) {
+                        val isTrackingTab = eu.kanade.tachiyomi.ui.discover.TrackingTab::class.isInstance(tab)
+            val tabNavigator = cafe.adriel.voyager.navigator.tab.LocalTabNavigator.current
+            val isSelected = tabNavigator.current::class == tab::class
+            val rotation = if (isTrackingTab && isSelected) {
+                val transition = androidx.compose.animation.core.rememberInfiniteTransition()
+                transition.animateFloat(
+                    initialValue = 0f,
+                    targetValue = -360f,
+                    animationSpec = androidx.compose.animation.core.infiniteRepeatable(
+                        animation = androidx.compose.animation.core.tween(2000, easing = androidx.compose.animation.core.LinearEasing),
+                        repeatMode = androidx.compose.animation.core.RepeatMode.Restart
+                    )
+                ).value
+            } else {
+                0f
+            }
+
             Icon(
-                painter = tab.options.icon!!,
+                painter = if (isTrackingTab) androidx.compose.ui.res.painterResource(id = eu.kanade.tachiyomi.R.drawable.ic_sync_24dp) else tab.options.icon!!,
                 contentDescription = tab.options.title,
-                // TODO: https://issuetracker.google.com/u/0/issues/316327367
                 tint = LocalContentColor.current,
+                modifier = Modifier.graphicsLayer(rotationZ = rotation)
             )
         }
     }
@@ -453,3 +471,6 @@ object HomeScreen : Screen() {
         data class More(val toDownloads: Boolean) : Tab
     }
 }
+
+
+

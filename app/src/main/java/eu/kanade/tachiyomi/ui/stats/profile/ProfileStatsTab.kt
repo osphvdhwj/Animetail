@@ -17,6 +17,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Warning
@@ -30,13 +32,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -91,7 +93,7 @@ fun Screen.profileStatsTab(): TabContent {
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Login to your AniList account under Tracking Settings to view your profile and aggregated statistics.",
+                                text = "Login to your AniList, MyAnimeList, Kitsu, or other tracker accounts under Tracking Settings to view your profile and sync tracking data.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -135,20 +137,22 @@ fun Screen.profileStatsTab(): TabContent {
                             }
                         }
                     }
-                    is ProfileState.SuccessAnilist -> {
-                        val stats = currentState.stats
+                    is ProfileState.Success -> {
+                        val stats = currentState.anilistStats
+                        val accounts = currentState.connectedAccounts
+
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .verticalScroll(rememberScrollState())
                         ) {
-                            // Header Banner & Profile
+                            // Header Banner
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(180.dp)
                             ) {
-                                if (!stats.bannerImage.isNullOrEmpty()) {
+                                if (stats?.bannerImage?.isNotBlank() == true) {
                                     AsyncImage(
                                         model = stats.bannerImage,
                                         contentDescription = null,
@@ -172,9 +176,10 @@ fun Screen.profileStatsTab(): TabContent {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.3f))
+                                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.35f))
                                 )
-                                // Profile Details Overlay
+
+                                // Main Profile Details Overlay
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -182,102 +187,177 @@ fun Screen.profileStatsTab(): TabContent {
                                         .padding(16.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    AsyncImage(
-                                        model = stats.avatar?.large,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(72.dp)
-                                            .clip(CircleShape)
-                                            .background(MaterialTheme.colorScheme.surface),
-                                        contentScale = ContentScale.Crop
-                                    )
+                                    if (stats?.avatar?.large?.isNotBlank() == true) {
+                                        AsyncImage(
+                                            model = stats.avatar?.large,
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(72.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.surface),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.AccountCircle,
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .size(72.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.surface),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
                                     Spacer(modifier = Modifier.width(16.dp))
                                     Column {
+                                        val primaryName = stats?.name ?: accounts.firstOrNull()?.username ?: "Tracker User"
                                         Text(
-                                            text = stats.name,
+                                            text = primaryName,
                                             style = MaterialTheme.typography.titleLarge,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onPrimary
                                         )
                                         Text(
-                                            text = "AniList Synced",
+                                            text = "${accounts.size} Connected Tracker(s)",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
+                                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f)
                                         )
                                     }
                                 }
                             }
 
-                            // Statistics Content
                             Column(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                // Anime Stats
-                                stats.statistics?.anime?.let { animeStats ->
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                                    ) {
-                                        Column(modifier = Modifier.padding(16.dp)) {
-                                            Text(
-                                                text = "Anime Statistics",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                            Spacer(modifier = Modifier.height(12.dp))
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                StatItem("Total Anime", animeStats.count.toString(), Modifier.weight(1f))
-                                                StatItem("Episodes", animeStats.episodesWatched.toString(), Modifier.weight(1f))
-                                            }
-                                            Spacer(modifier = Modifier.height(12.dp))
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                val days = (animeStats.minutesWatched / 1440f)
-                                                StatItem("Time Spent", String.format("%.1f Days", days), Modifier.weight(1f))
-                                                StatItem("Mean Score", String.format("%.1f", animeStats.meanScore), Modifier.weight(1f))
+                                // Connected Trackers List Card
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = "Connected Tracking Accounts",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        accounts.forEach { account ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 6.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    painter = painterResource(id = account.tracker.getLogo()),
+                                                    contentDescription = account.trackerName,
+                                                    modifier = Modifier.size(24.dp),
+                                                    tint = androidx.compose.ui.graphics.Color.Unspecified
+                                                )
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = account.trackerName,
+                                                        fontWeight = FontWeight.Bold,
+                                                        style = MaterialTheme.typography.bodyMedium
+                                                    )
+                                                    if (account.username.isNotBlank()) {
+                                                        Text(
+                                                            text = account.username,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                }
+                                                Icon(
+                                                    imageVector = Icons.Default.CheckCircle,
+                                                    contentDescription = "Connected",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
                                             }
                                         }
                                     }
                                 }
 
-                                // Manga Stats
-                                stats.statistics?.manga?.let { mangaStats ->
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                                    ) {
-                                        Column(modifier = Modifier.padding(16.dp)) {
-                                            Text(
-                                                text = "Manga Statistics",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                            Spacer(modifier = Modifier.height(12.dp))
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                StatItem("Total Manga", mangaStats.count.toString(), Modifier.weight(1f))
-                                                StatItem("Chapters", mangaStats.chaptersRead.toString(), Modifier.weight(1f))
-                                            }
-                                            Spacer(modifier = Modifier.height(12.dp))
-                                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                                StatItem("Volumes", mangaStats.volumesRead.toString(), Modifier.weight(1f))
-                                                StatItem("Mean Score", String.format("%.1f", mangaStats.meanScore), Modifier.weight(1f))
+                                // If AniList stats are present, show deep analytics
+                                if (stats != null) {
+                                    stats.statistics?.anime?.let { animeStats ->
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(16.dp),
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                        ) {
+                                            Column(modifier = Modifier.padding(16.dp)) {
+                                                Text(
+                                                    text = "Anime Statistics",
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                    StatItem("Total Anime", animeStats.count.toString(), Modifier.weight(1f))
+                                                    StatItem("Episodes", animeStats.episodesWatched.toString(), Modifier.weight(1f))
+                                                }
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                    val days = (animeStats.minutesWatched / 1440f)
+                                                    StatItem("Time Spent", String.format("%.1f Days", days), Modifier.weight(1f))
+                                                    StatItem("Mean Score", String.format("%.1f", animeStats.meanScore), Modifier.weight(1f))
+                                                }
                                             }
                                         }
                                     }
+
+                                    stats.statistics?.manga?.let { mangaStats ->
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(16.dp),
+                                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                        ) {
+                                            Column(modifier = Modifier.padding(16.dp)) {
+                                                Text(
+                                                    text = "Manga Statistics",
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                    StatItem("Total Manga", mangaStats.count.toString(), Modifier.weight(1f))
+                                                    StatItem("Chapters", mangaStats.chaptersRead.toString(), Modifier.weight(1f))
+                                                }
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                                    StatItem("Volumes", mangaStats.volumesRead.toString(), Modifier.weight(1f))
+                                                    StatItem("Mean Score", String.format("%.1f", mangaStats.meanScore), Modifier.weight(1f))
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = { uriHandler.openUri("https://anilist.co/user/${stats.name}") },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Icon(Icons.Default.OpenInNew, contentDescription = null)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(text = "View AniList Web Profile")
+                                    }
                                 }
 
-                                // View Profile Web Button
                                 OutlinedButton(
-                                    onClick = { uriHandler.openUri("https://anilist.co/user/${stats.name}") },
+                                    onClick = { navigator.push(SettingsTrackingScreen) },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Icon(Icons.Default.OpenInNew, contentDescription = null)
+                                    Icon(Icons.Default.Sync, contentDescription = null)
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(text = "View AniList Web Profile")
+                                    Text(text = "Manage Tracking Accounts")
                                 }
                             }
                         }

@@ -195,28 +195,8 @@ class MangaDownloadQueueViewModel(
         clearSelection()
     }
 
-<<<<<<< HEAD:app/src/main/java/eu/kanade/tachiyomi/ui/download/manga/MangaDownloadQueueScreenModel.kt
-    init {
-        screenModelScope.launch {
-            downloadManager.queueState
-                .map { downloads ->
-                    downloads
-                        .groupBy { it.status }
-                        .map { entry ->
-                            val statusName = entry.key.name.lowercase().replaceFirstChar { it.uppercase() }
-                            MangaDownloadHeaderItem(entry.key.value.toLong(), statusName, entry.value.size).apply {
-                                addSubItems(0, entry.value.map { MangaDownloadItem(it, this) })
-                            }
-                        }
-                }
-                .collect { newList -> _state.update { newList } }
-        }
-    }
-
-    override fun onDispose() {
-=======
     override fun onCleared() {
->>>>>>> d5b5c39181e570abe6f0a394f7b50098807acc0d:app/src/main/java/eu/kanade/tachiyomi/ui/download/manga/MangaDownloadQueueViewModel.kt
+        super.onCleared()
         for (job in progressJobs.values) {
             job.cancel()
         }

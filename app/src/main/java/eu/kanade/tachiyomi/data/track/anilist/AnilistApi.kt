@@ -484,11 +484,6 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
                     .awaitSuccess()
                     .parseAs<ALSearchResult>()
                     .data.page.media
-<<<<<<< HEAD
-=======
-                    .firstOrNull()
-                    ?.toALManga()
-                    ?.toTrack()
             }
         }
     }

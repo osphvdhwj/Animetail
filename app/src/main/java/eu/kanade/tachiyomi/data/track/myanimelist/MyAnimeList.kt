@@ -237,6 +237,9 @@ class MyAnimeList(id: Long) :
         return api.searchAnime(query)
     }
 
+    suspend fun getPopularAnime(): List<AnimeTrackSearch> = api.getPopularAnime()
+    suspend fun getPopularManga(): List<MangaTrackSearch> = api.getPopularManga()
+
     override suspend fun refresh(track: MangaTrack): MangaTrack {
         return api.findListItem(track) ?: add(track)
     }

@@ -247,13 +247,8 @@ data object DownloadsTab : Tab {
                         else -> false
                     },
                     enter = fadeIn(),
-                    exit = fadeOut(),
-                ) {
-<<<<<<< HEAD
-=======
                     val animeIsRunning by animeViewModel.isDownloaderRunning.collectAsStateWithLifecycle()
                     val mangaIsRunning by mangaScreenModel.isDownloaderRunning.collectAsStateWithLifecycle()
->>>>>>> d5b5c39181e570abe6f0a394f7b50098807acc0d
                     ExtendedFloatingActionButton(
                         text = {
                             val id = when (state.currentPage) {

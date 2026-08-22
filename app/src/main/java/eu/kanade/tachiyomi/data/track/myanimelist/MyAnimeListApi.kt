@@ -149,6 +149,49 @@ class MyAnimeListApi(
         }
     }
 
+    suspend fun getPopularAnime(): List<AnimeTrackSearch> {
+        return try {
+            withIOContext {
+                val url = "$BASE_API_URL/anime/ranking".toUri().buildUpon()
+                    .appendQueryParameter("ranking_type", "all")
+                    .appendQueryParameter("limit", "20")
+                    .appendQueryParameter("fields", SEARCH_FIELDS_ANIME)
+                    .build()
+                with(json) {
+                    authClient.newCall(GET(url.toString()))
+                        .awaitSuccess()
+                        .parseAs<MALAnimeSearchResult>()
+                        .data
+                        .map { parseAnimeSearchItem(it.node) }
+                }
+            }
+        } catch (e: Exception) {
+            searchAnime("a")
+        }
+    }
+
+    suspend fun getPopularManga(): List<MangaTrackSearch> {
+        return try {
+            withIOContext {
+                val url = "$BASE_API_URL/manga/ranking".toUri().buildUpon()
+                    .appendQueryParameter("ranking_type", "all")
+                    .appendQueryParameter("limit", "20")
+                    .appendQueryParameter("fields", SEARCH_FIELDS)
+                    .build()
+                with(json) {
+                    authClient.newCall(GET(url.toString()))
+                        .awaitSuccess()
+                        .parseAs<MALSearchResult>()
+                        .data
+                        .filter { !(it.node.mediaType.contains("novel")) }
+                        .map { parseSearchItem(it.node) }
+                }
+            }
+        } catch (e: Exception) {
+            search("a")
+        }
+    }
+
     suspend fun updateItem(track: MangaTrack): MangaTrack {
         return withIOContext {
             val formBodyBuilder = FormBody.Builder()

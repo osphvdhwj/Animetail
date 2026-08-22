@@ -241,12 +241,8 @@ fun GestureHandler(
                                 )
                             }
                             viewModel.seekTo(it.coerceIn(0, duration.toInt()), preciseSeeking)
+                            viewModel.updateSeekPos(it.toFloat().coerceIn(0f, duration))
                         }
-<<<<<<< HEAD
-=======
-                        viewModel.updateSeekPos(it.toFloat().coerceIn(0f, duration))
-                    }
->>>>>>> d5b5c39181e570abe6f0a394f7b50098807acc0d
 
                         if (showSeekbar) viewModel.showSeekBar()
                     }

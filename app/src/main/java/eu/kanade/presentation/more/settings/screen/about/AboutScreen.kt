@@ -85,7 +85,7 @@ object AboutScreen : Screen() {
             ) {
                 item {
                     LogoHeader(
-                        iconPadding = PaddingValues(vertical = 56.dp),
+                        iconPadding = PaddingValues(vertical = 28.dp),
                     )
                 }
 

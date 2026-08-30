@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -145,6 +146,15 @@ fun AnimeHistoryItem(
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
+        }
+
+        // Quick Resume Play button
+        IconButton(onClick = onClickResume) {
+            Icon(
+                imageVector = Icons.Outlined.PlayArrow,
+                contentDescription = stringResource(MR.strings.action_resume),
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
 
         IconButton(onClick = onClickDelete) {

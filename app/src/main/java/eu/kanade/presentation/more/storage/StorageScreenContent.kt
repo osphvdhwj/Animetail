@@ -1,13 +1,16 @@
 package eu.kanade.presentation.more.storage
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -66,6 +69,47 @@ fun StorageScreenContent(
                                 },
                             items = state.items,
                         )
+                        // Visual segmented breakdown bar + legend
+                        if (state.items.isNotEmpty()) {
+                            val totalSize = state.items.sumOf { it.size }.toFloat()
+                            if (totalSize > 0f) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = MaterialTheme.padding.small),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(10.dp),
+                                    ) {
+                                        state.items.take(8).forEach { item ->
+                                            val fraction = (item.size / totalSize).coerceIn(0f, 1f)
+                                            if (fraction > 0.01f) {
+                                                Spacer(
+                                                    modifier = Modifier
+                                                        .weight(fraction)
+                                                        .fillMaxHeight()
+                                                        .background(item.color),
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        state.items.take(3).forEach { item ->
+                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                Spacer(
+                                                    modifier = Modifier
+                                                        .size(8.dp)
+                                                        .background(item.color),
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     },
                 )
             }

@@ -61,12 +61,64 @@ class MangaStatsViewModel(
 
             val meanScore = getTrackMeanScore(scoredMangaTrackerMap)
 
+            val readingCount = distinctLibraryManga.count { it.hasStarted && it.unreadCount > 0L }
+            val completedCount = distinctLibraryManga.count {
+                it.manga.status.toInt() == SManga.COMPLETED && it.unreadCount == 0L
+            }
+            val planToReadCount = distinctLibraryManga.count { !it.hasStarted }
+            val onHoldCount = distinctLibraryManga.count { it.manga.status.toInt() == SManga.ON_HIATUS }
+            val droppedCount = distinctLibraryManga.count { it.manga.status.toInt() == SManga.CANCELLED }
+
+            // Extract genres
+            val genreCounts = mutableMapOf<String, Int>()
+            distinctLibraryManga.forEach { libManga ->
+                libManga.manga.genre?.forEach { rawGenre ->
+                    rawGenre.split(",", "/").map { it.trim() }.filter { it.isNotBlank() }.forEach { g ->
+                        genreCounts[g] = (genreCounts[g] ?: 0) + 1
+                    }
+                }
+            }
+            val topGenres = genreCounts.entries
+                .sortedByDescending { it.value }
+                .take(8)
+                .map { it.key to it.value }
+
+            // Score Distribution across trackers
+            val scoreDist = mutableMapOf<Int, Int>()
+            scoredMangaTrackerMap.values.flatten().forEach { track ->
+                val s = get10PointScore(track).toInt().coerceIn(1, 10)
+                scoreDist[s] = (scoreDist[s] ?: 0) + 1
+            }
+
+            // Per-Tracker Statistics Breakdown (AniList, MAL, Kitsu, Shikimori, Bangumi, Simkl, MangaUpdates, etc.)
+            val allMangaTrackers = trackerManager.trackers.filter { it is MangaTracker }
+            val trackerSiteStats = allMangaTrackers.map { tracker ->
+                val tracksForTracker = mangaTrackMap.values.flatten().filter { it.trackerId == tracker.id }
+                val scoredTracks = tracksForTracker.filter { it.score > 0.0 }
+                val avgScore = if (scoredTracks.isNotEmpty()) {
+                    scoredTracks.map(::get10PointScore).filter { !it.isNaN() }.average()
+                } else Double.NaN
+
+                StatsData.TrackerSiteStat(
+                    trackerId = tracker.id,
+                    trackerName = tracker.name,
+                    username = if (tracker.isLoggedIn) tracker.getDisplayUsername().ifBlank { tracker.getUsername() } else null,
+                    isLoggedIn = tracker.isLoggedIn,
+                    trackedCount = tracksForTracker.size,
+                    meanScore = avgScore,
+                    logoRes = tracker.getLogo(),
+                )
+            }
+
             val overviewStatData = StatsData.MangaOverview(
                 libraryMangaCount = distinctLibraryManga.size,
-                completedMangaCount = distinctLibraryManga.count {
-                    it.manga.status.toInt() == SManga.COMPLETED && it.unreadCount == 0L
-                },
+                completedMangaCount = completedCount,
                 totalReadDuration = getTotalReadDuration.await(),
+                readingCount = readingCount,
+                planToReadCount = planToReadCount,
+                onHoldCount = onHoldCount,
+                droppedCount = droppedCount,
+                topGenres = topGenres,
             )
 
             val titlesStatData = StatsData.MangaTitles(
@@ -85,6 +137,8 @@ class MangaStatsViewModel(
                 trackedTitleCount = mangaTrackMap.count { it.value.isNotEmpty() },
                 meanScore = meanScore,
                 trackerCount = loggedInTrackers.size,
+                trackerSiteStats = trackerSiteStats,
+                scoreDistribution = scoreDist,
             )
 
             state.update {

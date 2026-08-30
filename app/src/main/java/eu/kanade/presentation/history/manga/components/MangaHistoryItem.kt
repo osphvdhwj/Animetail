@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
@@ -114,6 +115,15 @@ fun MangaHistoryItem(
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
+        }
+
+        // Quick Resume Read button
+        IconButton(onClick = onClickResume) {
+            Icon(
+                imageVector = Icons.Outlined.AutoStories,
+                contentDescription = stringResource(MR.strings.action_resume),
+                tint = MaterialTheme.colorScheme.primary,
+            )
         }
 
         IconButton(onClick = onClickDelete) {

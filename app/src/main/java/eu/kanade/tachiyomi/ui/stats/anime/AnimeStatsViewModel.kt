@@ -62,12 +62,79 @@ class AnimeStatsViewModel(
 
             val meanScore = getTrackMeanScore(scoredAnimeTrackerMap)
 
+            val watchingCount = distinctLibraryAnime.count { it.hasStarted && it.unseenCount > 0L }
+            val completedCount = distinctLibraryAnime.count {
+                it.anime.status.toInt() == SAnime.COMPLETED && it.unseenCount == 0L
+            }
+            val planToWatchCount = distinctLibraryAnime.count { !it.hasStarted }
+            val onHoldCount = distinctLibraryAnime.count { it.anime.status.toInt() == SAnime.ON_HIATUS }
+            val droppedCount = distinctLibraryAnime.count { it.anime.status.toInt() == SAnime.CANCELLED }
+
+            // Extract genres
+            val genreCounts = mutableMapOf<String, Int>()
+            distinctLibraryAnime.forEach { libAnime ->
+                libAnime.anime.genre?.forEach { rawGenre ->
+                    rawGenre.split(",", "/").map { it.trim() }.filter { it.isNotBlank() }.forEach { g ->
+                        genreCounts[g] = (genreCounts[g] ?: 0) + 1
+                    }
+                }
+            }
+            val topGenres = genreCounts.entries
+                .sortedByDescending { it.value }
+                .take(8)
+                .map { it.key to it.value }
+
+            // Extract studios / authors
+            val studioCounts = mutableMapOf<String, Int>()
+            distinctLibraryAnime.forEach { libAnime ->
+                val studio = libAnime.anime.author?.trim()?.takeIf { it.isNotBlank() }
+                    ?: libAnime.anime.artist?.trim()?.takeIf { it.isNotBlank() }
+                if (studio != null) {
+                    studioCounts[studio] = (studioCounts[studio] ?: 0) + 1
+                }
+            }
+            val topStudios = studioCounts.entries
+                .sortedByDescending { it.value }
+                .take(5)
+                .map { it.key to it.value }
+
+            // Score Distribution across trackers
+            val scoreDist = mutableMapOf<Int, Int>()
+            scoredAnimeTrackerMap.values.flatten().forEach { track ->
+                val s = get10PointScore(track).toInt().coerceIn(1, 10)
+                scoreDist[s] = (scoreDist[s] ?: 0) + 1
+            }
+
+            // Per-Tracker Statistics Breakdown (AniList, MAL, Kitsu, Shikimori, Bangumi, Simkl, etc.)
+            val allAnimeTrackers = trackerManager.trackers.filter { it is AnimeTracker }
+            val trackerSiteStats = allAnimeTrackers.map { tracker ->
+                val tracksForTracker = animeTrackMap.values.flatten().filter { it.trackerId == tracker.id }
+                val scoredTracks = tracksForTracker.filter { it.score > 0.0 }
+                val avgScore = if (scoredTracks.isNotEmpty()) {
+                    scoredTracks.map(::get10PointScore).filter { !it.isNaN() }.average()
+                } else Double.NaN
+
+                StatsData.TrackerSiteStat(
+                    trackerId = tracker.id,
+                    trackerName = tracker.name,
+                    username = if (tracker.isLoggedIn) tracker.getDisplayUsername().ifBlank { tracker.getUsername() } else null,
+                    isLoggedIn = tracker.isLoggedIn,
+                    trackedCount = tracksForTracker.size,
+                    meanScore = avgScore,
+                    logoRes = tracker.getLogo(),
+                )
+            }
+
             val overviewStatData = StatsData.AnimeOverview(
                 libraryAnimeCount = distinctLibraryAnime.size,
-                completedAnimeCount = distinctLibraryAnime.count {
-                    it.anime.status.toInt() == SAnime.COMPLETED && it.unseenCount == 0L
-                },
+                completedAnimeCount = completedCount,
                 totalSeenDuration = getWatchTime(distinctLibraryAnime),
+                watchingCount = watchingCount,
+                planToWatchCount = planToWatchCount,
+                onHoldCount = onHoldCount,
+                droppedCount = droppedCount,
+                topGenres = topGenres,
+                topStudios = topStudios,
             )
 
             val titlesStatData = StatsData.AnimeTitles(
@@ -86,6 +153,8 @@ class AnimeStatsViewModel(
                 trackedTitleCount = animeTrackMap.count { it.value.isNotEmpty() },
                 meanScore = meanScore,
                 trackerCount = loggedInTrackers.size,
+                trackerSiteStats = trackerSiteStats,
+                scoreDistribution = scoreDist,
             )
 
             state.update {

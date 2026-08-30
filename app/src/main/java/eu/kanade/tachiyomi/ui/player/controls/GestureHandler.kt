@@ -117,6 +117,15 @@ fun GestureHandler(
     val volumeBoostingCap = audioPreferences.volumeBoostCap().get()
     val haptics = LocalHapticFeedback.current
 
+    fun resetHoldSpeed() {
+        if (isLongPressing) {
+            isLongPressing = false
+            val originalSpeed = viewModel.playbackSpeed.value
+            viewModel.mpv.setPropertyDouble("speed", originalSpeed.toDouble())
+            viewModel.playerUpdate.update { PlayerUpdates.None }
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -141,7 +150,6 @@ fun GestureHandler(
                         }
                     },
                     onPress = {
-                        val originalSpeed = viewModel.playbackSpeed.value
                         if (panelShown != Panels.None && !allowGesturesInPanels) {
                             viewModel.panelShown.update { Panels.None }
                         }
@@ -162,13 +170,12 @@ fun GestureHandler(
                             isDoubleTapSeeking = false
                         }
                         interactionSource.emit(press)
-                        tryAwaitRelease()
-                        if (isLongPressing) {
-                            isLongPressing = false
-                            viewModel.mpv.setPropertyDouble("speed", originalSpeed.toDouble())
-                            viewModel.playerUpdate.update { PlayerUpdates.None }
+                        try {
+                            tryAwaitRelease()
+                        } finally {
+                            resetHoldSpeed()
+                            interactionSource.emit(PressInteraction.Release(press))
                         }
-                        interactionSource.emit(PressInteraction.Release(press))
                     },
                     onLongPress = {
                         if (areControlsLocked) return@detectTapGestures
@@ -204,7 +211,7 @@ fun GestureHandler(
                     },
                     onDragEnd = {
                         if (isLongPressing) {
-                            // Do nothing
+                            resetHoldSpeed()
                         } else {
                             viewModel.gestureSeekAmount.update { null }
                             viewModel.hideSeekBar()
@@ -213,7 +220,7 @@ fun GestureHandler(
                     },
                     onDragCancel = {
                         if (isLongPressing) {
-                            // Do nothing
+                            resetHoldSpeed()
                         } else {
                             viewModel.gestureSeekAmount.update { null }
                             viewModel.hideSeekBar()
@@ -272,15 +279,25 @@ fun GestureHandler(
                         it > 0
                 }
                 detectVerticalDragGestures(
-                    onDragEnd = { startingY = 0f },
-                    onDragStart = {
+                    onDragEnd = {
                         startingY = 0f
-                        mpvVolumeStartingY = 0f
-                        originalVolume = currentVolume
-                        originalMPVVolume = currentMPVVolume
-                        originalBrightness = currentBrightness
+                        if (isLongPressing) resetHoldSpeed()
+                    },
+                    onDragCancel = {
+                        startingY = 0f
+                        if (isLongPressing) resetHoldSpeed()
+                    },
+                    onDragStart = {
+                        if (!isLongPressing) {
+                            startingY = 0f
+                            mpvVolumeStartingY = 0f
+                            originalVolume = currentVolume
+                            originalMPVVolume = currentMPVVolume
+                            originalBrightness = currentBrightness
+                        }
                     },
                 ) { change, amount ->
+                    if (isLongPressing) return@detectVerticalDragGestures
                     val changeVolume: () -> Unit = {
                         if (isIncreasingVolumeBoost(amount) || isDecreasingVolumeBoost(amount)) {
                             if (mpvVolumeStartingY == 0f) {

@@ -41,3 +41,29 @@ fun LazyItemScope.SectionCard(
         }
     }
 }
+
+@Composable
+fun LazyItemScope.SectionCard(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Text(
+        modifier = Modifier.padding(horizontal = MaterialTheme.padding.extraLarge),
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+    )
+
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = MaterialTheme.padding.medium,
+                vertical = MaterialTheme.padding.small,
+            ),
+        shape = MaterialTheme.shapes.extraLarge,
+    ) {
+        Column(modifier = Modifier.padding(MaterialTheme.padding.medium)) {
+            content()
+        }
+    }
+}

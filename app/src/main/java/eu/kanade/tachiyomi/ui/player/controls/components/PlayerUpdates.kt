@@ -19,9 +19,17 @@ package eu.kanade.tachiyomi.ui.player.controls.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,7 +37,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import tachiyomi.presentation.core.components.material.padding
 
 @Composable
@@ -40,7 +50,7 @@ fun PlayerUpdate(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.Black.copy(0.4f))
+            .background(Color.Black.copy(0.6f))
             .padding(vertical = MaterialTheme.padding.small, horizontal = MaterialTheme.padding.medium)
             .animateContentSize(),
         contentAlignment = Alignment.Center,
@@ -54,5 +64,44 @@ fun TextPlayerUpdate(
 ) {
     PlayerUpdate(modifier) {
         Text(text)
+    }
+}
+
+@Composable
+fun SpeedPlayerUpdate(
+    speed: Double,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .clip(CircleShape)
+            .background(Color(0xE6141414))
+            .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .animateContentSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.FastForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
+            val formattedSpeed = if (speed % 1.0 == 0.0) {
+                "${speed.toInt()}x"
+            } else {
+                "${speed}x"
+            }
+            Text(
+                text = "$formattedSpeed Speed",
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+            )
+        }
     }
 }

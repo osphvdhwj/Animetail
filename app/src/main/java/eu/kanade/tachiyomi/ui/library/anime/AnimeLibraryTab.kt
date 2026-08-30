@@ -109,9 +109,16 @@ data object AnimeLibraryTab : Tab {
     }
     // SY <--
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
+        AnimeLibraryScreen()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun AnimeLibraryScreen(
+        mediaSwitcher: (@Composable () -> Unit)? = null,
+    ) {
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
@@ -210,6 +217,7 @@ data object AnimeLibraryTab : Tab {
                     searchQuery = state.searchQuery,
                     onSearchQueryChange = viewModel::search,
                     scrollBehavior = scrollBehavior.takeIf { !tabVisible }, // For scroll overlay when no tab
+                    mediaSwitcher = mediaSwitcher,
                 )
             },
             bottomBar = {

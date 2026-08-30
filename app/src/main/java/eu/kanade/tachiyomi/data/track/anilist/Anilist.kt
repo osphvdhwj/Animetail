@@ -432,4 +432,8 @@ class Anilist(id: Long) :
     suspend fun getTrendingManga(page: Int): List<eu.kanade.tachiyomi.data.track.model.MangaTrackSearch> {
         return api.getTrendingManga(page).map { it.toALManga().toTrack() }
     }
+
+    suspend fun getAiringSchedule(start: Long, end: Long, page: Int = 1): List<eu.kanade.tachiyomi.data.track.model.AiringEpisode> {
+        return api.getAiringSchedule(start, end, page)
+    }
 }

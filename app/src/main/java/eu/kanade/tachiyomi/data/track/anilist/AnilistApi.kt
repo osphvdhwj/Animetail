@@ -488,6 +488,58 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         }
     }
 
+    suspend fun getAiringSchedule(start: Long, end: Long, page: Int = 1): List<eu.kanade.tachiyomi.data.track.model.AiringEpisode> {
+        return withIOContext {
+            val query = $$"""
+            |query AiringSchedule($start: Int, $end: Int, $page: Int) {
+                |Page (page: $page, perPage: 40) {
+                    |airingSchedules(airingAt_greater: $start, airingAt_lesser: $end, sort: TIME) {
+                        |id
+                        |airingAt
+                        |episode
+                        |media {
+                            |id
+                            |title {
+                                |userPreferred
+                                |english
+                                |romaji
+                            |}
+                            |coverImage {
+                                |large
+                            |}
+                            |format
+                            |status
+                            |episodes
+                            |averageScore
+                            |description
+                        |}
+                    |}
+                |}
+            |}
+            """.trimMargin()
+            val payload = buildJsonObject {
+                put("query", query)
+                putJsonObject("variables") {
+                    put("start", start)
+                    put("end", end)
+                    put("page", page)
+                }
+            }
+            with(json) {
+                client.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                )
+                    .awaitSuccess()
+                    .parseAs<eu.kanade.tachiyomi.data.track.anilist.dto.ALAiringScheduleResult>()
+                    .data.Page.airingSchedules
+                    .map { it.toAiringEpisode() }
+            }
+        }
+    }
+
     suspend fun getAnimeDetails(id: Int): AnimeTrackSearch? {
         return withIOContext {
             val query = $$"""

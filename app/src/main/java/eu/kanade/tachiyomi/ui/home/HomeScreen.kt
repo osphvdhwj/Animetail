@@ -60,6 +60,7 @@ import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.discover.TrackingTab
 import eu.kanade.tachiyomi.ui.history.HistoriesTab
+import eu.kanade.tachiyomi.ui.library.LibraryTab
 import eu.kanade.tachiyomi.ui.library.anime.AnimeLibraryTab
 import eu.kanade.tachiyomi.ui.library.manga.MangaLibraryTab
 import eu.kanade.tachiyomi.ui.more.MoreTab
@@ -117,7 +118,7 @@ object HomeScreen : Screen() {
         val effectiveStartTab = remember(showHomeTab, startScreenPref) {
             val configuredTab = startScreenPref.tab
             if (configuredTab == HomeTab && !showHomeTab) {
-                AnimeLibraryTab
+                LibraryTab
             } else {
                 configuredTab
             }
@@ -209,12 +210,12 @@ object HomeScreen : Screen() {
                 if (effectiveStartTab != navStyle.moreTab) {
                     tabNavigator.current = effectiveStartTab
                 } else {
-                    tabNavigator.current = if (showHomeTab) HomeTab else AnimeLibraryTab
+                    tabNavigator.current = if (showHomeTab) HomeTab else LibraryTab
                 }
             }
             BackHandler(
                 enabled = (tabNavigator.current == navStyle.moreTab || tabNavigator.current != effectiveStartTab) &&
-                    (tabNavigator.current != AnimeLibraryTab || effectiveStartTab != navStyle.moreTab),
+                    (tabNavigator.current != LibraryTab || effectiveStartTab != navStyle.moreTab),
                 onBack = goToStartScreen,
             )
 
@@ -223,6 +224,7 @@ object HomeScreen : Screen() {
                     librarySearchEvent.receiveAsFlow().collectLatest {
                         goToStartScreen()
                         when (effectiveStartTab) {
+                            LibraryTab -> LibraryTab.search(it)
                             AnimeLibraryTab -> AnimeLibraryTab.search(it)
                             MangaLibraryTab -> MangaLibraryTab.search(it)
                             else -> {}
@@ -232,11 +234,11 @@ object HomeScreen : Screen() {
                 launch {
                     openTabEvent.receiveAsFlow().collectLatest {
                         tabNavigator.current = when (it) {
-                            is Tab.Home -> if (showHomeTab) HomeTab else AnimeLibraryTab
+                            is Tab.Home -> if (showHomeTab) HomeTab else LibraryTab
 
-                            is Tab.AnimeLib -> AnimeLibraryTab
+                            is Tab.AnimeLib -> LibraryTab
 
-                            is Tab.Library -> MangaLibraryTab
+                            is Tab.Library -> LibraryTab
 
                             is Tab.Updates -> UpdatesTab
 

@@ -3,8 +3,10 @@ package eu.kanade.tachiyomi.ui.discover
 import cafe.adriel.voyager.core.model.ScreenModel
 import cafe.adriel.voyager.core.model.screenModelScope
 import eu.kanade.tachiyomi.data.track.TrackerManager
+import eu.kanade.tachiyomi.data.track.model.AiringEpisode
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
+import eu.kanade.tachiyomi.ui.discover.components.AiringDay
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +15,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
+import java.util.Calendar
+import java.util.TimeZone
 
 enum class TrackerSource(
     val id: Long,
@@ -46,10 +50,24 @@ class TrackingScreenModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    private val _selectedAnimeDetails = MutableStateFlow<AnimeTrackSearch?>(null)
+    val selectedAnimeDetails: StateFlow<AnimeTrackSearch?> = _selectedAnimeDetails.asStateFlow()
+
+    private val _selectedMangaDetails = MutableStateFlow<MangaTrackSearch?>(null)
+    val selectedMangaDetails: StateFlow<MangaTrackSearch?> = _selectedMangaDetails.asStateFlow()
+
+    private val _selectedAiringDay = MutableStateFlow(AiringDay.TODAY)
+    val selectedAiringDay: StateFlow<AiringDay> = _selectedAiringDay.asStateFlow()
+
+    private val _airingSchedule = MutableStateFlow<List<AiringEpisode>>(emptyList())
+    val airingSchedule: StateFlow<List<AiringEpisode>> = _airingSchedule.asStateFlow()
+
     private var currentJob: Job? = null
+    private var airingJob: Job? = null
 
     init {
         loadTracking()
+        loadAiringSchedule(AiringDay.TODAY)
     }
 
     fun isTrackerLoggedIn(source: TrackerSource): Boolean {
@@ -66,70 +84,121 @@ class TrackingScreenModel(
         loadTracking(query)
     }
 
+    fun selectAiringDay(day: AiringDay) {
+        _selectedAiringDay.value = day
+        loadAiringSchedule(day)
+    }
+
+    fun openAnimeDetails(anime: AnimeTrackSearch) {
+        _selectedAnimeDetails.value = anime
+    }
+
+    fun openMangaDetails(manga: MangaTrackSearch) {
+        _selectedMangaDetails.value = manga
+    }
+
+    fun closeDetails() {
+        _selectedAnimeDetails.value = null
+        _selectedMangaDetails.value = null
+    }
+
+    fun loadAiringSchedule(day: AiringDay = _selectedAiringDay.value) {
+        airingJob?.cancel()
+        airingJob = screenModelScope.launch {
+            try {
+                val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                cal.set(Calendar.HOUR_OF_DAY, 0)
+                cal.set(Calendar.MINUTE, 0)
+                cal.set(Calendar.SECOND, 0)
+                cal.set(Calendar.MILLISECOND, 0)
+
+                cal.add(Calendar.DAY_OF_YEAR, day.dayOffset)
+                val startTime = cal.timeInMillis / 1000L
+
+                val endTime = if (day == AiringDay.WEEK) {
+                    startTime + (7 * 86400L)
+                } else {
+                    startTime + 86400L
+                }
+
+                val episodes = trackerManager.aniList.getAiringSchedule(startTime, endTime)
+                _airingSchedule.value = episodes
+            } catch (_: Exception) {
+                _airingSchedule.value = emptyList()
+            }
+        }
+    }
+
     fun loadTracking(query: String = _searchQuery.value) {
         currentJob?.cancel()
         currentJob = screenModelScope.launch {
             _state.update { TrackingState.Loading }
             val tracker = _selectedTracker.value
             try {
-                var animeList: List<AnimeTrackSearch> = emptyList()
-                var mangaList: List<MangaTrackSearch> = emptyList()
+                var trendingAnime: List<AnimeTrackSearch> = emptyList()
+                var popularAnime: List<AnimeTrackSearch> = emptyList()
+                var trendingManga: List<MangaTrackSearch> = emptyList()
+                var popularManga: List<MangaTrackSearch> = emptyList()
 
                 when (tracker) {
                     TrackerSource.ANILIST -> {
                         val anilist = trackerManager.aniList
                         if (query.isNotBlank()) {
-                            animeList = anilist.searchAnime(query)
-                            mangaList = anilist.searchManga(query)
+                            trendingAnime = anilist.searchAnime(query)
+                            trendingManga = anilist.searchManga(query)
                         } else {
-                            animeList = anilist.getTrendingAnime(1)
-                            mangaList = anilist.getTrendingManga(1)
+                            trendingAnime = anilist.getTrendingAnime(1)
+                            popularAnime = anilist.getTrendingAnime(2)
+                            trendingManga = anilist.getTrendingManga(1)
+                            popularManga = anilist.getTrendingManga(2)
                         }
                     }
                     TrackerSource.MYANIMELIST -> {
                         val mal = trackerManager.myAnimeList
                         if (query.isNotBlank()) {
-                            animeList = mal.searchAnime(query)
-                            mangaList = mal.searchManga(query)
+                            trendingAnime = mal.searchAnime(query)
+                            trendingManga = mal.searchManga(query)
                         } else {
-                            animeList = mal.getPopularAnime()
-                            mangaList = mal.getPopularManga()
+                            trendingAnime = mal.getPopularAnime()
+                            trendingManga = mal.getPopularManga()
                         }
                     }
                     TrackerSource.KITSU -> {
                         val kitsu = trackerManager.kitsu
                         val q = query.ifBlank { "a" }
-                        animeList = kitsu.searchAnime(q)
-                        mangaList = kitsu.searchManga(q)
+                        trendingAnime = kitsu.searchAnime(q)
+                        trendingManga = kitsu.searchManga(q)
                     }
                     TrackerSource.SHIKIMORI -> {
                         val shikimori = trackerManager.shikimori
                         val q = query.ifBlank { "" }
-                        animeList = shikimori.searchAnime(q)
-                        mangaList = shikimori.searchManga(q)
+                        trendingAnime = shikimori.searchAnime(q)
+                        trendingManga = shikimori.searchManga(q)
                     }
                     TrackerSource.BANGUMI -> {
                         val bangumi = trackerManager.bangumi
                         val q = query.ifBlank { "2024" }
-                        animeList = bangumi.searchAnime(q)
-                        mangaList = bangumi.searchManga(q)
+                        trendingAnime = bangumi.searchAnime(q)
+                        trendingManga = bangumi.searchManga(q)
                     }
                     TrackerSource.SIMKL -> {
                         val simkl = trackerManager.simkl
                         val q = query.ifBlank { "a" }
-                        animeList = simkl.searchAnime(q)
+                        trendingAnime = simkl.searchAnime(q)
                     }
                     TrackerSource.MANGAUPDATES -> {
                         val mu = trackerManager.mangaUpdates
                         val q = query.ifBlank { "a" }
-                        mangaList = mu.searchManga(q)
+                        trendingManga = mu.searchManga(q)
                     }
                 }
 
                 _state.update {
                     TrackingState.Success(
-                        trendingAnime = animeList,
-                        trendingManga = mangaList,
+                        trendingAnime = trendingAnime,
+                        popularAnime = popularAnime,
+                        trendingManga = trendingManga,
+                        popularManga = popularManga,
                         trackerSource = tracker
                     )
                 }
@@ -142,7 +211,9 @@ class TrackingScreenModel(
                         _state.update {
                             TrackingState.Success(
                                 trendingAnime = fallbackAnime,
+                                popularAnime = emptyList(),
                                 trendingManga = fallbackManga,
+                                popularManga = emptyList(),
                                 trackerSource = TrackerSource.ANILIST
                             )
                         }
@@ -159,7 +230,9 @@ sealed interface TrackingState {
     data object Loading : TrackingState
     data class Success(
         val trendingAnime: List<AnimeTrackSearch>,
+        val popularAnime: List<AnimeTrackSearch> = emptyList(),
         val trendingManga: List<MangaTrackSearch>,
+        val popularManga: List<MangaTrackSearch> = emptyList(),
         val trackerSource: TrackerSource = TrackerSource.ANILIST
     ) : TrackingState
     data class Error(val message: String) : TrackingState

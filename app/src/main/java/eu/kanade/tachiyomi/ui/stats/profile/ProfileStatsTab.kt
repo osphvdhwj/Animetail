@@ -17,11 +17,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.OpenInNew
-import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -80,7 +80,7 @@ fun Screen.profileStatsTab(): TabContent {
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Sync,
+                                imageVector = Icons.Outlined.Sync,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
                                 tint = MaterialTheme.colorScheme.primary
@@ -113,7 +113,7 @@ fun Screen.profileStatsTab(): TabContent {
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Warning,
+                                imageVector = Icons.Outlined.Warning,
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
                                 tint = MaterialTheme.colorScheme.error
@@ -199,7 +199,7 @@ fun Screen.profileStatsTab(): TabContent {
                                         )
                                     } else {
                                         Icon(
-                                            imageVector = Icons.Default.AccountCircle,
+                                            imageVector = Icons.Outlined.AccountCircle,
                                             contentDescription = null,
                                             modifier = Modifier
                                                 .size(72.dp)
@@ -274,7 +274,7 @@ fun Screen.profileStatsTab(): TabContent {
                                                     }
                                                 }
                                                 Icon(
-                                                    imageVector = Icons.Default.CheckCircle,
+                                                    imageVector = Icons.Outlined.CheckCircle,
                                                     contentDescription = "Connected",
                                                     tint = MaterialTheme.colorScheme.primary,
                                                     modifier = Modifier.size(20.dp)
@@ -345,7 +345,7 @@ fun Screen.profileStatsTab(): TabContent {
                                         onClick = { uriHandler.openUri("https://anilist.co/user/${stats.name}") },
                                         modifier = Modifier.fillMaxWidth()
                                     ) {
-                                        Icon(Icons.Default.OpenInNew, contentDescription = null)
+                                        Icon(Icons.Outlined.OpenInNew, contentDescription = null)
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(text = "View AniList Web Profile")
                                     }
@@ -355,7 +355,7 @@ fun Screen.profileStatsTab(): TabContent {
                                     onClick = { navigator.push(SettingsTrackingScreen) },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Icon(Icons.Default.Sync, contentDescription = null)
+                                    Icon(Icons.Outlined.Sync, contentDescription = null)
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(text = "Manage Tracking Accounts")
                                 }

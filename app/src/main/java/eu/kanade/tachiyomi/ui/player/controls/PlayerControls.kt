@@ -71,6 +71,7 @@ import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessOverlay
 import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
 import eu.kanade.tachiyomi.ui.player.controls.components.SeekbarWithTimers
+import eu.kanade.tachiyomi.ui.player.controls.components.SpeedPlayerUpdate
 import eu.kanade.tachiyomi.ui.player.controls.components.TextPlayerUpdate
 import eu.kanade.tachiyomi.ui.player.controls.components.ThumbnailPreview
 import eu.kanade.tachiyomi.ui.player.controls.components.VolumeSlider
@@ -321,7 +322,7 @@ fun PlayerControls(
                     },
                 ) {
                     when (val update = currentPlayerUpdate) {
-                        is PlayerUpdates.DoubleSpeed -> TextPlayerUpdate(">> ${update.speed}x")
+                        is PlayerUpdates.DoubleSpeed -> SpeedPlayerUpdate(update.speed)
                         is PlayerUpdates.AspectRatio -> TextPlayerUpdate(stringResource(aspectRatio.titleRes))
                         is PlayerUpdates.ShowText -> TextPlayerUpdate(update.value)
                         is PlayerUpdates.ShowTextResource -> TextPlayerUpdate(stringResource(update.textResource))

@@ -107,9 +107,16 @@ data object MangaLibraryTab : Tab {
         requestOpenSettingsSheet()
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     override fun Content() {
+        MangaLibraryScreen()
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun MangaLibraryScreen(
+        mediaSwitcher: (@Composable () -> Unit)? = null,
+    ) {
         val navigator = LocalNavigator.currentOrThrow
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
@@ -212,6 +219,7 @@ data object MangaLibraryTab : Tab {
                     onSearchQueryChange = viewModel::search,
                     scrollBehavior = scrollBehavior.takeIf { !tabVisible }, // For scroll overlay when no tab
                     navigateUp = navigateUp,
+                    mediaSwitcher = mediaSwitcher,
                 )
             },
             bottomBar = {

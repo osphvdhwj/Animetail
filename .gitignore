@@ -21,3 +21,6 @@ local.properties
 
 # macOS specific files
 .DS_Store
+
+# Agent workspace files
+.agents/

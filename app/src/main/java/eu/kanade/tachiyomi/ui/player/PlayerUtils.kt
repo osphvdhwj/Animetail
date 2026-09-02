@@ -26,10 +26,13 @@ import logcat.LogPriority
 import logcat.logcat
 
 internal fun Uri.openContentFd(context: Context): String? {
-    return context.contentResolver.openFileDescriptor(this, "r")?.detachFd()?.let {
-        Utils.findRealPath(it)?.also { _ ->
-            ParcelFileDescriptor.adoptFd(it).close()
-        } ?: "fd://$it"
+    return try {
+        context.contentResolver.openFileDescriptor(this, "r")?.detachFd()?.let { fd ->
+            "fdclose://$fd"
+        }
+    } catch (e: Throwable) {
+        logcat(LogPriority.ERROR, e) { "Failed to open content URI fd: $this" }
+        null
     }
 }
 
@@ -39,7 +42,7 @@ internal fun Uri.resolveUri(context: Context): String? {
         "content" -> openContentFd(context)
         "data" -> "data://$schemeSpecificPart"
         in Utils.PROTOCOLS -> toString()
-        else -> null
+        else -> toString()
     }
 
     if (filepath == null) logcat(LogPriority.ERROR) { "unknown scheme: $scheme" }

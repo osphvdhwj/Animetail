@@ -246,13 +246,14 @@ class PlayerActivity : BaseActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
-        if (intent.data != null) {
-            val videoUri = intent.data!!
+        val incomingUri = intent.data ?: intent.clipData?.getItemAt(0)?.uri
+        if (incomingUri != null) {
             val title = intent.getStringExtra("video_title")
-                ?: videoUri.lastPathSegment?.substringAfterLast('/')
+                ?: incomingUri.getFileName(this)
+                ?: incomingUri.lastPathSegment?.substringAfterLast('/')
                 ?: "Local Video"
             setIntent(intent)
-            handleLocalVideoIntent(videoUri, title)
+            handleLocalVideoIntent(incomingUri, title)
             return
         }
 

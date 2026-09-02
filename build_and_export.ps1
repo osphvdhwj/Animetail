@@ -20,21 +20,18 @@ Set-Location "C:\platform-tools\Animetail"
 $generatedApk = Get-ChildItem -Path "app\build\outputs\apk" -Recurse -Filter "*.apk" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
 if ($generatedApk) {
-    $destFile1 = Join-Path $APKsFolder $generatedApk.Name
-    $destFile2 = Join-Path $APKsFolder "AniyomiPlus-arm64-v8a-debug.apk"
+    $destFile = Join-Path $APKsFolder "AniyomiPlus-arm64-v8a-debug.apk"
     
-    Copy-Item -Path $generatedApk.FullName -Destination $destFile1 -Force
-    Copy-Item -Path $generatedApk.FullName -Destination $destFile2 -Force
+    Copy-Item -Path $generatedApk.FullName -Destination $destFile -Force
     
     Write-Host "`n✅ Successfully exported APK to:" -ForegroundColor Green
-    Write-Host "   $destFile1" -ForegroundColor Yellow
-    Write-Host "   $destFile2" -ForegroundColor Yellow
+    Write-Host "   $destFile" -ForegroundColor Yellow
     
     # Check if an ADB device is connected
     $devices = adb devices | Select-String "device$"
     if ($devices) {
         Write-Host "`n📲 Found connected device, installing APK..." -ForegroundColor Cyan
-        adb install -r $destFile1
+        adb install -r $destFile
         Write-Host "🚀 Launching Aniyomi Plus..." -ForegroundColor Green
         adb shell am start -n com.dark.animetailv2.custom.dev/eu.kanade.tachiyomi.ui.main.MainActivity
     }

@@ -605,12 +605,11 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         Injekt.addSingleton<LocalAnimeCoverManager>(graph.localAnimeCoverManager)
         Injekt.addSingleton<LocalAnimeBackgroundManager>(graph.localAnimeBackgroundManager)
         Injekt.addSingleton<LocalEpisodeThumbnailManager>(graph.localEpisodeThumbnailManager)
-        Injekt.addSingleton(eu.kanade.domain.discover.DiscoverPreferences(preferenceStore))
-        Injekt.addSingleton(
-            eu.kanade.tachiyomi.data.discover.cache.DiscoverCacheStore(
-                this,
-                Injekt.getInstance(eu.kanade.tachiyomi.data.track.TrackerManager::class.java),
-            ),
+        Injekt.addSingleton<eu.kanade.domain.discover.DiscoverPreferences>(
+            eu.kanade.domain.discover.DiscoverPreferences(graph.preferenceStore),
+        )
+        Injekt.addSingleton<eu.kanade.tachiyomi.data.discover.cache.DiscoverCacheStore>(
+            eu.kanade.tachiyomi.data.discover.cache.DiscoverCacheStore(this, graph.trackerManager),
         )
     }
 

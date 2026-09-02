@@ -60,7 +60,7 @@ class UiPreferences(
     val showNavAnime: Preference<Boolean> = preferenceStore.getBoolean("pref_show_anime_button", true)
     val showNavManga: Preference<Boolean> = preferenceStore.getBoolean("pref_show_manga_button", true)
     val showNavUpdates: Preference<Boolean> = preferenceStore.getBoolean("pref_show_updates_button", true)
-    val showNavHistory: Preference<Boolean> = preferenceStore.getBoolean("pref_show_history_button", true)
+    val showNavHistory: Preference<Boolean> = preferenceStore.getBoolean("pref_show_history_button", false)
     val showNavDiscover: Preference<Boolean> = preferenceStore.getBoolean("pref_show_discover_button", true)
     val showNavBrowse: Preference<Boolean> = preferenceStore.getBoolean("pref_show_browse_button", true)
     val showHomeTab: Preference<Boolean> = preferenceStore.getBoolean("pref_show_home_tab", false)

@@ -1,6 +1,9 @@
 package eu.kanade.presentation.more
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.Modifier
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.automirrored.outlined.Label
@@ -45,6 +48,8 @@ fun MoreScreen(
     showNavHistory: Boolean,
     // SY <--
     navStyle: NavStyle,
+    recentHistoryProvider: () -> List<eu.kanade.presentation.history.components.RecentHistoryEntry> = { emptyList() },
+    onClickHistory: () -> Unit = {},
     onClickAlt: () -> Unit,
     onClickDownloadQueue: () -> Unit,
     onClickCategories: () -> Unit,
@@ -63,8 +68,20 @@ fun MoreScreen(
         ScrollbarLazyColumn(contentPadding = contentPadding) {
             item {
                 LogoHeader(
-                    iconPadding = PaddingValues(vertical = 32.dp),
+                    iconPadding = PaddingValues(vertical = 24.dp),
                 )
+            }
+            val recentHistory = recentHistoryProvider()
+            if (recentHistory.isNotEmpty()) {
+                item {
+                    eu.kanade.presentation.history.components.YouTubeRecentHistoryRail(
+                        historyItems = recentHistory,
+                        onViewAllClick = onClickHistory,
+                    )
+                }
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
             item {
                 SwitchPreferenceWidget(

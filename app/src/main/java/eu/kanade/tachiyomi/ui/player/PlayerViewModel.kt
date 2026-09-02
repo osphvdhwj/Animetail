@@ -1488,6 +1488,15 @@ class PlayerViewModel(
         eventChannel.trySend(Event.SetVideo(video))
     }
 
+    suspend fun prepareLocalVideo(uri: android.net.Uri, title: String) {
+        val request = NetworkStreamRequest(
+            url = uri.toString(),
+            title = title,
+            headers = emptyList(),
+        )
+        prepareNetworkStream(request)
+    }
+
     private fun updateEpisode(episode: Episode) {
         mediaTitle.update { _ -> episode.name }
         _isEpisodeOnline.update { _ -> isEpisodeOnline() == true }

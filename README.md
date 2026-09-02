@@ -1,126 +1,118 @@
 <div align="center">
 
-<a href="https://aniyomi.org">
-    <img src="./.github/assets/icon.png" alt="animetail logo" title="animetail logo" width="80"/>
+<a href="https://github.com/osphvdhwj/Animetail">
+    <img src="./.github/assets/icon.png" alt="Aniyomi Plus logo" title="Aniyomi Plus" width="96"/>
 </a>
 
-# Animetail [App](#)
+# Aniyomi Plus 🚀
 
-### Full-featured player and reader, based on ~~Tachiyomi~~ Mihon.
-Discover and watch anime, cartoons, series, and more – easier than ever on your Android device.
+### The ultimate all-in-one Anime & Manga powerhouse for Android.
+Built upon **Mihon**, **Aniyomi**, **Kuukiyomi**, and **Animetail**, supercharged with **Material You M3 Expressive Design**, **AniForge-style Bento Statistics**, **Multi-Tracker Hubs**, **Standalone Video Playback**, and **Tinder-Style Extension Discovery**.
 
-[![Discord server](https://img.shields.io/discord/1196139193664028762.svg?label=&labelColor=6A7EC2&color=7389D8&logo=discord&logoColor=FFFFFF)](https://discord.gg/fvskrQZb9j)
-[![GitHub downloads](https://img.shields.io/github/downloads/Animetailapp/animetail/total?label=downloads&labelColor=27303D&color=0D1117&logo=github&logoColor=FFFFFF&style=flat)](https://github.com/Animetailapp/Animetail/releases)
-
-[![CI](https://img.shields.io/github/actions/workflow/status/Animetailapp/animetail/build_push.yml?labelColor=27303D)](https://github.com/Animetailapp/Animetail/actions/workflows/build_push.yml)
-[![License: Apache-2.0](https://img.shields.io/github/license/Animetailapp/Animetail?labelColor=27303D&color=818cf8)](/LICENSE)
-[![Crowdin](https://badges.crowdin.net/animetail/localized.svg)](https://crowdin.com/project/animetail)
-
-## Download
-
-[![Animetail Stable](https://img.shields.io/github/release/Animetailapp/animetail.svg?maxAge=3600&label=Stable&labelColor=06599d&color=043b69)](https://github.com/Animetailapp/Animetail/releases)
-[![Animetail Preview](https://img.shields.io/github/v/release/Animetailapp/animetail-preview.svg?maxAge=3600&label=Beta&labelColor=2c2c47&color=1c1c39)](https://github.com/Animetailapp/animetail-preview/releases)
-
-*Requires Android 8.0 or higher.*
-
-## Features
-
-<div align="left">
-
-Features include:
-* Animetail:
-    * Multimedia Home Feed with Movies, Series, Anime, and Manga recommendations
-    * Hero Media Carousel with auto-scrolling (4s), indicator dots, and TMDB/AniList trends integration
-    * Direct launch from "Continue watching & reading" cards with exact progress formatting
-    * Real tracking scores (MAL/AniList/TMDB) and rating badges on media items
-    * Support for Cast functionality
-    * Support themes monet
-    * Android tv compatibility (only banner)
-    * Optimized Discord Rich Presence for Manga and Anime, no external API.
-
-* Kuukiyomi:
-    * Torrent support(Needs right extensions) (@Diegopyl1209)
-    * Custom Theme support
-    * resmush.it(Data Saver Provider)
-    * Group by tags in library
-    * Discord Rich Presence for Manga
-* Aniyomi:
-    * Watching videos
-    * View images
-    * Torrent streaming support
-    * Support for thumbnail preview when seeking in player
-    * Embedded HTTP server for extensions
-    * Local reading/watching of downloaded content
-    * A configurable reader with multiple viewers, reading directions and other settings.
-    * A configurable player built on mpv-android with multiple options and settings
-    * Tracker support: [MyAnimeList](https://myanimelist.net/), [AniList](https://anilist.co/), [Kitsu](https://kitsu.app/), [MangaUpdates](https://mangaupdates.com), [Shikimori](https://shikimori.one), [Bangumi](https://bgm.tv/), and [Hikka](https://hikka.io/)
-    * Categories to organize your library
-    * Light and dark themes
-    * Create backups locally to read/watch offline or to your desired cloud service
-* Mihon:
-    * Advanced library search supporting logical/comparison operators, field-specific prefixes, and nested expressions
-    * Vertical chapter navigator for long strip mode with customizable height and reader settings
-    * Resumable image downloads
-    * Split extension lists support with `index.pb` format
-* Other fork features:
-    * TachiyomiSY:
-        * Data Saver
-        * Edit Info
-        * Library Grouping
-        * Double Pages
-    * Animiru:
-        * Discord Rich Presence
-    * TachiyomiJ2K:
-        * Page Preload
-    * Komikku:
-        * Repository visibility toggle, icon support, and name display
+[![GitHub Release](https://img.shields.io/badge/Release-Aniyomi%20Plus-6366f1?style=for-the-badge&logo=android)](https://github.com/osphvdhwj/Animetail/releases)
+[![Architecture](https://img.shields.io/badge/ABI-arm64--v8a-emerald?style=for-the-badge)](https://github.com/osphvdhwj/Animetail)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=for-the-badge)](/LICENSE)
 
 </div>
 
-## Contributing
+---
 
-[Code of conduct](./CODE_OF_CONDUCT.md) · [Contributing guide](./CONTRIBUTING.md)
+## 🌟 Key Features Overview
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+### 🎨 1. Material You (M3 Expressive) UI & Navigation
+* **Clean 5-Tab Navigation**: Streamlined bottom bar (Library, Updates, Discover, Browse, More).
+* **Smart Active Count Pills**:
+  * In Anime Tab: `[ 🎬 Anime (42) ]  [ 📖 Manga ]`
+  * In Manga Tab: `[ 🎬 Anime ]  [ 📖 Manga (15) ]`
+* **Modern Header & Branding**: Animated `LogoHeader` and dynamic Monet color palette matching your wallpaper or cover art.
+* **WhatsApp-Style Contextual FAB**: Smooth animated floating action button at the bottom right that changes dynamically per tab (Swipe Deck Toggle, Resume playback, Open local file).
 
-Before reporting a new issue, take a look at the [FAQ](https://aniyomi.org/docs/faq/general), the [changelog](https://aniyomi.org/changelogs/) and the already opened [issues](https://github.com/Animetailapp/animetail/issues); if you got any questions, join our [Discord server](https://discord.gg/F32UjdJZrR).
+---
 
-### Repositories
+### 📊 2. AniForge-Inspired Offline Bento Statistics
+* **Animated Donut Chart**: Multi-color arc status distribution (Watching/Reading, Completed, Plan to Watch/Read, On Hold, Dropped) with center total count.
+* **Bento Time Counter Widget**: Real-time calculated Days, Hours, and Minutes spent watching anime and reading manga.
+* **Top Genres & Studios Leaderboard**: Ranked progress bars calculating top genres and animation studios/authors offline from your library.
+* **Multi-Tracker Statistics Hub**: Per-site breakdown tabs for **AniList, MyAnimeList, Kitsu, Shikimori, Bangumi, Simkl, and MangaUpdates** with offline computation.
 
-[![aniyomiorg/aniyomi-website - GitHub](https://github-readme-stats.vercel.app/api/pin/?username=aniyomiorg&repo=aniyomi-website&bg_color=161B22&text_color=c9d1d9&title_color=818cf8&icon_color=818cf8&border_radius=8&hide_border=true&description_lines_count=2)](https://github.com/aniyomiorg/aniyomi-website/)
-[![aniyomiorg/aniyomi-mpv-lib - GitHub](https://github-readme-stats.vercel.app/api/pin/?username=aniyomiorg&repo=aniyomi-mpv-lib&bg_color=161B22&text_color=c9d1d9&title_color=818cf8&icon_color=818cf8&border_radius=8&hide_border=true&description_lines_count=2)](https://github.com/aniyomiorg/aniyomi-mpv-lib/)
+---
 
-### Credits
+### 🃏 3. Tinder-Style Extension Discovery Deck
+* **Interactive Swipe Physics**: Swipe left (Pass/Dismiss) and Swipe right (Save to Library / Explore) with spring physics and tilt rotation.
+* **Universal Extension Bridge**: Tapping any card opens detailed metadata and lets you search across all installed anime and manga extensions with one click.
+* **Deck Controls**: Floating action buttons for Pass ❌, Info ℹ️, and Save ⭐ with undo support.
 
-Thank you to all the people who have contributed!
+---
 
-<a href="https://github.com/Animetailapp/Animetail/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=Animetailapp/Animetail" alt="Animetail app contributors" title="Animetail app contributors" width="800"/>
-</a>
+### 🎬 4. Standalone Video Player & System Handler
+* **Play ANY Local Video**: Open and watch external `.mp4`, `.mkv`, `.webm`, `.avi`, `.ts` files inside the high-performance MPV player engine.
+* **Android System Intent Handler**: Registered as a system video player so you can open videos directly from file managers, messaging apps, and downloads.
+* **Next-Gen Player Features**:
+  * Quick Speed Pills (1.0x, 1.25x, 1.5x, 2.0x, 3.0x).
+  * **Hold for 2X Speed Gesture**: Press and hold anywhere to temporarily boost speed with smooth haptic feedback and glass pill HUD.
+  * Advanced Subtitle & Audio track selectors, aspect ratio stretching, and hardware decoding.
 
-### Disclaimer
+---
 
-The developer(s) of this application does not have any affiliation with the content providers available, and this application hosts zero content.
+### 📅 5. Tracking & Live Airing Schedule Hub
+* **Real-time Airing Calendar**: Live countdown timers for upcoming episodes airing today, tomorrow, or this week.
+* **Hero Trend Carousels**: Featured trending banners with direct "Search in Sources" bridge.
+* **Offline Persistent Cache**: Instant loading without API bottlenecks.
+* **Force Reload All Sites**: 3-dot overflow menu and pull-to-refresh to sync all 7 trackers concurrently.
+* **Custom Background Auto-Refresh**: Configurable sync intervals (6h, 12h, 24h, 48h, or manual).
+* **Backup & Restore Integration**: Back up discover cache, cover art cache, and extended descriptions/tags to `.tachibk`.
 
-### License
+---
 
-<pre>
-Copyright © 2015 Javier Tomás
-Copyright © 2024 Mihon Open Source Project
-Copyright © 2024 Aniyomi Open Source Project
-Copyright © 2024 The Animetail Open Source Project
+### 📺 6. YouTube (2024–2026) Style Recent History
+* **Horizontal Recent Shelf**: Embedded in the More / You profile screen with 16:9 thumbnails, watched progress bars, and one-tap resume buttons.
+* **Direct "View all" Link**: Pushes the full chronological History page.
+* **Decluttered Bottom Bar**: Bottom History tab hidden by default for maximum screen real estate (re-enable anytime in `Settings > Appearance > Navigation`).
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+---
 
-http://www.apache.org/licenses/LICENSE-2.0
+### 💾 7. Revamped Data and Storage Hub
+* **Proportional Segmented Visualizer**: Dynamic multi-color breakdown bar showing exact space taken by each series and category.
+* **1-Tap Quick Cleaners**:
+  * 🧹 Clear Cover & Image Cache
+  * 🗑️ Clean Extension Temporary Data
+  * ⚡ Clear Discover & Tracking Cache
+  * 🔍 Remove Orphan Downloads
+* **Search & Filter Bar**: Instantly find and sort large series by size or name with batch delete confirmation.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-</pre>
+---
 
-</div>
+### 📱 8. Experimental Offline Shorts Feed
+* **Vertical Short Video Player**: TikTok/Shorts-style feed powered by downloaded anime episodes.
+* **"Watch Full Episode"**: Seamlessly jumps from clip preview to full episode playback in the player.
+* **Toggle in Settings**: Hidden by default, enable anytime under `Settings > Advanced > Experimental`.
+
+---
+
+## 🛠️ Build & Installation
+
+### Build Standalone `arm64-v8a` Signed APK
+```powershell
+$env:JAVA_HOME = "C:\platform-tools\jdk"
+$env:PATH = "$env:JAVA_HOME\bin;C:\platform-tools\MinGit\cmd;$env:PATH"
+$env:ANDROID_HOME = "C:\Users\HP\AppData\Local\Android\Sdk"
+
+# Compile and package single arm64 APK signed with Android certificate:
+.\gradlew.bat :app:assembleDebug
+```
+
+The output APK will be generated at:
+```text
+app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
+```
+
+---
+
+## 🌐 Repository & Upstream
+* **Fork Repository**: [https://github.com/osphvdhwj/Animetail](https://github.com/osphvdhwj/Animetail)
+* **Branch**: `master`
+
+---
+
+## 📄 License
+Aniyomi Plus is free and open source software licensed under the [Apache License 2.0](/LICENSE).

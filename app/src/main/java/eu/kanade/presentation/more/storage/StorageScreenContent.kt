@@ -1,31 +1,57 @@
 package eu.kanade.presentation.more.storage
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CleaningServices
+import androidx.compose.material.icons.outlined.DeleteSweep
+import androidx.compose.material.icons.outlined.FolderZip
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Storage
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.util.isTabletUi
 import tachiyomi.domain.category.model.Category
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.screens.LoadingScreen
-import kotlin.random.Random
 
 @Composable
 fun StorageScreenContent(
@@ -42,199 +68,180 @@ fun StorageScreenContent(
         }
 
         is StorageScreenState.Success -> {
+            var searchQuery by remember { mutableStateOf("") }
+
+            val filteredItems = remember(state.items, searchQuery) {
+                if (searchQuery.isBlank()) {
+                    state.items
+                } else {
+                    state.items.filter { it.title.contains(searchQuery, ignoreCase = true) }
+                }
+            }
+
+            val totalSize = remember(state.items) {
+                state.items.sumOf { it.size }.toFloat()
+            }
+
             @Composable
-            fun Info(modifier: Modifier = Modifier) {
+            fun InfoHeader(modifier: Modifier = Modifier) {
                 Column(
-                    modifier = modifier,
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    content = {
-                        SelectStorageCategory(
-                            selectedCategory = state.selectedCategory,
-                            categories = state.categories,
-                            onCategorySelected = onCategorySelected,
-                        )
-                        CumulativeStorage(
-                            modifier = Modifier
-                                .padding(
-                                    horizontal = MaterialTheme.padding.small,
-                                    vertical = MaterialTheme.padding.medium,
-                                )
-                                .run {
-                                    if (isTabletUi()) {
-                                        this
-                                    } else {
-                                        padding(bottom = MaterialTheme.padding.medium)
-                                    }
-                                },
-                            items = state.items,
-                        )
-                        // Visual segmented breakdown bar + legend
-                        if (state.items.isNotEmpty()) {
-                            val totalSize = state.items.sumOf { it.size }.toFloat()
-                            if (totalSize > 0f) {
-                                Column(
+                    modifier = modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    SelectStorageCategory(
+                        selectedCategory = state.selectedCategory,
+                        categories = state.categories,
+                        onCategorySelected = onCategorySelected,
+                    )
+
+                    CumulativeStorage(
+                        modifier = Modifier.fillMaxWidth(),
+                        items = state.items,
+                    )
+
+                    // Proportional Visualizer Bar
+                    if (state.items.isNotEmpty() && totalSize > 0f) {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = "Usage Breakdown",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                    Text(
+                                        text = "${state.items.size} Series",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+
+                                Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(horizontal = MaterialTheme.padding.small),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                        .height(12.dp)
+                                        .clip(RoundedCornerShape(6.dp)),
                                 ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(10.dp),
-                                    ) {
-                                        state.items.take(8).forEach { item ->
-                                            val fraction = (item.size / totalSize).coerceIn(0f, 1f)
-                                            if (fraction > 0.01f) {
-                                                Spacer(
-                                                    modifier = Modifier
-                                                        .weight(fraction)
-                                                        .fillMaxHeight()
-                                                        .background(item.color),
-                                                )
-                                            }
+                                    state.items.take(8).forEach { item ->
+                                        val fraction = (item.size / totalSize).coerceIn(0f, 1f)
+                                        if (fraction > 0.01f) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .weight(fraction)
+                                                    .fillMaxHeight()
+                                                    .background(item.color),
+                                            )
                                         }
                                     }
-                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        state.items.take(3).forEach { item ->
-                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                                Spacer(
-                                                    modifier = Modifier
-                                                        .size(8.dp)
-                                                        .background(item.color),
-                                                )
-                                            }
+                                }
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState()),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                ) {
+                                    state.items.take(4).forEach { item ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(8.dp)
+                                                    .clip(CircleShape)
+                                                    .background(item.color),
+                                            )
+                                            Text(
+                                                text = item.title,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                maxLines = 1,
+                                                fontSize = 11.sp,
+                                            )
                                         }
                                     }
                                 }
                             }
                         }
-                    },
-                )
-            }
-
-            Row(
-                modifier = modifier
-                    .padding(horizontal = MaterialTheme.padding.small)
-                    .padding(contentPadding),
-                content = {
-                    if (isTabletUi()) {
-                        Info(
-                            modifier = Modifier
-                                .weight(2f)
-                                .padding(end = MaterialTheme.padding.extraLarge)
-                                .fillMaxHeight(),
-                        )
                     }
-                    LazyColumn(
-                        modifier = Modifier.weight(3f),
-                        content = {
-                            item {
-                                Spacer(Modifier.height(MaterialTheme.padding.small))
-                            }
-                            item {
-                                if (!isTabletUi()) {
-                                    Info()
-                                }
-                            }
-                            items(
-                                state.items.size,
-                                itemContent = { index ->
-                                    StorageItem(
-                                        item = state.items[index],
-                                        isManga = isManga,
-                                        onDelete = onDelete,
-                                    )
-                                    Spacer(Modifier.height(MaterialTheme.padding.medium))
-                                },
+
+                    // Search and Filter Bar
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Filter downloads by title...") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Search,
+                                contentDescription = "Search",
+                                modifier = Modifier.size(20.dp),
                             )
                         },
+                        singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        ),
                     )
-                },
-            )
-        }
-    }
-}
+                }
+            }
 
-@Preview(showBackground = true)
-@Composable
-private fun StorageScreenContentPreview() {
-    val random = remember { Random(0) }
-    val categories = remember {
-        List(10) {
-            Category(
-                id = it.toLong(),
-                name = "Category $it",
-                0L,
-                0L,
-                false,
-            )
-        }
-    }
-    StorageScreenContent(
-        state = StorageScreenState.Success(
-            items = List(20) { index ->
-                StorageItem(
-                    id = index.toLong(),
-                    title = "Title $index",
-                    size = index * 10000000L,
-                    thumbnail = null,
-                    entriesCount = 100 * index,
-                    color = Color(
-                        random.nextInt(255),
-                        random.nextInt(255),
-                        random.nextInt(255),
-                    ),
-                )
-            },
-            categories = categories,
-            selectedCategory = categories[0],
-        ),
-        isManga = true,
-        contentPadding = PaddingValues(0.dp),
-        onCategorySelected = {},
-        onDelete = {},
-    )
-}
+            LazyColumn(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(contentPadding),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item {
+                    InfoHeader()
+                }
 
-@Preview(showBackground = true, device = Devices.DESKTOP)
-@Composable
-private fun StorageTabletUiScreenContentPreview() {
-    val random = remember { Random(0) }
-    val categories = remember {
-        List(10) {
-            Category(
-                id = it.toLong(),
-                name = "Category $it",
-                0L,
-                0L,
-                false,
-            )
+                if (filteredItems.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = if (searchQuery.isNotBlank()) "No series matching \"$searchQuery\"" else "No downloaded items found",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                } else {
+                    items(
+                        items = filteredItems,
+                        key = { it.id },
+                    ) { item ->
+                        StorageItem(
+                            item = item,
+                            isManga = isManga,
+                            onDelete = onDelete,
+                        )
+                    }
+                }
+            }
         }
     }
-    StorageScreenContent(
-        state = StorageScreenState.Success(
-            items = List(20) { index ->
-                StorageItem(
-                    id = index.toLong(),
-                    title = "Title $index",
-                    size = index * 10000000L,
-                    thumbnail = null,
-                    entriesCount = 100 * index,
-                    color = Color(
-                        random.nextInt(255),
-                        random.nextInt(255),
-                        random.nextInt(255),
-                    ),
-                )
-            },
-            categories = categories,
-            selectedCategory = categories[0],
-        ),
-        isManga = true,
-        contentPadding = PaddingValues(0.dp),
-        onCategorySelected = {},
-        onDelete = {},
-    )
 }

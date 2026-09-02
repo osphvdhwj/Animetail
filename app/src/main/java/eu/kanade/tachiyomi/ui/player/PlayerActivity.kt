@@ -221,6 +221,19 @@ class PlayerActivity : BaseActivity() {
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
         }
+
+        fun newFileIntent(
+            context: Context,
+            videoUri: Uri,
+            title: String? = null,
+        ): Intent {
+            return Intent(context, PlayerActivity::class.java).apply {
+                action = Intent.ACTION_VIEW
+                data = videoUri
+                putExtra("video_title", title ?: videoUri.lastPathSegment?.substringAfterLast('/') ?: "Local Video")
+                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+        }
         internal const val MPV_DIR = "mpv"
         private const val MPV_FONTS_DIR = "fonts"
     }
@@ -232,6 +245,16 @@ class PlayerActivity : BaseActivity() {
     @SuppressLint("MissingSuperCall")
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+
+        if (intent.data != null) {
+            val videoUri = intent.data!!
+            val title = intent.getStringExtra("video_title")
+                ?: videoUri.lastPathSegment?.substringAfterLast('/')
+                ?: "Local Video"
+            setIntent(intent)
+            handleLocalVideoIntent(videoUri, title)
+            return
+        }
 
         val networkStreamPayload = intent.getStringExtra(NetworkStreamRequest.EXTRA_KEY)
         if (networkStreamPayload != null) {
@@ -1304,6 +1327,13 @@ class PlayerActivity : BaseActivity() {
         viewModel.saveCurrentEpisodeWatchingProgress()
         lifecycleScope.launchNonCancellable {
             viewModel.prepareNetworkStream(request)
+        }
+    }
+
+    private fun handleLocalVideoIntent(uri: Uri, title: String) {
+        viewModel.saveCurrentEpisodeWatchingProgress()
+        lifecycleScope.launchNonCancellable {
+            viewModel.prepareLocalVideo(uri, title)
         }
     }
 

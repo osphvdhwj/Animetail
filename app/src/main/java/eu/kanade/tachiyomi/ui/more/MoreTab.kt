@@ -34,11 +34,16 @@ import eu.kanade.tachiyomi.data.download.anime.AnimeDownloadManager
 import eu.kanade.tachiyomi.data.download.manga.MangaDownloadManager
 import eu.kanade.tachiyomi.ui.category.CategoriesTab
 import eu.kanade.tachiyomi.ui.download.DownloadsTab
+import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
+import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.main.MainActivity
+import eu.kanade.tachiyomi.ui.player.PlayerActivity
 import eu.kanade.tachiyomi.ui.setting.PlayerSettingsScreen
 import eu.kanade.tachiyomi.ui.setting.SettingsScreen
 import eu.kanade.tachiyomi.ui.stats.StatsTab
 import eu.kanade.tachiyomi.ui.storage.StorageTab
+import tachiyomi.domain.history.anime.model.AnimeHistoryWithRelations
+import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -73,6 +78,7 @@ data object MoreTab : Tab {
         val context = LocalContext.current
         val viewModel = metroViewModel<MoreViewModel>()
         val downloadQueueState by viewModel.downloadQueueState.collectAsState()
+        val recentHistory by viewModel.recentHistory.collectAsState()
         val navStyle = currentNavigationStyle()
         MoreScreen(
             downloadQueueStateProvider = { downloadQueueState },
@@ -85,6 +91,27 @@ data object MoreTab : Tab {
             showNavHistory = viewModel.showNavHistory,
             // SY <--
             navStyle = navStyle,
+            recentHistoryProvider = {
+                recentHistory.map { entry ->
+                    entry.copy(
+                        onClick = {
+                            if (entry.isAnime) {
+                                navigator.push(AnimeScreen(entry.id))
+                            } else {
+                                navigator.push(MangaScreen(entry.id))
+                            }
+                        },
+                        onResumeClick = {
+                            if (entry.isAnime) {
+                                context.startActivity(PlayerActivity.newIntent(context, entry.id, entry.id))
+                            } else {
+                                context.startActivity(eu.kanade.tachiyomi.ui.reader.ReaderActivity.newIntent(context, entry.id, entry.id))
+                            }
+                        },
+                    )
+                }
+            },
+            onClickHistory = { navigator.push(eu.kanade.tachiyomi.ui.history.HistoriesTab) },
             onClickAlt = { navigator.push(navStyle.moreTab) },
             onClickDownloadQueue = { navigator.push(DownloadsTab) },
             onClickCategories = { navigator.push(CategoriesTab) },
@@ -113,6 +140,8 @@ data object MoreTab : Tab {
 class MoreViewModel(
     private val downloadManager: MangaDownloadManager,
     private val animeDownloadManager: AnimeDownloadManager,
+    private val getAnimeHistory: tachiyomi.domain.history.anime.interactor.GetAnimeHistory,
+    private val getMangaHistory: tachiyomi.domain.history.manga.interactor.GetMangaHistory,
     preferences: BasePreferences,
     // SY -->
     uiPreferences: UiPreferences,
@@ -132,7 +161,47 @@ class MoreViewModel(
     )
     val downloadQueueState: StateFlow<DownloadQueueState> = _downloadQueueState.asStateFlow()
 
+    private val _recentHistory = MutableStateFlow<List<eu.kanade.presentation.history.components.RecentHistoryEntry>>(emptyList())
+    val recentHistory: StateFlow<List<eu.kanade.presentation.history.components.RecentHistoryEntry>> = _recentHistory.asStateFlow()
+
     init {
+        // Load YouTube-style recent history shelf
+        viewModelScope.launchIO {
+            try {
+                combine(
+                    getAnimeHistory.subscribe(""),
+                    getMangaHistory.subscribe(""),
+                ) { animeList: List<AnimeHistoryWithRelations>, mangaList: List<MangaHistoryWithRelations> ->
+                    val animeEntries = animeList.take(8).map { anime ->
+                        eu.kanade.presentation.history.components.RecentHistoryEntry(
+                            id = anime.animeId,
+                            title = anime.title,
+                            subtitle = "Ep. ${anime.episodeNumber.toInt()}",
+                            coverUrl = anime.coverData.url ?: "",
+                            progress = 0.5f,
+                            isAnime = true,
+                            onClick = {},
+                            onResumeClick = {},
+                        )
+                    }
+                    val mangaEntries = mangaList.take(8).map { manga ->
+                        eu.kanade.presentation.history.components.RecentHistoryEntry(
+                            id = manga.mangaId,
+                            title = manga.title,
+                            subtitle = "Ch. ${manga.chapterNumber.toInt()}",
+                            coverUrl = manga.coverData.url ?: "",
+                            progress = 0.5f,
+                            isAnime = false,
+                            onClick = {},
+                            onResumeClick = {},
+                        )
+                    }
+                    (animeEntries + mangaEntries).take(12)
+                }.collectLatest { items ->
+                    _recentHistory.value = items
+                }
+            } catch (_: Exception) {}
+        }
         // Handle running/paused status change and queue progress updating
         viewModelScope.launchIO {
             combine(

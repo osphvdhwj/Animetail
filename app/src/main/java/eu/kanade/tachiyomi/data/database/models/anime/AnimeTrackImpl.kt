@@ -14,7 +14,7 @@ class AnimeTrackImpl : AnimeTrack {
 
     override var library_id: Long? = null
 
-    override lateinit var title: String
+    override var title: String = ""
 
     override var last_episode_seen: Double = 0.0
 

@@ -14,7 +14,7 @@ class MangaTrackImpl : MangaTrack {
 
     override var library_id: Long? = null
 
-    override lateinit var title: String
+    override var title: String = ""
 
     override var last_chapter_read: Double = 0.0
 

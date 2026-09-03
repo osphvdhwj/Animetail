@@ -61,10 +61,14 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import eu.kanade.core.preference.asState
 import eu.kanade.domain.discover.DiscoverPreferences
+import eu.kanade.domain.track.service.TrackSyncEngine.SyncProgressState
 import eu.kanade.presentation.components.AppBarTitle
 import eu.kanade.presentation.components.AppFloatingActionButton
 import eu.kanade.presentation.components.FabContextMode
 import eu.kanade.presentation.components.SearchToolbar
+import eu.kanade.presentation.track.components.SyncItemStatus
+import eu.kanade.presentation.track.components.TrackerStatusItem
+import eu.kanade.presentation.track.components.UniversalTrackerSyncDashboard
 import eu.kanade.presentation.util.Tab as VoyagerTab
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
@@ -300,6 +304,11 @@ data object TrackingTab : VoyagerTab {
                             text = { TabText("Shorts") },
                         )
                     }
+                    Tab(
+                        selected = selectedDiscoverTab == 5,
+                        onClick = { selectedDiscoverTab = 5 },
+                        text = { TabText("Multi-Sync") },
+                    )
                 }
 
                 Box(
@@ -394,6 +403,40 @@ data object TrackingTab : VoyagerTab {
                                 items = emptyList(),
                                 onWatchFullEpisode = { item ->
                                     // Start standalone player
+                                },
+                            )
+                        }
+                        5 -> {
+                            val trackerManager = remember { Injekt.get<TrackerManager>() }
+                            val context = androidx.compose.ui.platform.LocalContext.current
+                            val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+
+                            UniversalTrackerSyncDashboard(
+                                trackersState = trackerManager.trackers.map { tracker ->
+                                    TrackerStatusItem(
+                                        tracker = tracker,
+                                        isLoggedIn = tracker.isLoggedIn,
+                                        syncStatus = if (tracker.isLoggedIn) SyncItemStatus.SYNCED else SyncItemStatus.NOT_LOGGED_IN,
+                                    )
+                                },
+                                syncProgressState = SyncProgressState.Idle,
+                                onSyncAll = {
+                                    // Force reload & sync all trackers
+                                    screenModel.forceRefreshAllTrackers()
+                                },
+                                onTrackerClick = { tracker ->
+                                    // Launch tracker profile in external browser
+                                    val url = when (tracker.id) {
+                                        1L -> "https://myanimelist.net"
+                                        2L -> "https://anilist.co"
+                                        3L -> "https://kitsu.io"
+                                        4L -> "https://shikimori.one"
+                                        5L -> "https://bgm.tv"
+                                        101L -> "https://simkl.com"
+                                        201L -> "https://trakt.tv"
+                                        else -> "https://myanimelist.net"
+                                    }
+                                    uriHandler.openUri(url)
                                 },
                             )
                         }

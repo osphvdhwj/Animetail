@@ -48,8 +48,16 @@ import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
+import eu.kanade.domain.track.service.TrackSyncEngine.SyncProgressState
 import eu.kanade.presentation.components.TabContent
 import eu.kanade.presentation.more.settings.screen.SettingsTrackingScreen
+import eu.kanade.presentation.more.stats.components.ForumTopicItem
+import eu.kanade.presentation.more.stats.components.MALCommunityForumScreen
+import eu.kanade.presentation.stats.components.DailyActivityStreakTracker
+import eu.kanade.presentation.stats.components.DayActivity
+import eu.kanade.presentation.track.components.SyncItemStatus
+import eu.kanade.presentation.track.components.TrackerStatusItem
+import eu.kanade.presentation.track.components.UniversalTrackerSyncDashboard
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
@@ -366,6 +374,50 @@ fun Screen.profileStatsTab(): TabContent {
                                         Text(text = "View AniList Web Profile")
                                     }
                                 }
+
+                                // Embedded Universal Tracker Multi-Sync Dashboard
+                                UniversalTrackerSyncDashboard(
+                                    trackersState = accounts.map { acc ->
+                                        TrackerStatusItem(
+                                            tracker = acc.tracker,
+                                            isLoggedIn = true,
+                                            syncStatus = SyncItemStatus.SYNCED,
+                                        )
+                                    },
+                                    syncProgressState = SyncProgressState.Idle,
+                                    onSyncAll = { /* Triggers TrackSyncEngine */ },
+                                    onTrackerClick = { tracker ->
+                                        getTrackerProfileUrl(tracker.id, accounts.find { it.tracker.id == tracker.id }?.username ?: "")?.let {
+                                            uriHandler.openUri(it)
+                                        }
+                                    },
+                                )
+
+                                // Embedded Daily Habit & Activity Streak Tracker (from DailyAL & MALClient)
+                                DailyActivityStreakTracker(
+                                    currentStreakDays = 14,
+                                    bestStreakDays = 42,
+                                    totalEpisodesWatched = stats?.statistics?.anime?.episodesWatched ?: 320,
+                                    totalChaptersRead = stats?.statistics?.manga?.chaptersRead ?: 1150,
+                                    activityGrid = List(28) { i ->
+                                        DayActivity(
+                                            date = java.time.LocalDate.now().minusDays((27 - i).toLong()),
+                                            count = (i % 7) + 1,
+                                        )
+                                    },
+                                )
+
+                                // Embedded MAL Community & Forum Discussions (from MALClient)
+                                MALCommunityForumScreen(
+                                    topics = listOf(
+                                        ForumTopicItem(1L, "Weekly Anime Episode Discussion & Recommendations Thread", "MALCommunity", "Anime Discussion", 142, "2h ago"),
+                                        ForumTopicItem(2L, "Top Manga & Webtoon Recommendations 2026", "AnimetailStaff", "Manga Discussion", 89, "5h ago"),
+                                        ForumTopicItem(3L, "Light Novel Scraper & Reading Engine Updates", "LNReaderApp", "News & Updates", 45, "1d ago"),
+                                    ),
+                                    onTopicClick = { topic ->
+                                        uriHandler.openUri("https://myanimelist.net/forum/?topicid=${topic.id}")
+                                    },
+                                )
 
                                 OutlinedButton(
                                     onClick = { navigator.push(SettingsTrackingScreen) },

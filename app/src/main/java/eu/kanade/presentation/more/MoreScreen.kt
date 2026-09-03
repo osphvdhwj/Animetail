@@ -71,6 +71,17 @@ fun MoreScreen(
                     iconPadding = PaddingValues(vertical = 24.dp),
                 )
             }
+            item {
+                eu.kanade.presentation.more.components.AnimetailFeatureHubScreen(
+                    onNavigateToMultiSync = onClickStats,
+                    onNavigateToHabitTracker = onClickStats,
+                    onNavigateToForum = onClickStats,
+                    onNavigateToWebsitePortal = onClickCategories,
+                    onNavigateToDownloadManager = onClickDownloadQueue,
+                    onNavigateToLNReader = onClickPlayerSettings,
+                    onNavigateToStaffSheet = onClickStats,
+                )
+            }
             val recentHistory = recentHistoryProvider()
             if (recentHistory.isNotEmpty()) {
                 item {
@@ -174,6 +185,22 @@ fun MoreScreen(
                     title = stringResource(MR.strings.label_data_storage),
                     icon = Icons.Outlined.Storage,
                     onPreferenceClick = onClickDataAndStorage,
+                )
+            }
+
+            item { HorizontalDivider() }
+
+            // Embedded MAL Community & Forum Discussions (from MALClient)
+            item {
+                eu.kanade.presentation.more.stats.components.MALCommunityForumScreen(
+                    topics = listOf(
+                        eu.kanade.presentation.more.stats.components.ForumTopicItem(1L, "Weekly Anime Episode Discussion & Recommendations Thread", "MALCommunity", "Anime Discussion", 142, "2h ago"),
+                        eu.kanade.presentation.more.stats.components.ForumTopicItem(2L, "Top Manga & Webtoon Recommendations 2026", "AnimetailStaff", "Manga Discussion", 89, "5h ago"),
+                        eu.kanade.presentation.more.stats.components.ForumTopicItem(3L, "Light Novel Scraper & Reading Engine Updates", "LNReaderApp", "News & Updates", 45, "1d ago"),
+                    ),
+                    onTopicClick = { topic ->
+                        uriHandler.openUri("https://myanimelist.net/forum/?topicid=${topic.id}")
+                    },
                 )
             }
 

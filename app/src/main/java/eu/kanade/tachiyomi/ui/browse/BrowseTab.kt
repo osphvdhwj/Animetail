@@ -151,6 +151,7 @@ data object BrowseTab : Tab {
                     ),
                     animeExtensionsTabContent,
                     mangaExtensionsTabContent,
+                    universalPortalTab(),
                     migrateAnimeSourceTab(),
                     migrateMangaSourceTab(),
                 )

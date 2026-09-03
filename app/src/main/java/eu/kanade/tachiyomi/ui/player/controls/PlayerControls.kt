@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import eu.kanade.presentation.more.settings.screen.player.custombutton.getButtons
+import eu.kanade.presentation.player.components.AniSkipOverlayPill
 import eu.kanade.presentation.theme.playerRippleConfiguration
 import eu.kanade.tachiyomi.ui.player.CastManager
 import eu.kanade.tachiyomi.ui.player.Dialogs

@@ -37,7 +37,15 @@ enum class TrackerSource(
     SHIKIMORI(4L, "Shikimori", true, true),
     BANGUMI(5L, "Bangumi", true, true),
     SIMKL(TrackerManager.SIMKL, "Simkl", true, false),
-    MANGAUPDATES(7L, "MangaUpdates", false, true);
+    MANGAUPDATES(7L, "MangaUpdates", false, true),
+    TRAKT(TrackerManager.TRAKT, "Trakt", true, false),
+    SUWAYOMI(9L, "Suwayomi", true, true),
+    KOMGA(6L, "Komga", false, true),
+    KAVITA(TrackerManager.KAVITA, "Kavita", false, true),
+    JELLYFIN(TrackerManager.JELLYFIN, "Jellyfin", true, false),
+    TMDB(200L, "TMDB", true, false),
+    HIKKA(10L, "Hikka", true, true),
+    MANGABAKA(TrackerManager.MANGABAKA, "MangaBaka", false, true);
 
     fun isTrackerLoggedIn(trackerManager: TrackerManager): Boolean {
         return trackerManager.get(id)?.isLoggedIn ?: false

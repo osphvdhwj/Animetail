@@ -7,6 +7,11 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.outlined.AutoStories
+import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.ImportContacts
+import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import tachiyomi.i18n.MR
@@ -21,6 +26,16 @@ enum class MediaType(val icon: ImageVector, val color: Color) {
     SERIES(Icons.Default.Tv, Color(0xFFA855F7)),
     ANIME(Icons.Default.PlayArrow, Color(0xFFEF4444)),
     MANGA(Icons.Default.Book, Color(0xFFF97316)),
+    MANHWA(Icons.Outlined.AutoStories, Color(0xFF06B6D4)),
+    MANHUA(Icons.Outlined.MenuBook, Color(0xFFEC4899)),
+    WEBTOON(Icons.Outlined.Smartphone, Color(0xFF10B981)),
+    NOVEL(Icons.Outlined.ImportContacts, Color(0xFF8B5CF6));
+
+    val isVideo: Boolean
+        get() = this == MOVIES || this == SERIES || this == ANIME
+
+    val isReading: Boolean
+        get() = this == MANGA || this == MANHWA || this == MANHUA || this == WEBTOON || this == NOVEL
 }
 
 /**
@@ -34,5 +49,9 @@ fun MediaType.getLabel(): String {
         MediaType.SERIES -> stringResource(MR.strings.label_series)
         MediaType.ANIME -> stringResource(MR.strings.label_anime)
         MediaType.MANGA -> stringResource(MR.strings.label_manga)
+        MediaType.MANHWA -> "Manhwa"
+        MediaType.MANHUA -> "Manhua"
+        MediaType.WEBTOON -> "Webtoon"
+        MediaType.NOVEL -> "Light Novel"
     }
 }

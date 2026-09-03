@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Explore
@@ -128,16 +129,22 @@ data object TrackingTab : VoyagerTab {
         val scope = rememberCoroutineScope()
         val enableShorts by discoverPrefs.enableExperimentalShorts().asState(scope)
         val enableSwipeDeck by discoverPrefs.enableTinderSwipeDeck().asState(scope)
+        val swipeBothSides by discoverPrefs.swipeBothSidesDismiss().asState(scope)
 
         var isSearchMode by remember { mutableStateOf(false) }
         var selectedDiscoverTab by remember { mutableIntStateOf(0) } // 0: Anime, 1: Airing, 2: Manga, 3: Swipe Deck, 4: Shorts
+        var selectedAnimeFormat by remember { mutableStateOf("ALL") }
+        var selectedMangaFormat by remember { mutableStateOf("ALL") }
         var showMenu by remember { mutableStateOf(false) }
 
         Scaffold(
             topBar = {
                 SearchToolbar(
                     titleContent = {
-                        AppBarTitle("Discover & Track")
+                        eu.kanade.tachiyomi.ui.home.HomeTabSwitcher(
+                            selectedTab = 1,
+                            onSelectTab = { if (it != 1) eu.kanade.tachiyomi.ui.home.HomeTab.activeSubTab.value = it },
+                        )
                     },
                     searchEnabled = isSearchMode,
                     searchQuery = searchQuery,
@@ -378,6 +385,7 @@ data object TrackingTab : VoyagerTab {
                                 },
                                 onPass = { /* Card dismissed */ },
                                 onRefresh = { screenModel.loadTracking() },
+                                bothSidesDismiss = swipeBothSides,
                             )
                         }
                         4 -> {
@@ -457,12 +465,74 @@ data object TrackingTab : VoyagerTab {
                                                 }
                                             }
                                         } else {
+                                            val filteredTrendingAnime = remember(currentState.trendingAnime, selectedAnimeFormat) {
+                                                if (selectedAnimeFormat == "ALL") currentState.trendingAnime
+                                                else currentState.trendingAnime.filter {
+                                                    val type = (it.publishing_type + " " + it.title).uppercase()
+                                                    when (selectedAnimeFormat) {
+                                                        "TV" -> type.contains("TV")
+                                                        "MOVIE" -> type.contains("MOVIE")
+                                                        "OVA" -> type.contains("OVA")
+                                                        "ONA" -> type.contains("ONA")
+                                                        "SPECIAL" -> type.contains("SPECIAL")
+                                                        else -> true
+                                                    }
+                                                }
+                                            }
+
+                                            val filteredPopularAnime = remember(currentState.popularAnime, selectedAnimeFormat) {
+                                                if (selectedAnimeFormat == "ALL") currentState.popularAnime
+                                                else currentState.popularAnime.filter {
+                                                    val type = (it.publishing_type + " " + it.title).uppercase()
+                                                    when (selectedAnimeFormat) {
+                                                        "TV" -> type.contains("TV")
+                                                        "MOVIE" -> type.contains("MOVIE")
+                                                        "OVA" -> type.contains("OVA")
+                                                        "ONA" -> type.contains("ONA")
+                                                        "SPECIAL" -> type.contains("SPECIAL")
+                                                        else -> true
+                                                    }
+                                                }
+                                            }
+
                                             LazyColumn(
                                                 contentPadding = PaddingValues(vertical = 12.dp),
                                                 verticalArrangement = Arrangement.spacedBy(16.dp),
                                                 modifier = Modifier.fillMaxSize(),
                                             ) {
-                                                val heroAnime = currentState.trendingAnime.firstOrNull()
+                                                // Anime Formats Filter Strip
+                                                item {
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .horizontalScroll(rememberScrollState())
+                                                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    ) {
+                                                        listOf(
+                                                            "ALL" to "All Formats",
+                                                            "TV" to "TV Series",
+                                                            "MOVIE" to "Anime Movies",
+                                                            "OVA" to "OVA",
+                                                            "ONA" to "ONA / Web",
+                                                            "SPECIAL" to "Specials",
+                                                        ).forEach { (key, label) ->
+                                                            val isSel = selectedAnimeFormat == key
+                                                            FilterChip(
+                                                                selected = isSel,
+                                                                onClick = { selectedAnimeFormat = key },
+                                                                label = { Text(label, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal) },
+                                                                colors = FilterChipDefaults.filterChipColors(
+                                                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                                ),
+                                                                shape = RoundedCornerShape(16.dp),
+                                                            )
+                                                        }
+                                                    }
+                                                }
+
+                                                val heroAnime = filteredTrendingAnime.firstOrNull()
                                                 if (heroAnime != null) {
                                                     item {
                                                         AnimiteHeroBannerCard(
@@ -476,21 +546,21 @@ data object TrackingTab : VoyagerTab {
                                                     }
                                                 }
 
-                                                if (currentState.trendingAnime.isNotEmpty()) {
+                                                if (filteredTrendingAnime.isNotEmpty()) {
                                                     item {
                                                         AnimiteAnimeMediaRow(
-                                                            title = "Trending Now",
-                                                            items = currentState.trendingAnime.drop(1),
+                                                            title = if (selectedAnimeFormat == "MOVIE") "Trending Movies" else "Trending Now",
+                                                            items = filteredTrendingAnime.drop(1),
                                                             onItemClick = screenModel::openAnimeDetails,
                                                         )
                                                     }
                                                 }
 
-                                                if (currentState.popularAnime.isNotEmpty()) {
+                                                if (filteredPopularAnime.isNotEmpty()) {
                                                     item {
                                                         AnimiteAnimeMediaRow(
-                                                            title = "All Time Popular",
-                                                            items = currentState.popularAnime,
+                                                            title = if (selectedAnimeFormat == "MOVIE") "Popular Movies" else "All Time Popular",
+                                                            items = filteredPopularAnime,
                                                             onItemClick = screenModel::openAnimeDetails,
                                                         )
                                                     }
@@ -531,12 +601,74 @@ data object TrackingTab : VoyagerTab {
                                                 }
                                             }
                                         } else {
+                                            val filteredTrendingManga = remember(currentState.trendingManga, selectedMangaFormat) {
+                                                if (selectedMangaFormat == "ALL") currentState.trendingManga
+                                                else currentState.trendingManga.filter {
+                                                    val type = (it.publishing_type + " " + it.title + " " + it.summary).uppercase()
+                                                    when (selectedMangaFormat) {
+                                                        "MANHWA" -> type.contains("MANHWA") || type.contains("WEBTOON")
+                                                        "MANHUA" -> type.contains("MANHUA")
+                                                        "NOVEL" -> type.contains("NOVEL")
+                                                        "ONE_SHOT" -> type.contains("ONE_SHOT") || type.contains("ONE SHOT")
+                                                        "MANGA" -> !type.contains("MANHWA") && !type.contains("MANHUA") && !type.contains("NOVEL")
+                                                        else -> true
+                                                    }
+                                                }
+                                            }
+
+                                            val filteredPopularManga = remember(currentState.popularManga, selectedMangaFormat) {
+                                                if (selectedMangaFormat == "ALL") currentState.popularManga
+                                                else currentState.popularManga.filter {
+                                                    val type = (it.publishing_type + " " + it.title + " " + it.summary).uppercase()
+                                                    when (selectedMangaFormat) {
+                                                        "MANHWA" -> type.contains("MANHWA") || type.contains("WEBTOON")
+                                                        "MANHUA" -> type.contains("MANHUA")
+                                                        "NOVEL" -> type.contains("NOVEL")
+                                                        "ONE_SHOT" -> type.contains("ONE_SHOT") || type.contains("ONE SHOT")
+                                                        "MANGA" -> !type.contains("MANHWA") && !type.contains("MANHUA") && !type.contains("NOVEL")
+                                                        else -> true
+                                                    }
+                                                }
+                                            }
+
                                             LazyColumn(
                                                 contentPadding = PaddingValues(vertical = 12.dp),
                                                 verticalArrangement = Arrangement.spacedBy(16.dp),
                                                 modifier = Modifier.fillMaxSize(),
                                             ) {
-                                                val heroManga = currentState.trendingManga.firstOrNull()
+                                                // Manga / Manhwa / Manhua Formats Filter Strip
+                                                item {
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .horizontalScroll(rememberScrollState())
+                                                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    ) {
+                                                        listOf(
+                                                            "ALL" to "All Formats",
+                                                            "MANGA" to "Manga (JP)",
+                                                            "MANHWA" to "Manhwa (KR)",
+                                                            "MANHUA" to "Manhua (CN)",
+                                                            "NOVEL" to "Light Novels",
+                                                            "ONE_SHOT" to "One-Shots",
+                                                        ).forEach { (key, label) ->
+                                                            val isSel = selectedMangaFormat == key
+                                                            FilterChip(
+                                                                selected = isSel,
+                                                                onClick = { selectedMangaFormat = key },
+                                                                label = { Text(label, fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal) },
+                                                                colors = FilterChipDefaults.filterChipColors(
+                                                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                                ),
+                                                                shape = RoundedCornerShape(16.dp),
+                                                            )
+                                                        }
+                                                    }
+                                                }
+
+                                                val heroManga = filteredTrendingManga.firstOrNull()
                                                 if (heroManga != null) {
                                                     item {
                                                         AnimiteHeroBannerCard(
@@ -550,21 +682,36 @@ data object TrackingTab : VoyagerTab {
                                                     }
                                                 }
 
-                                                if (currentState.trendingManga.isNotEmpty()) {
+                                                val trendingTitle = when (selectedMangaFormat) {
+                                                    "MANHWA" -> "Trending Manhwa (Webtoons)"
+                                                    "MANHUA" -> "Trending Manhua"
+                                                    "NOVEL" -> "Trending Light Novels"
+                                                    "ONE_SHOT" -> "Trending One-Shots"
+                                                    else -> "Trending Manga"
+                                                }
+                                                val popularTitle = when (selectedMangaFormat) {
+                                                    "MANHWA" -> "Popular Manhwa (Webtoons)"
+                                                    "MANHUA" -> "Popular Manhua"
+                                                    "NOVEL" -> "Popular Light Novels"
+                                                    "ONE_SHOT" -> "Popular One-Shots"
+                                                    else -> "Popular Manga"
+                                                }
+
+                                                if (filteredTrendingManga.isNotEmpty()) {
                                                     item {
                                                         AnimiteMangaMediaRow(
-                                                            title = "Trending Manga",
-                                                            items = currentState.trendingManga.drop(1),
+                                                            title = trendingTitle,
+                                                            items = filteredTrendingManga.drop(1),
                                                             onItemClick = screenModel::openMangaDetails,
                                                         )
                                                     }
                                                 }
 
-                                                if (currentState.popularManga.isNotEmpty()) {
+                                                if (filteredPopularManga.isNotEmpty()) {
                                                     item {
                                                         AnimiteMangaMediaRow(
-                                                            title = "Popular Manga",
-                                                            items = currentState.popularManga,
+                                                            title = popularTitle,
+                                                            items = filteredPopularManga,
                                                             onItemClick = screenModel::openMangaDetails,
                                                         )
                                                     }

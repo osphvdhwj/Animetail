@@ -22,6 +22,10 @@ class DiscoverPreferences(
         return preferenceStore.getBoolean("pref_enable_tinder_swipe_deck", true)
     }
 
+    fun swipeBothSidesDismiss(): Preference<Boolean> {
+        return preferenceStore.getBoolean("pref_swipe_both_sides_dismiss", false)
+    }
+
     fun lastPreloadTimestamp(): Preference<Long> {
         return preferenceStore.getLong("pref_discover_last_preload_ts", 0L)
     }

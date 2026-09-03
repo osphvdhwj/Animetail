@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.more.stats.components.BentoTimeWidget
 import eu.kanade.presentation.more.stats.components.DonutSegment
 import eu.kanade.presentation.more.stats.components.MultiTrackerStatsCard
+import eu.kanade.presentation.more.stats.components.ScoreDistributionBarChart
 import eu.kanade.presentation.more.stats.components.StatsDonutChart
 import eu.kanade.presentation.more.stats.components.StatsItem
 import eu.kanade.presentation.more.stats.components.StatsOverviewItem
@@ -212,81 +213,10 @@ private fun LazyItemScope.ChapterStats(
 private fun LazyItemScope.ScoreDistributionSection(
     data: StatsData.Trackers,
 ) {
-    val meanScore = data.meanScore
-    val meanScoreFormatted = if (meanScore.isNaN()) {
-        "—"
-    } else {
-        String.format(Locale.getDefault(), "%.1f", meanScore)
-    }
-
     SectionCard("Score Distribution") {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "Mean Score",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = "★ $meanScoreFormatted",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-
-            // Proportional Score Color Band (Red <60 / Orange 60-74 / Blue 75-84 / Green 85+)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(10.dp)
-                    .clip(RoundedCornerShape(5.dp)),
-            ) {
-                Box(modifier = Modifier.weight(1.5f).background(Color(0xFFEF4444)))
-                Box(modifier = Modifier.weight(2.5f).background(Color(0xFFF97316)))
-                Box(modifier = Modifier.weight(3.5f).background(Color(0xFF3B82F6)))
-                Box(modifier = Modifier.weight(2.5f).background(Color(0xFF10B981)))
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                ScoreLegendDot(color = Color(0xFFEF4444), label = "<60")
-                ScoreLegendDot(color = Color(0xFFF97316), label = "60-74")
-                ScoreLegendDot(color = Color(0xFF3B82F6), label = "75-84")
-                ScoreLegendDot(color = Color(0xFF10B981), label = "85+")
-            }
-        }
-    }
-}
-
-@Composable
-private fun ScoreLegendDot(color: Color, label: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(color),
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 10.sp,
+        ScoreDistributionBarChart(
+            scoreDistribution = data.scoreDistribution,
+            meanScore = data.meanScore,
         )
     }
 }

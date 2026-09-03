@@ -36,7 +36,17 @@ import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
-private val HISTORY_ITEM_HEIGHT = 96.dp
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
+
+private val HISTORY_ITEM_HEIGHT = 100.dp
 
 @Composable
 fun MangaHistoryItem(
@@ -47,91 +57,129 @@ fun MangaHistoryItem(
     onClickFavorite: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         modifier = modifier
-            .clickable(onClick = onClickResume)
-            .height(HISTORY_ITEM_HEIGHT)
-            .padding(
-                horizontal = MaterialTheme.padding.medium,
-                vertical = MaterialTheme.padding.small,
-            ),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .clickable(onClick = onClickResume),
     ) {
-        ItemCover.Book(
-            modifier = Modifier.fillMaxHeight(),
-            data = history.coverData,
-            onClick = onClickCover,
-        )
-        Column(
+        Row(
             modifier = Modifier
-                .weight(1f)
-                .padding(start = MaterialTheme.padding.medium, end = MaterialTheme.padding.small),
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            val textStyle = MaterialTheme.typography.bodyMedium
-            Text(
-                text = history.title,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                style = textStyle,
-            )
-            val readAt = remember { history.readAt?.toTimestampString() ?: "" }
-            val lastPage = history.lastPageRead.takeIf { it > 0L }
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = if (history.chapterNumber > -1) {
-                        stringResource(
-                            MR.strings.recent_manga_time,
-                            formatChapterNumber(history.chapterNumber),
-                            readAt,
-                        )
-                    } else {
-                        readAt
-                    },
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = textStyle,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+            // Book Cover Thumbnail
+            Box(
+                modifier = Modifier
+                    .width(64.dp)
+                    .height(84.dp)
+                    .clip(RoundedCornerShape(10.dp)),
+            ) {
+                ItemCover.Book(
+                    modifier = Modifier.fillMaxSize(),
+                    data = history.coverData,
+                    onClick = onClickCover,
                 )
+            }
 
-                if (lastPage != null) {
-                    DotSeparatorText()
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp, end = 6.dp),
+            ) {
+                Text(
+                    text = history.title,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                val readAt = remember { history.readAt?.toTimestampString() ?: "" }
+                val lastPage = history.lastPageRead.takeIf { it > 0L }
+
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (history.chapterNumber > -1) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                        ) {
+                            Text(
+                                text = "CH ${formatChapterNumber(history.chapterNumber)}",
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+
                     Text(
-                        text = stringResource(MR.strings.chapter_progress, (lastPage + 1).toInt()),
+                        text = readAt,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
-                        color = LocalContentColor.current.copy(alpha = DISABLED_ALPHA),
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+
+                if (lastPage != null) {
+                    Text(
+                        text = stringResource(MR.strings.chapter_progress, (lastPage + 1).toInt()),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
             }
-        }
 
-        if (!history.coverData.isMangaFavorite) {
-            IconButton(onClick = onClickFavorite) {
-                Icon(
-                    imageVector = Icons.Outlined.FavoriteBorder,
-                    contentDescription = stringResource(MR.strings.add_to_library),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
+            // Quick Actions
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!history.coverData.isMangaFavorite) {
+                    IconButton(
+                        onClick = onClickFavorite,
+                        modifier = Modifier.size(34.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.FavoriteBorder,
+                            contentDescription = stringResource(MR.strings.add_to_library),
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = onClickResume,
+                    modifier = Modifier.size(34.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.AutoStories,
+                        contentDescription = stringResource(MR.strings.action_resume),
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                IconButton(
+                    onClick = onClickDelete,
+                    modifier = Modifier.size(34.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Delete,
+                        contentDescription = stringResource(MR.strings.action_delete),
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-        }
-
-        // Quick Resume Read button
-        IconButton(onClick = onClickResume) {
-            Icon(
-                imageVector = Icons.Outlined.AutoStories,
-                contentDescription = stringResource(MR.strings.action_resume),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
-
-        IconButton(onClick = onClickDelete) {
-            Icon(
-                imageVector = Icons.Outlined.Delete,
-                contentDescription = stringResource(MR.strings.action_delete),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
         }
     }
 }

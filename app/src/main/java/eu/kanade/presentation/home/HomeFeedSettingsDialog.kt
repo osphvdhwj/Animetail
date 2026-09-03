@@ -28,6 +28,14 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.CheckboxItem
 import tachiyomi.presentation.core.components.HeadingItem
 import tachiyomi.presentation.core.i18n.stringResource
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import eu.kanade.core.preference.asState
+import eu.kanade.domain.discover.DiscoverPreferences
+import tachiyomi.presentation.core.util.collectAsState
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 /**
  * Control segmentado compacto reutilizable.
@@ -204,6 +212,10 @@ private fun FeaturedSettingsTab(
     onToggleAutoScrollHero: () -> Unit,
     onSetHeroSource: (HeroSource) -> Unit,
 ) {
+    val discoverPrefs = remember { Injekt.get<DiscoverPreferences>() }
+    val scope = rememberCoroutineScope()
+    val bothSidesDismiss by discoverPrefs.swipeBothSidesDismiss().asState(scope)
+
     HeadingItem(stringResource(MR.strings.show_featured))
     CheckboxItem(
         label = stringResource(MR.strings.auto_scroll_hero),
@@ -224,6 +236,13 @@ private fun FeaturedSettingsTab(
             onSelect = onSetHeroSource,
         )
     }
+
+    HeadingItem("Card Swipe Deck")
+    CheckboxItem(
+        label = "Swipe Right & Left Both Dismiss Cards",
+        checked = bothSidesDismiss,
+        onClick = { discoverPrefs.swipeBothSidesDismiss().set(!bothSidesDismiss) },
+    )
 }
 
 @Composable

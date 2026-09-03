@@ -50,7 +50,23 @@ enum class AiringDay(val displayName: String, val dayOffset: Int) {
     TODAY("Today", 0),
     TOMORROW("Tomorrow", 1),
     DAY_AFTER("In 2 Days", 2),
-    WEEK("This Week", 7),
+    DAY_4("In 3 Days", 3),
+    DAY_5("In 4 Days", 4),
+    DAY_6("In 5 Days", 5),
+    DAY_7("In 6 Days", 6),
+    WEEK("This Week", 7);
+
+    fun getComputedLabel(): String {
+        if (this == WEEK) return "This Week"
+        val cal = java.util.Calendar.getInstance()
+        cal.add(java.util.Calendar.DAY_OF_YEAR, dayOffset)
+        val dayName = java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault()).format(cal.time)
+        return when (dayOffset) {
+            0 -> "Today ($dayName)"
+            1 -> "Tomorrow ($dayName)"
+            else -> dayName
+        }
+    }
 }
 
 @Composable
@@ -79,7 +95,7 @@ fun AiringScheduleView(
                     onClick = { onSelectDay(day) },
                     label = {
                         Text(
-                            text = day.displayName,
+                            text = day.getComputedLabel(),
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         )
                     },
@@ -100,7 +116,7 @@ fun AiringScheduleView(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "No airing episodes scheduled for ${selectedDay.displayName}",
+                    text = "No airing episodes scheduled for ${selectedDay.getComputedLabel()}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -202,6 +218,21 @@ fun AiringEpisodeItemCard(
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                         )
+                    }
+
+                    if (episode.score > 0) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        ) {
+                            Text(
+                                text = "★ ${String.format(java.util.Locale.US, "%.1f", if (episode.score > 10) episode.score / 10f else episode.score)}",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp),
+                            )
+                        }
                     }
 
                     if (episode.format.isNotBlank()) {

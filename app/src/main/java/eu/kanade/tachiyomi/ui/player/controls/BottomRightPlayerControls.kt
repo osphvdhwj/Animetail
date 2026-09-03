@@ -40,6 +40,7 @@ fun BottomRightPlayerControls(
     isPipAvailable: Boolean,
     onAspectClick: () -> Unit,
     onPipClick: () -> Unit,
+    controlsShown: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     Row(modifier) {
@@ -49,7 +50,7 @@ fun BottomRightPlayerControls(
                 onClick = onPressSkipIntroButton,
                 onLongClick = {},
             )
-        } else if (customButton != null) {
+        } else if (customButton != null && controlsShown) {
             FilledControlsButton(
                 text = customButtonTitle,
                 onClick = { customButton.execute(mpv) },
@@ -57,16 +58,18 @@ fun BottomRightPlayerControls(
             )
         }
 
-        if (isPipAvailable) {
+        if (controlsShown) {
+            if (isPipAvailable) {
+                ControlsButton(
+                    Icons.Default.PictureInPictureAlt,
+                    onClick = onPipClick,
+                )
+            }
+
             ControlsButton(
-                Icons.Default.PictureInPictureAlt,
-                onClick = onPipClick,
+                Icons.Default.AspectRatio,
+                onClick = onAspectClick,
             )
         }
-
-        ControlsButton(
-            Icons.Default.AspectRatio,
-            onClick = onAspectClick,
-        )
     }
 }

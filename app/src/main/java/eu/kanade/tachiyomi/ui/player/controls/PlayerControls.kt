@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import eu.kanade.presentation.more.settings.screen.player.custombutton.getButtons
@@ -70,6 +71,7 @@ import eu.kanade.tachiyomi.ui.player.cast.components.CastSheet
 import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessOverlay
 import eu.kanade.tachiyomi.ui.player.controls.components.BrightnessSlider
 import eu.kanade.tachiyomi.ui.player.controls.components.ControlsButton
+import eu.kanade.tachiyomi.ui.player.controls.components.NextEpisodeAutoplayCard
 import eu.kanade.tachiyomi.ui.player.controls.components.SeekbarWithTimers
 import eu.kanade.tachiyomi.ui.player.controls.components.SpeedPlayerUpdate
 import eu.kanade.tachiyomi.ui.player.controls.components.TextPlayerUpdate
@@ -197,10 +199,25 @@ fun PlayerControls(
                     unlockControlsButton,
                     bottomRightControls, bottomLeftControls,
                     centerControls, thumbnail, seekbar, playerUpdates,
+                    nextEpisodeAutoplay,
                 ) = createRefs()
 
                 val hasPreviousEpisode by viewModel.hasPreviousEpisode.collectAsState()
                 val hasNextEpisode by viewModel.hasNextEpisode.collectAsState()
+                val playlist by viewModel.currentPlaylist.collectAsState()
+                val currentEpisode by viewModel.currentEpisode.collectAsState()
+                var isAutoplayDismissed by remember(currentEpisode?.id) { mutableStateOf(false) }
+                val remainingSeconds = (duration - position).toInt()
+                val isNearEnd = duration > 45f && remainingSeconds in 1..20
+                val showAutoplayCard = hasNextEpisode && isNearEnd && !isAutoplayDismissed && !areControlsLocked
+
+                val nextEpisodeName = remember(playlist, currentEpisode) {
+                    val currentIndex = playlist.indexOfFirst { it.id == currentEpisode?.id }
+                    if (currentIndex != -1 && currentIndex + 1 < playlist.size) {
+                        playlist[currentIndex + 1].name
+                    } else "Next Episode"
+                }
+
                 val isBrightnessSliderShown by viewModel.isBrightnessSliderShown.collectAsState()
                 val isVolumeSliderShown by viewModel.isVolumeSliderShown.collectAsState()
                 val brightness by viewModel.currentBrightness.collectAsState()
@@ -493,7 +510,7 @@ fun PlayerControls(
                 val skipIntroButton by viewModel.skipIntroText.collectAsState()
                 val customButtonTitle by viewModel.primaryButtonTitle.collectAsState()
                 AnimatedVisibility(
-                    controlsShown && !areControlsLocked,
+                    (controlsShown || skipIntroButton != null) && !areControlsLocked,
                     enter = if (!reduceMotion) {
                         slideInHorizontally(playerControlsEnterAnimationSpec()) { it } +
                             fadeIn(playerControlsEnterAnimationSpec())
@@ -533,8 +550,28 @@ fun PlayerControls(
                                 },
                             )
                         },
+                        controlsShown = controlsShown,
                     )
                 }
+
+                // Next Episode Autoplay Countdown Card (Jellyfin / Netflix style)
+                NextEpisodeAutoplayCard(
+                    isVisible = showAutoplayCard,
+                    nextEpisodeTitle = nextEpisodeName,
+                    countdownSeconds = remainingSeconds,
+                    totalSeconds = 20,
+                    onPlayNext = {
+                        viewModel.changeEpisode(previous = false)
+                    },
+                    onDismiss = {
+                        isAutoplayDismissed = true
+                    },
+                    modifier = Modifier.constrainAs(nextEpisodeAutoplay) {
+                        bottom.linkTo(seekbar.top, 12.dp)
+                        end.linkTo(parent.end, 16.dp)
+                    },
+                )
+
                 // Bottom left controls
                 val playbackSpeed by viewModel.playbackSpeed.collectAsState()
                 AnimatedVisibility(

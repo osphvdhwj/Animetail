@@ -150,12 +150,25 @@ object AboutScreen : Screen() {
 
                 item {
                     TextPreferenceWidget(
-                        title = stringResource(MR.strings.help_translate),
-                        onPreferenceClick = {
-                            uriHandler.openUri(
-                                "https://aniyomi.org/docs/contribute#translation",
-                            )
-                        },
+                        title = "Developer (@osphvdhwj)",
+                        subtitle = "View developer profile and projects",
+                        onPreferenceClick = { uriHandler.openUri("https://github.com/osphvdhwj") },
+                    )
+                }
+
+                item {
+                    TextPreferenceWidget(
+                        title = "GitHub Repository",
+                        subtitle = "osphvdhwj/Animetail",
+                        onPreferenceClick = { uriHandler.openUri("https://github.com/osphvdhwj/Animetail") },
+                    )
+                }
+
+                item {
+                    TextPreferenceWidget(
+                        title = "Report an Issue / Feature Request",
+                        subtitle = "Open an issue on GitHub",
+                        onPreferenceClick = { uriHandler.openUri("https://github.com/osphvdhwj/Animetail/issues") },
                     )
                 }
 
@@ -167,13 +180,6 @@ object AboutScreen : Screen() {
                 }
 
                 item {
-                    TextPreferenceWidget(
-                        title = stringResource(MR.strings.privacy_policy),
-                        onPreferenceClick = { uriHandler.openUri("https://aniyomi.org/privacy/") },
-                    )
-                }
-
-                item {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -181,19 +187,14 @@ object AboutScreen : Screen() {
                         horizontalArrangement = Arrangement.Center,
                     ) {
                         LinkIcon(
-                            label = stringResource(MR.strings.website),
+                            label = "Developer",
                             icon = Icons.Outlined.Public,
-                            url = "https://akiled.org",
-                        )
-                        LinkIcon(
-                            label = "Discord",
-                            icon = CustomIcons.Discord,
-                            url = Constants.URL_DISCORD,
+                            url = "https://github.com/osphvdhwj",
                         )
                         LinkIcon(
                             label = "GitHub",
                             icon = CustomIcons.Github,
-                            url = "https://github.com/Animetailapp/Animetail",
+                            url = "https://github.com/osphvdhwj/Animetail",
                         )
                     }
                 }

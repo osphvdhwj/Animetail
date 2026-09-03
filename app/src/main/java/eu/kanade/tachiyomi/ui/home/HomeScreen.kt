@@ -244,7 +244,10 @@ object HomeScreen : Screen() {
 
                             is Tab.History -> HistoriesTab
 
-                            is Tab.Discover -> TrackingTab
+                            is Tab.Discover -> {
+                                HomeTab.activeSubTab.value = 1
+                                HomeTab
+                            }
 
                             is Tab.Browse -> {
                                 if (it.toExtensions) {

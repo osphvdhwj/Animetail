@@ -1,5 +1,6 @@
 package eu.kanade.presentation.components
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Close
@@ -41,8 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -300,15 +301,21 @@ fun SearchToolbar(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
+    val closeSearchAction: () -> Unit = {
+        keyboardController?.hide()
+        focusManager.clearFocus()
+        onClickCloseSearch()
+    }
+
+    BackHandler(enabled = searchQuery != null, onBack = closeSearchAction)
 
     AppBar(
         modifier = modifier,
         titleContent = {
             if (searchQuery == null) return@AppBar titleContent()
-
-            val keyboardController = LocalSoftwareKeyboardController.current
-            val focusManager = LocalFocusManager.current
 
             val searchAndClearFocus: () -> Unit = f@{
                 if (searchQuery.isBlank()) return@f
@@ -366,7 +373,7 @@ fun SearchToolbar(
                 },
             )
         },
-        navigateUp = if (searchQuery == null) navigateUp else onClickCloseSearch,
+        navigateUp = if (searchQuery == null) navigateUp else closeSearchAction,
         actions = {
             key("search") {
                 val onClick = { onChangeSearchQuery("") }

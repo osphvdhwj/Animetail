@@ -26,6 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -246,10 +247,11 @@ fun Screen.profileStatsTab(): TabContent {
                                         Spacer(modifier = Modifier.height(12.dp))
 
                                         accounts.forEach { account ->
+                                            val profileUrl = getTrackerProfileUrl(account.tracker.id, account.username)
                                             Row(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
-                                                    .padding(vertical = 6.dp),
+                                                    .padding(vertical = 4.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Icon(
@@ -267,18 +269,32 @@ fun Screen.profileStatsTab(): TabContent {
                                                     )
                                                     if (account.username.isNotBlank()) {
                                                         Text(
-                                                            text = account.username,
+                                                            text = "@${account.username}",
                                                             style = MaterialTheme.typography.bodySmall,
                                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                                         )
                                                     }
                                                 }
-                                                Icon(
-                                                    imageVector = Icons.Outlined.CheckCircle,
-                                                    contentDescription = "Connected",
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
+                                                if (profileUrl != null) {
+                                                    IconButton(
+                                                        onClick = { uriHandler.openUri(profileUrl) },
+                                                        modifier = Modifier.size(32.dp)
+                                                    ) {
+                                                        Icon(
+                                                            imageVector = Icons.Outlined.OpenInNew,
+                                                            contentDescription = "Open ${account.trackerName} Profile",
+                                                            tint = MaterialTheme.colorScheme.primary,
+                                                            modifier = Modifier.size(18.dp)
+                                                        )
+                                                    }
+                                                } else {
+                                                    Icon(
+                                                        imageVector = Icons.Outlined.CheckCircle,
+                                                        contentDescription = "Connected",
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -374,5 +390,20 @@ private fun StatItem(label: String, value: String, modifier: Modifier = Modifier
     Column(modifier = modifier, horizontalAlignment = Alignment.Start) {
         Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(text = value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+private fun getTrackerProfileUrl(trackerId: Long, username: String): String? {
+    if (username.isBlank()) return null
+    return when (trackerId) {
+        1L -> "https://myanimelist.net/profile/$username"
+        2L -> "https://anilist.co/user/$username"
+        3L -> "https://kitsu.app/users/$username"
+        4L -> "https://shikimori.one/$username"
+        5L -> "https://bgm.tv/user/$username"
+        7L -> "https://www.mangaupdates.com/members.html?id=$username"
+        101L -> "https://simkl.com/$username"
+        201L -> "https://trakt.tv/users/$username"
+        else -> null
     }
 }

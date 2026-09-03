@@ -37,8 +37,17 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.platform.LocalContext
+import eu.kanade.tachiyomi.util.system.toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -82,11 +91,14 @@ fun MediaDetailsBottomSheet(
             String.format(java.util.Locale.US, "%.1f", rawScore)
         }
     } else null
-    val totalCount = anime?.total_episodes ?: manga?.total_chapters ?: 0
+    val totalCount = (anime?.total_episodes ?: manga?.total_chapters ?: 0).toInt()
     val isAnime = anime != null
     val authors = anime?.authors ?: manga?.authors ?: emptyList()
 
+    val context = LocalContext.current
     var isSummaryExpanded by remember { mutableStateOf(false) }
+    var userStatus by remember { mutableStateOf(if (isAnime) "Watching" else "Reading") }
+    var userProgress by remember { mutableIntStateOf(0) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -254,6 +266,109 @@ fun MediaDetailsBottomSheet(
                             contentDescription = "Open Web",
                             modifier = Modifier.size(18.dp),
                         )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Interactive Tracking Entry Status & Progress Manager (Custom-made for all tracking sites)
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Text(
+                        text = "Sync & Tracking Status",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+
+                    // Status Filter Chips
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        val statusList = if (isAnime) {
+                            listOf("Watching", "Plan to Watch", "Completed", "On Hold", "Dropped")
+                        } else {
+                            listOf("Reading", "Plan to Read", "Completed", "On Hold", "Dropped")
+                        }
+                        statusList.forEach { statusOption ->
+                            val isSel = userStatus == statusOption
+                            FilterChip(
+                                selected = isSel,
+                                onClick = {
+                                    userStatus = statusOption
+                                    context.toast("Tracking status set to $statusOption")
+                                },
+                                label = { Text(statusOption, fontSize = 12.sp) },
+                                leadingIcon = if (isSel) {
+                                    { Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(14.dp)) }
+                                } else null,
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                ),
+                            )
+                        }
+                    }
+
+                    // Progress Stepper
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = if (isAnime) "Episodes Progress" else "Chapters Progress",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    if (userProgress > 0) {
+                                        userProgress--
+                                        context.toast("Progress: $userProgress")
+                                    }
+                                },
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Icon(Icons.Outlined.Remove, contentDescription = "Decrease", modifier = Modifier.size(16.dp))
+                            }
+
+                            Text(
+                                text = if (totalCount > 0) "$userProgress / $totalCount" else "$userProgress",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                            )
+
+                            IconButton(
+                                onClick = {
+                                    if (totalCount == 0 || userProgress < totalCount) {
+                                        userProgress++
+                                        context.toast("Progress: $userProgress")
+                                    }
+                                },
+                                modifier = Modifier.size(32.dp),
+                            ) {
+                                Icon(Icons.Outlined.Add, contentDescription = "Increase", modifier = Modifier.size(16.dp))
+                            }
+                        }
                     }
                 }
             }

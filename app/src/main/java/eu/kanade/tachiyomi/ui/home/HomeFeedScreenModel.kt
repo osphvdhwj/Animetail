@@ -603,6 +603,17 @@ class HomeFeedScreenModel(
                         relation.chapterNumber.toString()
                     }
 
+                    val libManga = libraryMangaList.find { it.id == relation.mangaId }?.manga
+                    val genreStr = libManga?.genre?.joinToString(", ") ?: ""
+                    val clean = "${relation.title} $genreStr".lowercase()
+                    val detectedType = when {
+                        clean.contains("manhwa") -> MediaType.MANHWA
+                        clean.contains("manhua") -> MediaType.MANHUA
+                        clean.contains("webtoon") -> MediaType.WEBTOON
+                        clean.contains("light novel") || clean.contains("novel") -> MediaType.NOVEL
+                        else -> MediaType.MANGA
+                    }
+
                     HomeItemData(
                         id = relation.mangaId,
                         isAnime = false,
@@ -611,10 +622,11 @@ class HomeFeedScreenModel(
                         title = relation.title,
                         subtitle = "Capítulo $chNum",
                         coverData = relation.coverData,
-                        mediaType = MediaType.MANGA,
+                        mediaType = detectedType,
                         progress = 0.8f,
                         remainingInfo = "Cap. $chNum",
                         synopsis = relation.title,
+                        genres = genreStr,
                         lastUpdatedTimestamp = relation.readAt?.time ?: 0L,
                     )
                 }
@@ -671,17 +683,26 @@ class HomeFeedScreenModel(
 
             val mangaItems = sourceMangaList.map { lib ->
                 val manga = lib.manga
+                val genreStr = manga.genre?.joinToString(", ") ?: ""
+                val clean = "${manga.title} $genreStr".lowercase()
+                val detectedType = when {
+                    clean.contains("manhwa") -> MediaType.MANHWA
+                    clean.contains("manhua") -> MediaType.MANHUA
+                    clean.contains("webtoon") -> MediaType.WEBTOON
+                    clean.contains("light novel") || clean.contains("novel") -> MediaType.NOVEL
+                    else -> MediaType.MANGA
+                }
                 HomeItemData(
                     id = manga.id,
                     isAnime = false,
                     inLibrary = true,
                     title = manga.title,
-                    subtitle = manga.genre?.firstOrNull() ?: "Manga",
+                    subtitle = manga.genre?.firstOrNull() ?: detectedType.name.lowercase().replaceFirstChar { it.uppercase() },
                     coverData = manga.asMangaCover(),
-                    mediaType = MediaType.MANGA,
+                    mediaType = detectedType,
                     rating = "",
                     synopsis = manga.description ?: manga.title,
-                    genres = manga.genre?.joinToString(", ") ?: "",
+                    genres = genreStr,
                 )
             }
 
@@ -798,14 +819,14 @@ class HomeFeedScreenModel(
             val unifiedRecommended = filteredRecs.shuffled()
 
             val displayBecauseYouWatched = when (filter) {
-                HomeMediaFilter.VIDEO_ONLY -> becauseYouWatchedList.filter { it.mediaType != MediaType.MANGA }
-                HomeMediaFilter.MANGA_ONLY -> becauseYouWatchedList.filter { it.mediaType == MediaType.MANGA }
+                HomeMediaFilter.VIDEO_ONLY -> becauseYouWatchedList.filter { it.mediaType.isVideo }
+                HomeMediaFilter.MANGA_ONLY -> becauseYouWatchedList.filter { it.mediaType.isReading }
                 HomeMediaFilter.ALL -> becauseYouWatchedList
             }
 
             val displayRecommended = when (filter) {
-                HomeMediaFilter.VIDEO_ONLY -> unifiedRecommended.filter { it.mediaType != MediaType.MANGA }
-                HomeMediaFilter.MANGA_ONLY -> unifiedRecommended.filter { it.mediaType == MediaType.MANGA }
+                HomeMediaFilter.VIDEO_ONLY -> unifiedRecommended.filter { it.mediaType.isVideo }
+                HomeMediaFilter.MANGA_ONLY -> unifiedRecommended.filter { it.mediaType.isReading }
                 HomeMediaFilter.ALL -> unifiedRecommended
             }
 
@@ -818,7 +839,7 @@ class HomeFeedScreenModel(
             } else {
                 (processedRemoteAnime + processedRemoteManga).shuffled()
             }
-            val videoItems = animeItems.filter { it.mediaType != MediaType.MANGA }
+            val videoItems = animeItems.filter { it.mediaType.isVideo }
             val fallbackCarousel = if (videoItems.isNotEmpty()) {
                 videoItems.distinctBy { it.id }.take(7)
             } else {

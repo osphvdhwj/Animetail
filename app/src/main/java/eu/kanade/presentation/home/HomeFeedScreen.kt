@@ -59,6 +59,7 @@ import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.home.HomeFeedScreenModel
 import eu.kanade.tachiyomi.ui.home.HomeTab
+import eu.kanade.tachiyomi.ui.home.HomeTabSwitcher
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
@@ -87,6 +88,7 @@ fun HomeFeedScreen(
     val model = screenModel
     val state by model.state.collectAsState()
     var selectedMediaType by remember { mutableStateOf(MediaType.ALL) }
+    var selectedGenre by remember { mutableStateOf("") }
     var showSettingsDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -143,10 +145,9 @@ fun HomeFeedScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = stringResource(MR.strings.label_home),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                    HomeTabSwitcher(
+                        selectedTab = 0,
+                        onSelectTab = { if (it != 0) HomeTab.activeSubTab.value = it },
                     )
                 },
                 actions = {
@@ -160,6 +161,12 @@ fun HomeFeedScreen(
                         Icon(
                             imageVector = Icons.Default.Notifications,
                             contentDescription = stringResource(MR.strings.label_notifications),
+                        )
+                    }
+                    IconButton(onClick = { showSettingsDialog = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = "Customize Home Feed",
                         )
                     }
                 },
@@ -188,12 +195,18 @@ fun HomeFeedScreen(
                         .padding(padding),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    // 1. Chips de Filtro Horizontal (Todo, Películas, Series, Anime, Manga)
+                    // 1. Chips de Filtro Horizontal (Todo, Películas, Series, Anime, Manga + Géneros)
                     item {
-                        MediaFormatFilterChips(
-                            selectedMediaType = selectedMediaType,
-                            onMediaTypeSelected = { selectedMediaType = it },
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            MediaFormatFilterChips(
+                                selectedMediaType = selectedMediaType,
+                                onMediaTypeSelected = { selectedMediaType = it },
+                            )
+                            GenreFilterChips(
+                                selectedGenre = selectedGenre,
+                                onGenreSelected = { selectedGenre = it },
+                            )
+                        }
                     }
 
                     // 2. Banner Destacado (Hero Carousel con avance automático de 7+ ítems)
@@ -255,6 +268,7 @@ fun HomeFeedScreen(
                                 title = headerText,
                                 items = state.becauseYouWatchedList,
                                 selectedMediaType = selectedMediaType,
+                                selectedGenre = selectedGenre,
                                 itemsPerSection = state.itemsPerSection,
                                 onItemClick = onItemClick,
                             )
@@ -268,6 +282,7 @@ fun HomeFeedScreen(
                                 title = stringResource(MR.strings.label_recommended_for_you),
                                 items = state.recommendedList,
                                 selectedMediaType = selectedMediaType,
+                                selectedGenre = selectedGenre,
                                 itemsPerSection = state.itemsPerSection,
                                 onItemClick = onItemClick,
                             )
@@ -281,6 +296,7 @@ fun HomeFeedScreen(
                                 title = stringResource(MR.strings.label_popular_movies),
                                 items = state.movieList,
                                 selectedMediaType = selectedMediaType,
+                                selectedGenre = selectedGenre,
                                 itemsPerSection = state.itemsPerSection,
                                 onItemClick = onItemClick,
                             )
@@ -294,6 +310,7 @@ fun HomeFeedScreen(
                                 title = stringResource(MR.strings.label_popular_series),
                                 items = state.seriesList,
                                 selectedMediaType = selectedMediaType,
+                                selectedGenre = selectedGenre,
                                 itemsPerSection = state.itemsPerSection,
                                 onItemClick = onItemClick,
                             )
@@ -307,6 +324,7 @@ fun HomeFeedScreen(
                                 title = stringResource(MR.strings.label_popular_anime),
                                 items = state.animeList,
                                 selectedMediaType = selectedMediaType,
+                                selectedGenre = selectedGenre,
                                 itemsPerSection = state.itemsPerSection,
                                 onItemClick = onItemClick,
                             )
@@ -320,6 +338,7 @@ fun HomeFeedScreen(
                                 title = stringResource(MR.strings.label_popular_manga),
                                 items = state.mangaList,
                                 selectedMediaType = selectedMediaType,
+                                selectedGenre = selectedGenre,
                                 itemsPerSection = state.itemsPerSection,
                                 onItemClick = onItemClick,
                             )

@@ -87,6 +87,58 @@ fun MediaFormatFilterChips(
     }
 }
 
+val POPULAR_GENRES = listOf(
+    "All Genres",
+    "Action",
+    "Adventure",
+    "Comedy",
+    "Drama",
+    "Fantasy",
+    "Romance",
+    "Sci-Fi",
+    "Mystery",
+    "Supernatural",
+    "Slice of Life",
+    "Sports",
+    "Horror",
+    "Thriller",
+)
+
+@Composable
+fun GenreFilterChips(
+    selectedGenre: String,
+    onGenreSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        items(POPULAR_GENRES) { genre ->
+            val isSelected = selectedGenre == genre || (selectedGenre.isEmpty() && genre == "All Genres")
+            FilterChip(
+                selected = isSelected,
+                onClick = {
+                    onGenreSelected(if (genre == "All Genres") "" else genre)
+                },
+                label = {
+                    Text(
+                        text = genre,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+                shape = RoundedCornerShape(16.dp),
+            )
+        }
+    }
+}
+
 /**
  * Componente de sección reutilizable para el feed de inicio con soporte de filtrado y límite.
  */
@@ -95,6 +147,7 @@ fun HomeFeedSection(
     title: String,
     items: List<HomeItemData>,
     selectedMediaType: MediaType,
+    selectedGenre: String = "",
     itemsPerSection: Int = 12,
     shouldFilterByType: Boolean = true,
     onItemClick: (HomeItemData) -> Unit,
@@ -102,12 +155,16 @@ fun HomeFeedSection(
 ) {
     if (items.isEmpty()) return
 
-    val filteredItems = remember(items, selectedMediaType, itemsPerSection, shouldFilterByType) {
-        if (!shouldFilterByType || selectedMediaType == MediaType.ALL) {
+    val filteredItems = remember(items, selectedMediaType, selectedGenre, itemsPerSection, shouldFilterByType) {
+        var result = if (!shouldFilterByType || selectedMediaType == MediaType.ALL) {
             items
         } else {
             items.filter { it.mediaType == selectedMediaType }
-        }.take(itemsPerSection)
+        }
+        if (selectedGenre.isNotBlank()) {
+            result = result.filter { it.genres.contains(selectedGenre, ignoreCase = true) }
+        }
+        result.take(itemsPerSection)
     }
 
     if (filteredItems.isNotEmpty()) {

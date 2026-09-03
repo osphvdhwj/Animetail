@@ -1,7 +1,12 @@
 package eu.kanade.tachiyomi.ui.discover.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +85,7 @@ fun TinderDiscoveryDeck(
     onSaveToLibrary: (SwipeableMediaCard) -> Unit,
     onPass: (SwipeableMediaCard) -> Unit,
     onRefresh: () -> Unit,
+    bothSidesDismiss: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     if (items.isEmpty()) {
@@ -121,6 +128,7 @@ fun TinderDiscoveryDeck(
 
     val currentCard = items.getOrNull(currentIndex)
     val nextCard = items.getOrNull(currentIndex + 1)
+    val isDraggingUp = offsetY.value < -40f
 
     Column(
         modifier = modifier
@@ -136,13 +144,20 @@ fun TinderDiscoveryDeck(
                 .weight(1f),
             contentAlignment = Alignment.Center,
         ) {
-            // Background Next Card Preview
+            // Background Next Card Preview with depth scaling
             if (nextCard != null) {
+                val nextScale = (0.94f + (kotlin.math.abs(offsetX.value) / 2000f)).coerceIn(0.94f, 1f)
                 DeckCardItem(
                     card = nextCard,
+                    dragOffsetX = 0f,
+                    bothSidesDismiss = bothSidesDismiss,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 16.dp, start = 12.dp, end = 12.dp),
+                        .padding(top = 16.dp, start = 12.dp, end = 12.dp)
+                        .graphicsLayer {
+                            scaleX = nextScale
+                            scaleY = nextScale
+                        },
                     onClick = {},
                 )
             }
@@ -153,6 +168,8 @@ fun TinderDiscoveryDeck(
 
                 DeckCardItem(
                     card = currentCard,
+                    dragOffsetX = offsetX.value,
+                    bothSidesDismiss = bothSidesDismiss,
                     modifier = Modifier
                         .fillMaxSize()
                         .offset { IntOffset(offsetX.value.roundToInt(), offsetY.value.roundToInt()) }
@@ -161,15 +178,19 @@ fun TinderDiscoveryDeck(
                             detectDragGestures(
                                 onDragEnd = {
                                     scope.launch {
-                                        if (offsetX.value > 300f) {
-                                            // Swiped Right -> Like
+                                        if (offsetX.value > 150f) {
+                                            // Swiped Right
                                             offsetX.animateTo(1000f, tween(200))
-                                            onSaveToLibrary(currentCard)
+                                            if (bothSidesDismiss) {
+                                                onPass(currentCard)
+                                            } else {
+                                                onSaveToLibrary(currentCard)
+                                            }
                                             currentIndex++
                                             offsetX.snapTo(0f)
                                             offsetY.snapTo(0f)
-                                        } else if (offsetX.value < -300f) {
-                                            // Swiped Left -> Pass
+                                        } else if (offsetX.value < -150f) {
+                                            // Swiped Left -> Pass / Dismiss
                                             offsetX.animateTo(-1000f, tween(200))
                                             onPass(currentCard)
                                             currentIndex++
@@ -198,72 +219,86 @@ fun TinderDiscoveryDeck(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Action Buttons Row (Pass, Info, Like)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically,
+        // Action Buttons Row (Pass, Info, Like) - Automatically hides when dragging up
+        AnimatedVisibility(
+            visible = !isDraggingUp,
+            enter = fadeIn(tween(150)) + expandVertically(tween(150)),
+            exit = fadeOut(tween(150)) + shrinkVertically(tween(150)),
         ) {
-            // Pass Button
-            FilledIconButton(
-                onClick = {
-                    if (currentCard != null) {
-                        scope.launch {
-                            offsetX.animateTo(-1000f, tween(200))
-                            onPass(currentCard)
-                            currentIndex++
-                            offsetX.snapTo(0f)
-                            offsetY.snapTo(0f)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Pass / Dismiss Left Button
+                FilledIconButton(
+                    onClick = {
+                        if (currentCard != null) {
+                            scope.launch {
+                                offsetX.animateTo(-1000f, tween(200))
+                                onPass(currentCard)
+                                currentIndex++
+                                offsetX.snapTo(0f)
+                                offsetY.snapTo(0f)
+                            }
                         }
-                    }
-                },
-                modifier = Modifier.size(56.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                ),
-            ) {
-                Icon(Icons.Outlined.Close, contentDescription = "Pass", modifier = Modifier.size(28.dp))
-            }
+                    },
+                    modifier = Modifier.size(56.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    ),
+                ) {
+                    Icon(Icons.Outlined.Close, contentDescription = "Dismiss", modifier = Modifier.size(28.dp))
+                }
 
-            // Info / Details Button
-            FilledIconButton(
-                onClick = {
-                    if (currentCard != null) {
-                        onCardClick(currentCard)
-                    }
-                },
-                modifier = Modifier.size(46.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-            ) {
-                Icon(Icons.Outlined.Info, contentDescription = "Details", modifier = Modifier.size(22.dp))
-            }
-
-            // Like / Save Button
-            FilledIconButton(
-                onClick = {
-                    if (currentCard != null) {
-                        scope.launch {
-                            offsetX.animateTo(1000f, tween(200))
-                            onSaveToLibrary(currentCard)
-                            currentIndex++
-                            offsetX.snapTo(0f)
-                            offsetY.snapTo(0f)
+                // Info / Details Button
+                FilledIconButton(
+                    onClick = {
+                        if (currentCard != null) {
+                            onCardClick(currentCard)
                         }
-                    }
-                },
-                modifier = Modifier.size(56.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                ),
-            ) {
-                Icon(Icons.Outlined.Favorite, contentDescription = "Explore", modifier = Modifier.size(28.dp))
+                    },
+                    modifier = Modifier.size(46.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                ) {
+                    Icon(Icons.Outlined.Info, contentDescription = "Details", modifier = Modifier.size(22.dp))
+                }
+
+                // Like / Save or Dismiss Right Button
+                FilledIconButton(
+                    onClick = {
+                        if (currentCard != null) {
+                            scope.launch {
+                                offsetX.animateTo(1000f, tween(200))
+                                if (bothSidesDismiss) {
+                                    onPass(currentCard)
+                                } else {
+                                    onSaveToLibrary(currentCard)
+                                }
+                                currentIndex++
+                                offsetX.snapTo(0f)
+                                offsetY.snapTo(0f)
+                            }
+                        }
+                    },
+                    modifier = Modifier.size(56.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = if (bothSidesDismiss) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = if (bothSidesDismiss) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+                ) {
+                    Icon(
+                        if (bothSidesDismiss) Icons.Outlined.Close else Icons.Outlined.Favorite,
+                        contentDescription = if (bothSidesDismiss) "Dismiss" else "Explore",
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
             }
         }
     }
@@ -272,6 +307,8 @@ fun TinderDiscoveryDeck(
 @Composable
 private fun DeckCardItem(
     card: SwipeableMediaCard,
+    dragOffsetX: Float = 0f,
+    bothSidesDismiss: Boolean = false,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
@@ -288,6 +325,45 @@ private fun DeckCardItem(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
             )
+
+            // Dynamic Swipe Stamps (SAVE / PASS / DISMISS)
+            if (dragOffsetX > 40f) {
+                val alpha = ((dragOffsetX - 40f) / 100f).coerceIn(0f, 1f)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = (if (bothSidesDismiss) Color(0xFFE53935) else Color(0xFF43A047)).copy(alpha = 0.9f * alpha),
+                    contentColor = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(top = 64.dp, start = 20.dp)
+                        .rotate(-15f),
+                ) {
+                    Text(
+                        text = if (bothSidesDismiss) "DISMISS" else "SAVE",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    )
+                }
+            } else if (dragOffsetX < -40f) {
+                val alpha = ((-dragOffsetX - 40f) / 100f).coerceIn(0f, 1f)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFE53935).copy(alpha = 0.9f * alpha),
+                    contentColor = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 64.dp, end = 20.dp)
+                        .rotate(15f),
+                ) {
+                    Text(
+                        text = "PASS",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    )
+                }
+            }
 
             // Gradient Overlay
             Box(

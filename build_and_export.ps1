@@ -1,4 +1,4 @@
-# Build, export to C:\platform-tools\APKs, and optionally install to connected ADB device
+﻿# Build, export to C:\platform-tools\APKs, and optionally install to connected ADB device
 $ErrorActionPreference = "Stop"
 
 $APKsFolder = "C:\platform-tools\APKs"
@@ -24,17 +24,17 @@ if ($generatedApk) {
     
     Copy-Item -Path $generatedApk.FullName -Destination $destFile -Force
     
-    Write-Host "`n✅ Successfully exported APK to:" -ForegroundColor Green
+    Write-Host "`n[SUCCESS] Successfully exported APK to:" -ForegroundColor Green
     Write-Host "   $destFile" -ForegroundColor Yellow
     
     # Check if an ADB device is connected
     $devices = adb devices | Select-String "device$"
     if ($devices) {
-        Write-Host "`n📲 Found connected device, installing APK..." -ForegroundColor Cyan
+        Write-Host "`n[ADB] Found connected device, installing APK..." -ForegroundColor Cyan
         adb install -r $destFile
-        Write-Host "🚀 Launching Aniyomi Plus..." -ForegroundColor Green
+        Write-Host "[LAUNCH] Launching Aniyomi Plus..." -ForegroundColor Green
         adb shell am start -n com.dark.animetailv2.custom.dev/eu.kanade.tachiyomi.ui.main.MainActivity
     }
 } else {
-    Write-Host "❌ No APK found in build outputs!" -ForegroundColor Red
+    Write-Host "[ERROR] No APK found in build outputs!" -ForegroundColor Red
 }

@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoStories
 import androidx.compose.material.icons.outlined.FilterList
@@ -196,73 +198,99 @@ fun LibraryMediaSwitcher(
     mangaCount: Int? = null,
     modifier: Modifier = Modifier,
 ) {
-    Row(
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.65f),
         modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // Anime Pill
-        Surface(
-            onClick = onSelectAnime,
-            shape = CircleShape,
-            color = if (isAnime) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-            contentColor = if (isAnime) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+        Row(
+            modifier = Modifier.padding(3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            // Anime Pill
+            Surface(
+                onClick = onSelectAnime,
+                shape = RoundedCornerShape(50),
+                color = if (isAnime) MaterialTheme.colorScheme.primary else Color.Transparent,
+                contentColor = if (isAnime) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.Movie,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                )
-                Text(
-                    text = "Anime",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = if (isAnime) FontWeight.Bold else FontWeight.Medium,
-                )
-                // Only show count on active tab pill
-                if (isAnime && animeCount != null && animeCount > 0) {
-                    Pill(
-                        text = "$animeCount",
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                        fontSize = 11.sp,
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Movie,
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp),
                     )
+                    Text(
+                        text = "Anime",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (isAnime) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                    if (isAnime && animeCount != null && animeCount > 0) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f),
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ) {
+                            Text(
+                                text = "$animeCount",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                        }
+                    }
                 }
             }
-        }
 
-        // Manga Pill
-        Surface(
-            onClick = onSelectManga,
-            shape = CircleShape,
-            color = if (!isAnime) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-            contentColor = if (!isAnime) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            // Manga Pill
+            Surface(
+                onClick = onSelectManga,
+                shape = RoundedCornerShape(50),
+                color = if (!isAnime) MaterialTheme.colorScheme.primary else Color.Transparent,
+                contentColor = if (!isAnime) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.AutoStories,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                )
-                Text(
-                    text = "Manga",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = if (!isAnime) FontWeight.Bold else FontWeight.Medium,
-                )
-                // Only show count on active tab pill
-                if (!isAnime && mangaCount != null && mangaCount > 0) {
-                    Pill(
-                        text = "$mangaCount",
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                        fontSize = 11.sp,
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.AutoStories,
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp),
                     )
+                    Text(
+                        text = "Manga",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = if (!isAnime) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1,
+                        softWrap = false,
+                    )
+                    if (!isAnime && mangaCount != null && mangaCount > 0) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.25f),
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ) {
+                            Text(
+                                text = "$mangaCount",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                maxLines = 1,
+                                softWrap = false,
+                            )
+                        }
+                    }
                 }
             }
         }

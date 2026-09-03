@@ -31,7 +31,7 @@ internal fun Uri.openContentFd(context: Context): String? {
             "fdclose://$fd"
         }
     } catch (e: Throwable) {
-        logcat(LogPriority.ERROR, e) { "Failed to open content URI fd: $this" }
+        logcat(LogPriority.ERROR) { "Failed to open content URI fd: $this, error: ${e.message}" }
         null
     }
 }

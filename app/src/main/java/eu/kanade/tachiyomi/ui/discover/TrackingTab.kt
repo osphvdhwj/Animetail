@@ -70,6 +70,9 @@ import eu.kanade.presentation.track.components.SyncItemStatus
 import eu.kanade.presentation.track.components.TrackerStatusItem
 import eu.kanade.presentation.track.components.UniversalTrackerSyncDashboard
 import eu.kanade.presentation.util.Tab as VoyagerTab
+import eu.kanade.tachiyomi.data.track.TrackerManager
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.ui.browse.anime.source.globalsearch.GlobalAnimeSearchScreen

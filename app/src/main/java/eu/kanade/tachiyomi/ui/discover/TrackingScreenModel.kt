@@ -271,6 +271,18 @@ class TrackingScreenModel(
                         val q = query.ifBlank { "a" }
                         trendingManga = mu.searchManga(q)
                     }
+                    else -> {
+                        val anilist = trackerManager.aniList
+                        if (query.isNotBlank()) {
+                            trendingAnime = anilist.searchAnime(query)
+                            trendingManga = anilist.searchManga(query)
+                        } else {
+                            trendingAnime = anilist.getTrendingAnime(1)
+                            popularAnime = anilist.getTrendingAnime(2)
+                            trendingManga = anilist.getTrendingManga(1)
+                            popularManga = anilist.getTrendingManga(2)
+                        }
+                    }
                 }
 
                 if (query.isBlank()) {

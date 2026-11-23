@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.anime.components
+﻿package eu.kanade.presentation.browse.anime.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,6 +25,12 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for RelatedAnimesList.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun RelatedAnimesList(
     entries: Int,
     topBarHeight: Int,

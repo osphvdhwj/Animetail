@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.source.feed
+﻿package eu.kanade.tachiyomi.ui.browse.anime.source.feed
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -56,6 +56,12 @@ import java.util.concurrent.Executors
 import tachiyomi.domain.entries.anime.model.Anime as DomainAnime
 
 open class SourceFeedScreenModel(
+/**
+ * State and business logic coordinator for SourceFeedScreenModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
     val sourceId: Long,
     uiPreferences: UiPreferences = Injekt.get(),
     private val sourceManager: AnimeSourceManager = Injekt.get(),

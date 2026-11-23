@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.download.anime
+﻿package eu.kanade.tachiyomi.ui.download.anime
 
 import android.view.LayoutInflater
 import androidx.compose.foundation.layout.Box
@@ -26,6 +26,12 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import kotlin.math.roundToInt
 
 @Composable
+/**
+ * UI presentation composable for AnimeDownloadQueueScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AnimeDownloadQueueScreen(
     contentPadding: PaddingValues,
     scope: CoroutineScope,

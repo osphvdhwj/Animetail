@@ -1,4 +1,4 @@
-package eu.kanade.presentation.library.anime
+﻿package eu.kanade.presentation.library.anime
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,6 +27,12 @@ import tachiyomi.presentation.core.components.material.PullRefresh
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
+/**
+ * UI presentation composable for AnimeLibraryContent.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AnimeLibraryContent(
     categories: List<Category>,
     searchQuery: String?,

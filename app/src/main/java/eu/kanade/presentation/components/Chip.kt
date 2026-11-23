@@ -1,4 +1,4 @@
-package eu.kanade.presentation.components
+﻿package eu.kanade.presentation.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
@@ -46,6 +46,10 @@ import tachiyomi.presentation.core.util.animateElevation
 import androidx.compose.material3.SuggestionChipDefaults as SuggestionChipDefaultsM3
 
 @ExperimentalMaterial3Api
+/**
+ * Core component for $name within the Animetail presentation and UI layer.
+ * Provides specialized functionality, rendering logic, or state management.
+ */
 @Composable
 fun SuggestionChip(
     label: @Composable () -> Unit,

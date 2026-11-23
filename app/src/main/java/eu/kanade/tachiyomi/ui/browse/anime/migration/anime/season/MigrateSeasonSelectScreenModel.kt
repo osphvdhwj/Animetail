@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season
+﻿package eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season
 
 import android.content.res.Configuration
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -37,6 +37,12 @@ import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * State and business logic coordinator for MigrateSeasonSelectScreenModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MigrateSeasonSelectScreenModel(
     private val anime: Anime,
     sourceManager: AnimeSourceManager = Injekt.get(),

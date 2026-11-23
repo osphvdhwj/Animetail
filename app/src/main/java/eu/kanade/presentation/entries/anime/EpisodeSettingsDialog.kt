@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime
+﻿package eu.kanade.presentation.entries.anime
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,6 +25,7 @@ import eu.kanade.presentation.components.TabbedDialogPaddings
 import kotlinx.collections.immutable.persistentListOf
 import mihon.app.di.appGraph
 import tachiyomi.core.common.preference.TriState
+import eu.kanade.presentation.entries.manga.ScanlatorFilterItem
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
@@ -36,6 +37,12 @@ import tachiyomi.presentation.core.components.TriStateItem
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for EpisodeSettingsDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun EpisodeSettingsDialog(
     onDismissRequest: () -> Unit,
     anime: Anime? = null,
@@ -48,6 +55,8 @@ fun EpisodeSettingsDialog(
     onShowPreviewsEnabled: (Long) -> Unit,
     onShowSummariesEnabled: (Long) -> Unit,
     onSetAsDefault: (applyToExistingAnime: Boolean) -> Unit,
+    scanlatorFilterActive: Boolean = false,
+    onScanlatorFilterClicked: (() -> Unit)? = null,
 ) {
     var showSetAsDefaultDialog by rememberSaveable { mutableStateOf(false) }
     if (showSetAsDefaultDialog) {
@@ -95,6 +104,12 @@ fun EpisodeSettingsDialog(
                         fillermarkedFilter = anime?.fillermarkedFilter ?: TriState.DISABLED,
                         onFillermarkedFilterChanged = onFillermarkedFilterChanged,
                     )
+                    if (onScanlatorFilterClicked != null) {
+                        ScanlatorFilterItem(
+                            active = scanlatorFilterActive,
+                            onClick = onScanlatorFilterClicked,
+                        )
+                    }
                 }
 
                 1 -> {

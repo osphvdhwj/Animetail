@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -50,6 +50,12 @@ import tachiyomi.presentation.core.components.material.padding
 
 @SuppressLint("UnrememberedMutableState")
 @Composable
+/**
+ * UI presentation composable for ExpandableCard.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun ExpandableCard(
     isExpanded: Boolean,
     title: @Composable (Boolean) -> Unit,

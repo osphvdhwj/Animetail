@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.controls
+﻿package eu.kanade.tachiyomi.ui.player.controls
 
 import androidx.compose.runtime.Composable
 import eu.kanade.tachiyomi.data.database.models.anime.Episode
@@ -8,6 +8,12 @@ import eu.kanade.tachiyomi.ui.player.controls.components.dialogs.IntegerPickerDi
 import java.time.format.DateTimeFormatter
 
 @Composable
+/**
+ * UI presentation composable for PlayerDialogs.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun PlayerDialogs(
     dialogShown: Dialogs,
 

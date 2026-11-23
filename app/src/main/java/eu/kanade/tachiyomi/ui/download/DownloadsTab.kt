@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.download
+﻿package eu.kanade.tachiyomi.ui.download
 import androidx.compose.material.icons.outlined.Delete
 
 import androidx.compose.foundation.BorderStroke
@@ -13,7 +13,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.text.font.FontWeight
 import android.os.Environment
-import android.os.StatFs
+import eu.kanade.tachiyomi.util.storage.DiskUtil
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -85,11 +85,17 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.Pill
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.TabText
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Navigation tab descriptor for DownloadsTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 data object DownloadsTab : Tab {
 
     override val options: TabOptions
@@ -336,12 +342,14 @@ data object DownloadsTab : Tab {
                     ) {
                         Column {
                             Text(
-                                text = "Device Storage",
+                                text = stringResource(TLMR.strings.download_queue_device_storage),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                            val freeSpace = remember { getFreeStorageSpace() }
                             Text(
-                                text = getFreeStorageSpace(),
+                                text = freeSpace?.let { stringResource(TLMR.strings.download_queue_free_space, it) }
+                                    ?: stringResource(TLMR.strings.download_queue_free_space_unknown),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -357,14 +365,20 @@ data object DownloadsTab : Tab {
 
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = "Active Downloads",
+                                text = stringResource(TLMR.strings.download_queue_active_downloads),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             val totalCount = animeDownloadCount + mangaDownloadCount
-                            val statusText = if (animeIsRunning || mangaIsRunning) "Downloading" else "Paused"
+                            val statusText = stringResource(
+                                if (animeIsRunning || mangaIsRunning) {
+                                    TLMR.strings.download_queue_status_downloading
+                                } else {
+                                    TLMR.strings.download_queue_status_paused
+                                },
+                            )
                             Text(
-                                text = "$totalCount items ($statusText)",
+                                text = stringResource(TLMR.strings.download_queue_items_count, totalCount, statusText),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = if (animeIsRunning || mangaIsRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
@@ -505,11 +519,11 @@ data object DownloadsTab : Tab {
                         onClick = { animeScreenModel.clearQueue() },
                     ),
                     AppBar.OverflowAction(
-                        title = "Clear completed",
+                        title = stringResource(TLMR.strings.download_queue_clear_completed),
                         onClick = { animeScreenModel.clearCompletedDownloads() },
                     ),
                     AppBar.OverflowAction(
-                        title = "Clear errors",
+                        title = stringResource(TLMR.strings.download_queue_clear_errors),
                         onClick = { animeScreenModel.clearErrorDownloads() },
                     ),
                 ),
@@ -607,11 +621,11 @@ data object DownloadsTab : Tab {
                         onClick = { mangaScreenModel.clearQueue() },
                     ),
                     AppBar.OverflowAction(
-                        title = "Clear completed",
+                        title = stringResource(TLMR.strings.download_queue_clear_completed),
                         onClick = { mangaScreenModel.clearCompletedDownloads() },
                     ),
                     AppBar.OverflowAction(
-                        title = "Clear errors",
+                        title = stringResource(TLMR.strings.download_queue_clear_errors),
                         onClick = { mangaScreenModel.clearErrorDownloads() },
                     ),
                 ),
@@ -619,15 +633,13 @@ data object DownloadsTab : Tab {
         }
     }
 
-    private fun getFreeStorageSpace(): String {
+    private fun getFreeStorageSpace(): String? {
         return try {
-            val path = Environment.getExternalStorageDirectory()
-            val stat = StatFs(path.path)
-            val bytesAvailable = stat.blockSizeLong * stat.availableBlocksLong
-            val gigabytes = bytesAvailable / (1024.0 * 1024.0 * 1024.0)
-            String.format(java.util.Locale.US, "%.1f GB Free", gigabytes)
+            val dir = Environment.getExternalStorageDirectory()
+            val bytes = DiskUtil.getAvailableStorageSpace(dir)
+            String.format(java.util.Locale.US, "%.1f GB", bytes / (1024.0 * 1024.0 * 1024.0))
         } catch (e: Exception) {
-            "Unknown Free"
+            null
         }
     }
 }

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime.components
+﻿package eu.kanade.presentation.entries.anime.components
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -19,6 +19,12 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.presentation.core.components.material.padding
 
 @Composable
+/**
+ * UI presentation composable for BaseAnimeListItem.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun BaseAnimeListItem(
     anime: Anime,
     modifier: Modifier = Modifier,

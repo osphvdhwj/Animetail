@@ -1,4 +1,4 @@
-package eu.kanade.presentation.reader.settings
+﻿package eu.kanade.presentation.reader.settings
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material3.FilterChip
@@ -31,6 +31,9 @@ import java.text.NumberFormat
 @Composable
 internal fun ColumnScope.ReadingModePage(viewModel: ReaderSettingsViewModel) {
     HeadingItem(MR.strings.pref_category_for_this_series)
+/**
+ * Core component for ReadingModePage within the Animetail presentation and UI layer.
+ */
     val manga by viewModel.mangaFlow.collectAsState()
 
     val readingMode = remember(manga) {

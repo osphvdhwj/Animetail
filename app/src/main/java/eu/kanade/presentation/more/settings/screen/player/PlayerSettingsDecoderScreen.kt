@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player
+﻿package eu.kanade.presentation.more.settings.screen.player
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -14,6 +14,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * Screen-level composable hierarchy for PlayerSettingsDecoderScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object PlayerSettingsDecoderScreen : Screen(), SearchableSettings {
 
     @ReadOnlyComposable

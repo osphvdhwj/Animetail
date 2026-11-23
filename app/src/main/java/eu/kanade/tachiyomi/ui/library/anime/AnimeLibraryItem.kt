@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.library.anime
+﻿package eu.kanade.tachiyomi.ui.library.anime
 
 import eu.kanade.tachiyomi.source.anime.getNameForAnimeInfo
 import tachiyomi.domain.library.anime.LibraryAnime
@@ -7,6 +7,11 @@ import tachiyomi.source.local.entries.anime.LocalAnimeSource
 
 private const val LOCAL_SOURCE_ID_ALIAS = "local"
 
+/**
+ * Presentation card/item component for AnimeLibraryItem.
+ *
+ * Handles compact data display, visual badges, and click/long-press actions.
+ */
 class AnimeLibraryItem(
     val libraryAnime: LibraryAnime,
     val downloadCount: Int,

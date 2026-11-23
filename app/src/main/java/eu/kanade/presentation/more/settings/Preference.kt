@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings
+﻿package eu.kanade.presentation.more.settings
 
 import android.content.Context
 import android.os.Build
@@ -21,6 +21,9 @@ import uy.kohesive.injekt.api.get
 import java.io.FileOutputStream
 import tachiyomi.core.common.preference.Preference as PreferenceData
 
+/**
+ * Core component for Preference within the Animetail presentation and UI layer.
+ */
 sealed class Preference {
     abstract val title: String
     abstract val enabled: Boolean

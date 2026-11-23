@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.extension
+﻿package eu.kanade.tachiyomi.ui.browse.anime.extension
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -26,6 +26,12 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for AnimeExtensionsTab.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun animeExtensionsTab(
     extensionsViewModel: AnimeExtensionsViewModel,
 ): TabContent {

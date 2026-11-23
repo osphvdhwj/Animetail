@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player.custombutton.components
+﻿package eu.kanade.presentation.more.settings.screen.player.custombutton.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -37,6 +37,9 @@ import tachiyomi.presentation.core.i18n.stringResource
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
+/**
+ * Core component for CustomButtonDialogs within the Animetail presentation and UI layer.
+ */
 fun CustomButtonButtonDialog(
     onDismissRequest: () -> Unit,
     onAction: (String, String, String, String) -> Unit,

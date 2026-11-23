@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen
+﻿package eu.kanade.presentation.more.settings.screen
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.clickable
@@ -67,6 +67,12 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.util.runOnEnterKeyPressed
 import cafe.adriel.voyager.core.screen.Screen as VoyagerScreen
 
+/**
+ * Screen-level composable hierarchy for SettingsSearchScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class SettingsSearchScreen(
     val isPlayer: Boolean = false,
 ) : Screen() {

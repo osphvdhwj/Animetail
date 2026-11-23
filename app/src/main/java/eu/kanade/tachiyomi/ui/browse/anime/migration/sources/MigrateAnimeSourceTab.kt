@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.migration.sources
+﻿package eu.kanade.tachiyomi.ui.browse.anime.migration.sources
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
@@ -20,6 +20,11 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Navigation tab descriptor for MigrateAnimeSourceTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 fun Screen.migrateAnimeSourceTab(): TabContent {
     val uriHandler = LocalUriHandler.current
     val navigator = LocalNavigator.currentOrThrow

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime.components
+﻿package eu.kanade.presentation.entries.anime.components
 
 import androidx.annotation.ColorInt
 import androidx.compose.foundation.Image
@@ -33,6 +33,9 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.anime.model.asAnimeCover
 import tachiyomi.domain.entries.anime.model.AnimeCover as DomainAnimeCover
 
+/**
+ * Core component for AnimeCover within the Animetail presentation and UI layer.
+ */
 enum class AnimeCover(val ratio: Float) {
     Square(1f / 1f),
     Book(2f / 3f),

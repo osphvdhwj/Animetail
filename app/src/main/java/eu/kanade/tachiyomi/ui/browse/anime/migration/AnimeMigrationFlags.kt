@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.migration
+﻿package eu.kanade.tachiyomi.ui.browse.anime.migration
 
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.entries.anime.model.hasCustomBackground
@@ -12,6 +12,9 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import uy.kohesive.injekt.injectLazy
 
+/**
+ * Core component for AnimeMigrationFlags within the Animetail presentation and UI layer.
+ */
 data class AnimeMigrationFlag(
     val flag: Int,
     val isDefaultSelected: Boolean,

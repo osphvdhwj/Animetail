@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.manga
+﻿package eu.kanade.tachiyomi.ui.entries.manga
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
@@ -48,6 +48,12 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Composable
+/**
+ * UI presentation composable for RelatedMangasScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun RelatedMangasScreen(
     viewModel: MangaViewModel,
     navigateUp: () -> Unit,

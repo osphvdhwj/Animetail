@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.advanced
+﻿package eu.kanade.presentation.more.settings.screen.advanced
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -66,6 +66,12 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.selectedBackground
 
+/**
+ * Screen-level composable hierarchy for ClearDatabaseScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class ClearDatabaseScreen : Screen() {
 
     @Composable

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.download.manga
+﻿package eu.kanade.tachiyomi.ui.download.manga
 
 import android.view.MenuItem
 import androidx.lifecycle.ViewModel
@@ -33,6 +33,12 @@ import kotlin.time.Duration.Companion.seconds
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+/**
+ * State and business logic coordinator for MangaDownloadQueueViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MangaDownloadQueueViewModel(
     private val downloadManager: MangaDownloadManager,
 ) : ViewModel() {

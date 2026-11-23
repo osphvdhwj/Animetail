@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player.editor.components
+﻿package eu.kanade.presentation.more.settings.screen.player.editor.components
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
@@ -23,6 +23,9 @@ import tachiyomi.presentation.core.i18n.stringResource
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
+/**
+ * Core component for EditorDialogs within the Animetail presentation and UI layer.
+ */
 fun FileCreateDialog(
     initialName: String?,
     fileExtension: String,

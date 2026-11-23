@@ -7,8 +7,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -29,7 +27,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -44,7 +44,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastFilter
 import androidx.compose.ui.util.fastForEach
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -52,6 +54,9 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabNavigator
 import eu.kanade.core.preference.asState
+import eu.kanade.presentation.components.FloatingIslandNavigationBar
+import eu.kanade.presentation.design.DS
+import eu.kanade.presentation.design.glassSurface
 import eu.kanade.presentation.util.Screen
 import eu.kanade.presentation.util.isTabletUi
 import eu.kanade.tachiyomi.ui.browse.BrowseTab
@@ -133,7 +138,16 @@ object HomeScreen : Screen() {
                 Scaffold(
                     startBar = {
                         if (isTabletUi()) {
-                            NavigationRail {
+                            NavigationRail(
+                                modifier = Modifier
+                                    .padding(vertical = 12.dp, horizontal = 8.dp)
+                                    .glassSurface(
+                                        shape = DS.radiusHero,
+                                        containerColor = DS.Glass.containerColor(0.85f),
+                                        shadowElevation = DS.elevationMedium,
+                                    ),
+                                containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                            ) {
                                 navStyle.tabs
                                     .fastFilter { it.isEnabled() }
                                     .fastForEach {
@@ -156,7 +170,8 @@ object HomeScreen : Screen() {
                                         castManager = castManager,
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                                            .glassSurface(shape = DS.radiusCard),
                                     )
                                 }
 
@@ -169,7 +184,7 @@ object HomeScreen : Screen() {
                                     enter = expandVertically(),
                                     exit = shrinkVertically(),
                                 ) {
-                                    NavigationBar {
+                                    FloatingIslandNavigationBar {
                                         navStyle.tabs
                                             .fastFilter { it.isEnabled() }
                                             .fastForEach {
@@ -290,40 +305,47 @@ object HomeScreen : Screen() {
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
         val selected = tabNavigator.current::class == tab::class
+        val lastClickTime = remember { androidx.compose.runtime.mutableLongStateOf(0L) }
         NavigationBarItem(
             selected = selected,
             onClick = {
-                if (!selected) {
-                    tabNavigator.current = tab
+                val now = System.currentTimeMillis()
+                if (selected && now - lastClickTime.longValue < 350L) {
+                    lastClickTime.longValue = 0L
+                    scope.launch {
+                        if (tab is eu.kanade.tachiyomi.ui.home.HomeTab) {
+                            eu.kanade.tachiyomi.ui.discover.TrackingTab.onDoubleTapNav()
+                        } else {
+                            tab.onReselect(navigator)
+                        }
+                    }
                 } else {
-                    scope.launch { tab.onReselect(navigator) }
-                }
-            },
-            modifier = Modifier.combinedClickable(
-                onClick = {
+                    lastClickTime.longValue = now
                     if (!selected) {
                         tabNavigator.current = tab
                     } else {
                         scope.launch { tab.onReselect(navigator) }
                     }
-                },
-                onLongClick = {
-                    if (!selected) {
-                        tabNavigator.current = tab
-                    }
-                    scope.launch { tab.onReselect(navigator) }
-                },
-            ),
+                }
+            },
             icon = { NavigationIconItem(tab) },
             label = {
                 Text(
                     text = tab.options.title,
                     style = MaterialTheme.typography.labelMedium,
-                    fontSize = androidx.compose.ui.unit.TextUnit(11f, androidx.compose.ui.unit.TextUnitType.Sp),
+                    fontSize = 11.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 )
             },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.primary,
+                selectedTextColor = MaterialTheme.colorScheme.primary,
+                indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f),
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+            ),
             alwaysShowLabel = alwaysShowLabel,
         )
     }
@@ -340,30 +362,29 @@ object HomeScreen : Screen() {
         val navigator = LocalNavigator.currentOrThrow
         val scope = rememberCoroutineScope()
         val selected = tabNavigator.current::class == tab::class
+        val lastRailClickTime = remember { androidx.compose.runtime.mutableLongStateOf(0L) }
         NavigationRailItem(
             selected = selected,
             onClick = {
-                if (!selected) {
-                    tabNavigator.current = tab
+                val now = System.currentTimeMillis()
+                if (selected && now - lastRailClickTime.longValue < 350L) {
+                    lastRailClickTime.longValue = 0L
+                    scope.launch {
+                        if (tab is eu.kanade.tachiyomi.ui.home.HomeTab) {
+                            eu.kanade.tachiyomi.ui.discover.TrackingTab.onDoubleTapNav()
+                        } else {
+                            tab.onReselect(navigator)
+                        }
+                    }
                 } else {
-                    scope.launch { tab.onReselect(navigator) }
-                }
-            },
-            modifier = Modifier.combinedClickable(
-                onClick = {
+                    lastRailClickTime.longValue = now
                     if (!selected) {
                         tabNavigator.current = tab
                     } else {
                         scope.launch { tab.onReselect(navigator) }
                     }
-                },
-                onLongClick = {
-                    if (!selected) {
-                        tabNavigator.current = tab
-                    }
-                    scope.launch { tab.onReselect(navigator) }
-                },
-            ),
+                }
+            },
             icon = { NavigationIconItem(tab) },
             label = {
                 Text(
@@ -371,8 +392,16 @@ object HomeScreen : Screen() {
                     style = MaterialTheme.typography.labelLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                 )
             },
+            colors = NavigationRailItemDefaults.colors(
+                selectedIconColor = MaterialTheme.colorScheme.primary,
+                selectedTextColor = MaterialTheme.colorScheme.primary,
+                indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f),
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+            ),
             alwaysShowLabel = alwaysShowLabel,
         )
     }
@@ -436,22 +465,31 @@ object HomeScreen : Screen() {
             val isTrackingTab = eu.kanade.tachiyomi.ui.discover.TrackingTab::class.isInstance(tab)
             val tabNavigator = cafe.adriel.voyager.navigator.tab.LocalTabNavigator.current
             val isSelected = tabNavigator.current::class == tab::class
-            val transition = rememberInfiniteTransition(label = "tracking_tab_rot")
-            val rotation by transition.animateFloat(
-                initialValue = 0f,
-                targetValue = if (isTrackingTab && isSelected) -360f else 0f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(2000, easing = LinearEasing),
-                    repeatMode = RepeatMode.Restart,
-                ),
-                label = "tracking_rot_val",
+            // Discover icon: spring pop when selected, gentle settle when not
+            val iconScale by androidx.compose.animation.core.animateFloatAsState(
+                targetValue = if (isSelected) 1.1f else 1f,
+                animationSpec = if (isSelected) {
+                    androidx.compose.animation.core.spring(
+                        dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                        stiffness = androidx.compose.animation.core.Spring.StiffnessMedium,
+                    )
+                } else {
+                    androidx.compose.animation.core.spring(
+                        dampingRatio = androidx.compose.animation.core.Spring.DampingRatioNoBouncy,
+                        stiffness = androidx.compose.animation.core.Spring.StiffnessMediumLow,
+                    )
+                },
+                label = "nav_icon_scale",
             )
 
             Icon(
-                painter = if (isTrackingTab) androidx.compose.ui.res.painterResource(id = eu.kanade.tachiyomi.R.drawable.ic_sync_24dp) else tab.options.icon!!,
+                painter = tab.options.icon!!,
                 contentDescription = tab.options.title,
                 tint = LocalContentColor.current,
-                modifier = Modifier.graphicsLayer(rotationZ = rotation)
+                modifier = Modifier.graphicsLayer(
+                    scaleX = iconScale,
+                    scaleY = iconScale,
+                ),
             )
         }
     }
@@ -479,6 +517,5 @@ object HomeScreen : Screen() {
         data class More(val toDownloads: Boolean) : Tab
     }
 }
-
 
 

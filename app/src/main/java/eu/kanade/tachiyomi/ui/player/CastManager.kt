@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player
+﻿package eu.kanade.tachiyomi.ui.player
 
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
@@ -46,6 +46,9 @@ import tachiyomi.i18n.tail.TLMR
 import java.util.LinkedList
 import kotlin.coroutines.resume
 
+/**
+ * Core component for CastManager within the Animetail presentation and UI layer.
+ */
 class CastManager(
     val activity: ComponentActivity,
     val preferenceStore: PreferenceStore,

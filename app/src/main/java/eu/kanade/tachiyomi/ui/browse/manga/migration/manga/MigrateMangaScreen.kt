@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.migration.manga
+﻿package eu.kanade.tachiyomi.ui.browse.manga.migration.manga
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
@@ -18,6 +18,12 @@ import kotlinx.coroutines.flow.collectLatest
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * Screen-level composable hierarchy for MigrateMangaScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 data class MigrateMangaScreen(
     private val sourceId: Long,
 ) : Screen() {

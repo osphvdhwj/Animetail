@@ -1,4 +1,4 @@
-package eu.kanade.presentation.reader.components
+﻿package eu.kanade.presentation.reader.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -46,6 +46,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * UI presentation composable for LightNovelReaderEngine.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 enum class LNThemePreset(
     val displayName: String,
     val backgroundColor: Color,

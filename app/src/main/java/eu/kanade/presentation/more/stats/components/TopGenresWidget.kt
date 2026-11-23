@@ -41,6 +41,7 @@ fun TopGenresWidget(
     modifier: Modifier = Modifier,
     title: String = "Top Genres",
     barColor: Color = MaterialTheme.colorScheme.primary,
+    maxItems: Int = 8,
 ) {
     val maxCount = remember(genres) {
         genres.maxOfOrNull { it.second }?.toFloat()?.coerceAtLeast(1f) ?: 1f
@@ -50,7 +51,7 @@ fun TopGenresWidget(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        genres.take(5).forEachIndexed { index, (name, count) ->
+        genres.take(maxItems).forEachIndexed { index, (name, count) ->
             val ratio = count / maxCount
 
             var targetProgress by remember(name) { mutableFloatStateOf(0f) }

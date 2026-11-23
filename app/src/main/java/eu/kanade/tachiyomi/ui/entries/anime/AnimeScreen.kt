@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.anime
+﻿package eu.kanade.tachiyomi.ui.entries.anime
 
 import android.content.Context
 import android.content.Intent
@@ -39,6 +39,7 @@ import eu.kanade.presentation.entries.anime.DuplicateAnimeDialog
 import eu.kanade.presentation.entries.anime.EpisodeOptionsDialogScreen
 import eu.kanade.presentation.entries.anime.EpisodeSettingsDialog
 import eu.kanade.presentation.entries.anime.SeasonSettingsDialog
+import eu.kanade.presentation.entries.manga.components.ScanlatorFilterDialog
 import eu.kanade.presentation.entries.anime.components.AnimeImagesDialog
 import eu.kanade.presentation.entries.components.DeleteItemsDialog
 import eu.kanade.presentation.entries.components.SetDateDialog
@@ -87,6 +88,12 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * Screen-level composable hierarchy for AnimeScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class AnimeScreen(
     private val animeId: Long,
     val fromSource: Boolean = false,
@@ -415,7 +422,22 @@ class AnimeScreen(
                 onShowPreviewsEnabled = viewModel::showEpisodePreviews,
                 onShowSummariesEnabled = viewModel::showEpisodeSummaries,
                 onSetAsDefault = viewModel::setCurrentSettingsAsDefault,
+                scanlatorFilterActive = successState.excludedScanlators.isNotEmpty(),
+                onScanlatorFilterClicked = viewModel::showScanlatorFilterDialog,
             )
+
+            AnimeViewModel.Dialog.ScanlatorFilter -> {
+                val availableScanlators = successState.episodes
+                    .mapNotNull { it.episode.scanlator }
+                    .filter { it.isNotBlank() }
+                    .toSet()
+                ScanlatorFilterDialog(
+                    availableScanlators = availableScanlators,
+                    excludedScanlators = successState.excludedScanlators,
+                    onDismissRequest = viewModel::dismissDialog,
+                    onConfirm = viewModel::setExcludedScanlators,
+                )
+            }
 
             AnimeViewModel.Dialog.SeasonSettingsSheet -> SeasonSettingsDialog(
                 onDismissRequest = onDismissRequest,

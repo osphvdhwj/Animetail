@@ -125,16 +125,44 @@ class AnimeStatsViewModel(
                 )
             }
 
+            // Format distribution
+            val formatCounts = mutableMapOf<String, Int>()
+            distinctLibraryAnime.forEach { libAnime ->
+                val text = "${libAnime.anime.title} ${libAnime.anime.genre?.joinToString()} ${libAnime.anime.description}".lowercase()
+                val format = when {
+                    text.contains("movie") || text.contains("película") || text.contains("film") -> "Movie"
+                    text.contains("ova") -> "OVA"
+                    text.contains("ona") || text.contains("web") -> "ONA"
+                    text.contains("special") || text.contains("especial") -> "Special"
+                    else -> "TV Series"
+                }
+                formatCounts[format] = (formatCounts[format] ?: 0) + 1
+            }
+
+            val totalWatchedEpisodes = distinctLibraryAnime.sumOf { it.seenCount }.toInt()
+            val totalEpisodes = distinctLibraryAnime.sumOf { it.totalCount }.toInt()
+            val totalSeenDuration = getWatchTime(distinctLibraryAnime)
+            val avgEpPerAnime = if (distinctLibraryAnime.isNotEmpty()) totalEpisodes.toDouble() / distinctLibraryAnime.size else 0.0
+            val avgEpDuration = if (totalWatchedEpisodes > 0) totalSeenDuration / totalWatchedEpisodes else 0L
+            val startedCount = distinctLibraryAnime.count { it.hasStarted }
+            val startedRate = if (distinctLibraryAnime.isNotEmpty()) (startedCount.toFloat() / distinctLibraryAnime.size) * 100f else 0f
+            val completionRate = if (distinctLibraryAnime.isNotEmpty()) (completedCount.toFloat() / distinctLibraryAnime.size) * 100f else 0f
+
             val overviewStatData = StatsData.AnimeOverview(
                 libraryAnimeCount = distinctLibraryAnime.size,
                 completedAnimeCount = completedCount,
-                totalSeenDuration = getWatchTime(distinctLibraryAnime),
+                totalSeenDuration = totalSeenDuration,
                 watchingCount = watchingCount,
                 planToWatchCount = planToWatchCount,
                 onHoldCount = onHoldCount,
                 droppedCount = droppedCount,
                 topGenres = topGenres,
                 topStudios = topStudios,
+                formatDistribution = formatCounts,
+                averageEpisodesPerAnime = avgEpPerAnime,
+                averageEpisodeDurationMs = avgEpDuration,
+                completionRate = completionRate,
+                startedRate = startedRate,
             )
 
             val titlesStatData = StatsData.AnimeTitles(

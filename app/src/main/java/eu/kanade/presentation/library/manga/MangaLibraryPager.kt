@@ -1,4 +1,4 @@
-package eu.kanade.presentation.library.manga
+﻿package eu.kanade.presentation.library.manga
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -29,6 +29,12 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.util.plus
 
 @Composable
+/**
+ * UI presentation composable for MangaLibraryPager.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MangaLibraryPager(
     state: PagerState,
     contentPadding: PaddingValues,

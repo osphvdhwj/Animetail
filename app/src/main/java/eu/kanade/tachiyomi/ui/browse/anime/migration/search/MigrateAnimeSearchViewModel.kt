@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.migration.search
+﻿package eu.kanade.tachiyomi.ui.browse.anime.migration.search
 
 import androidx.lifecycle.viewModelScope
 import dev.zacsweers.metro.AppScope
@@ -19,6 +19,12 @@ import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 
 @AssistedInject
+/**
+ * State and business logic coordinator for MigrateAnimeSearchViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MigrateAnimeSearchViewModel(
     @Assisted val animeId: Long,
     @Assisted initialExtensionFilter: String?,

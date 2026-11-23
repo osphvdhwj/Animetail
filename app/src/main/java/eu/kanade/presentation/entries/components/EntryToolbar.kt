@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.components
+﻿package eu.kanade.presentation.entries.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Download
@@ -35,6 +35,12 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Composable
+/**
+ * UI presentation composable for EntryToolbar.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun EntryToolbar(
     title: String,
     hasFilters: Boolean,

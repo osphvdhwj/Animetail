@@ -1,5 +1,8 @@
-package eu.kanade.tachiyomi.ui.reader.model
+﻿package eu.kanade.tachiyomi.ui.reader.model
 
+/**
+ * Core component for ViewerChapters within the Animetail presentation and UI layer.
+ */
 data class ViewerChapters(
     val currChapter: ReaderChapter,
     val prevChapter: ReaderChapter?,

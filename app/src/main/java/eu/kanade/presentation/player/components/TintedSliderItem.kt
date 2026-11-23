@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -40,6 +40,12 @@ import kotlin.math.max
 import kotlin.math.min
 
 @Composable
+/**
+ * UI presentation composable for TintedSliderItem.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun TintedSliderItem(
     label: String,
     value: Int,

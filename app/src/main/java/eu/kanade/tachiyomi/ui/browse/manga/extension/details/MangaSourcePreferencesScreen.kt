@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.extension.details
+﻿package eu.kanade.tachiyomi.ui.browse.manga.extension.details
 
 import android.content.Context
 import android.os.Bundle
@@ -45,6 +45,12 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * Screen-level composable hierarchy for MangaSourcePreferencesScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class MangaSourcePreferencesScreen(val sourceId: Long) : Screen() {
 
     @Composable

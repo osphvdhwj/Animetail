@@ -10,10 +10,13 @@ import eu.kanade.presentation.browse.components.UniversalWebsitePortalScreen
 import eu.kanade.presentation.components.TabContent
 import tachiyomi.i18n.MR
 
+/**
+ * Sub-tab in Browse presenting curated online anime & manga web portals and databases.
+ */
 @Composable
 fun Screen.universalPortalTab(): TabContent {
     return TabContent(
-        titleRes = MR.strings.browse,
+        titleRes = MR.strings.label_sources,
         content = { contentPadding, _ ->
             Box(
                 modifier = Modifier
@@ -21,7 +24,7 @@ fun Screen.universalPortalTab(): TabContent {
                     .padding(contentPadding),
             ) {
                 UniversalWebsitePortalScreen(
-                    onWebsiteClick = { /* Handled in screen */ },
+                    onWebsiteClick = { /* Handled internally by UniversalWebsitePortalScreen */ },
                 )
             }
         },

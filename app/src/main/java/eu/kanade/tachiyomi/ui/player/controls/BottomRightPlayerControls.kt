@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -31,6 +31,12 @@ import `is`.xyz.mpv.MPV
 import tachiyomi.domain.custombuttons.model.CustomButton
 
 @Composable
+/**
+ * UI presentation composable for BottomRightPlayerControls.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun BottomRightPlayerControls(
     mpv: MPV,
     customButton: CustomButton?,

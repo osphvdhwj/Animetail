@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.extension.details
+﻿package eu.kanade.tachiyomi.ui.browse.manga.extension.details
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
@@ -38,6 +38,12 @@ import tachiyomi.core.common.util.system.logcat
 import kotlin.time.Duration.Companion.seconds
 
 @AssistedInject
+/**
+ * State and business logic coordinator for MangaExtensionDetailsViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MangaExtensionDetailsViewModel(
     @Assisted pkgName: String,
     private val context: Context,

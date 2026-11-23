@@ -25,6 +25,7 @@ import eu.kanade.tachiyomi.ui.home.HomeFeedScreenModel
 import eu.kanade.tachiyomi.ui.home.HomeMediaFilter
 import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.CheckboxItem
 import tachiyomi.presentation.core.components.HeadingItem
 import tachiyomi.presentation.core.i18n.stringResource
@@ -260,6 +261,11 @@ private fun VisibleSectionsTab(
         label = stringResource(MR.strings.show_continue),
         checked = state.showContinue,
         onClick = { onToggleSection("continue") },
+    )
+    CheckboxItem(
+        label = stringResource(TLMR.strings.home_feed_airing_today),
+        checked = state.showAiringToday,
+        onClick = { onToggleSection("airing_today") },
     )
     CheckboxItem(
         label = stringResource(MR.strings.show_because_you_watched),

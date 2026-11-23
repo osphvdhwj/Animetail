@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.extension
+﻿package eu.kanade.tachiyomi.ui.browse.manga.extension
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
@@ -43,6 +43,12 @@ import kotlin.time.Duration.Companion.seconds
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+/**
+ * State and business logic coordinator for MangaExtensionsViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MangaExtensionsViewModel(
     private val context: Context,
     private val preferences: SourcePreferences,

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.download.anime
+﻿package eu.kanade.tachiyomi.ui.download.anime
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -15,6 +15,11 @@ import eu.kanade.presentation.components.TabContent
 import tachiyomi.i18n.aniyomi.AYMR
 
 @Composable
+/**
+ * Navigation tab descriptor for AnimeDownloadQueueTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 fun Screen.animeDownloadTab(
     nestedScrollConnection: NestedScrollConnection,
 ): TabContent {

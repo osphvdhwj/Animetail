@@ -17,6 +17,7 @@ import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALSearchItem
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserListEntryQueryResult
 import eu.kanade.tachiyomi.data.track.anilist.dto.ALUserViewerData
+import eu.kanade.tachiyomi.data.track.anilist.dto.ALAnime
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import eu.kanade.tachiyomi.data.track.model.TrackAnimeMetadata
@@ -26,28 +27,49 @@ import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.interceptor.rateLimit
 import eu.kanade.tachiyomi.network.jsonMime
 import eu.kanade.tachiyomi.network.parseAs
+import eu.kanade.tachiyomi.ui.discover.DailyALCharacterRole
+import eu.kanade.tachiyomi.ui.discover.DailyALFilterState
+import eu.kanade.tachiyomi.ui.discover.DailyALMediaDetails
+import eu.kanade.tachiyomi.ui.discover.DailyALActivityEntry
+import eu.kanade.tachiyomi.ui.discover.DailyALProfileStats
+import eu.kanade.tachiyomi.ui.discover.DailyALUserListEntry
+import eu.kanade.tachiyomi.ui.discover.DailyALRecommendation
+import eu.kanade.tachiyomi.ui.discover.DailyALRelation
+import eu.kanade.tachiyomi.ui.discover.DailyALReview
+import eu.kanade.tachiyomi.ui.discover.DailyALStaffRole
+import eu.kanade.tachiyomi.ui.discover.DailyALVoiceActor
 import eu.kanade.tachiyomi.util.lang.htmlDecode
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.number
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import logcat.LogPriority
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
+import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
+import kotlin.math.roundToLong
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import tachiyomi.domain.track.anime.model.AnimeTrack as DomainAnimeTrack
 import tachiyomi.domain.track.manga.model.MangaTrack as DomainMangaTrack
 
-class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
+class AnilistApi(val client: OkHttpClient, val interceptor: AnilistInterceptor) {
 
     private val json: Json by injectLazy()
 
@@ -222,6 +244,48 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
             authClient.newCall(POST(API_URL, body = payload.toString().toRequestBody(jsonMime)))
                 .awaitSuccess()
             track
+        }
+    }
+
+    /**
+     * Upserts watch progress (and optionally score/status) for a media entry by its
+     * AniList media id, without requiring an existing list entry id — AniList's
+     * SaveMediaListEntry creates the entry when one doesn't exist yet.
+     *
+     * Used by the Discover profile progress editor.
+     *
+     * @return [Result.success] on a 2xx response, or the captured failure.
+     */
+    suspend fun updateMediaProgress(
+        mediaId: Long,
+        progress: Int,
+        status: String? = null,
+        score: Int? = null,
+    ): Result<Unit> {
+        return runCatching {
+            withIOContext {
+                val query = """
+                |mutation UpsertProgress(${'$'}mediaId: Int, ${'$'}progress: Int, ${'$'}status: MediaListStatus, ${'$'}scoreRaw: Int) {
+                    |SaveMediaListEntry(mediaId: ${'$'}mediaId, progress: ${'$'}progress, status: ${'$'}status, scoreRaw: ${'$'}scoreRaw) {
+                        |id
+                        |progress
+                        |status
+                    |}
+                |}
+                |
+                """.trimMargin()
+                val payload = buildJsonObject {
+                    put("query", query)
+                    putJsonObject("variables") {
+                        put("mediaId", mediaId)
+                        put("progress", progress)
+                        status?.let { put("status", it) }
+                        score?.let { put("scoreRaw", it) }
+                    }
+                }
+                authClient.newCall(POST(API_URL, body = payload.toString().toRequestBody(jsonMime)))
+                    .awaitSuccess()
+            }
         }
     }
 
@@ -1328,6 +1392,837 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
         }
     }
 
+    /**
+     * Retrieves comprehensive deep media details from AniList ported from DailyAL's rich media graph.
+     *
+     * Constructs a single round-trip GraphQL query requesting core media metadata, characters with
+     * voice actors, production staff, relations, recommendations, reviews, and trailer.
+     *
+     * @param mediaId AniList media identifier.
+     * @param isAnime Whether the target media is an anime (true) or manga (false).
+     * @return [Result] containing [DailyALMediaDetails] on success, or exception on failure.
+     */
+    suspend fun getDeepMediaDetails(mediaId: Long, isAnime: Boolean = true): Result<DailyALMediaDetails> {
+        return withIOContext {
+            runCatching {
+                val query = """
+                |query DeepMediaDetails(${'$'}id: Int, ${'$'}type: MediaType) {
+                |  Media(id: ${'$'}id, type: ${'$'}type) {
+                |    id
+                |    title {
+                |      userPreferred
+                |      romaji
+                |      english
+                |      native
+                |    }
+                |    coverImage {
+                |      extraLarge
+                |      large
+                |    }
+                |    bannerImage
+                |    format
+                |    status
+                |    episodes
+                |    duration
+                |    season
+                |    seasonYear
+                |    meanScore
+                |    averageScore
+                |    popularity
+                |    rankings {
+                |      rank
+                |      allTime
+                |      type
+                |    }
+                |    description(asHtml: false)
+                |    genres
+                |    tags {
+                |      name
+                |    }
+                |    trailer {
+                |      id
+                |      site
+                |    }
+                |    characters(sort: [ROLE, RELEVANCE, ID], perPage: 25) {
+                |      edges {
+                |        role
+                |        node {
+                |          id
+                |          name {
+                |            userPreferred
+                |            full
+                |            native
+                |          }
+                |          image {
+                |            large
+                |          }
+                |        }
+                |        voiceActors(sort: [RELEVANCE, ID]) {
+                |          id
+                |          name {
+                |            userPreferred
+                |            full
+                |            native
+                |          }
+                |          language
+                |          image {
+                |            large
+                |          }
+                |        }
+                |      }
+                |    }
+                |    staff(sort: [RELEVANCE, ID], perPage: 25) {
+                |      edges {
+                |        role
+                |        node {
+                |          id
+                |          name {
+                |            userPreferred
+                |            full
+                |          }
+                |          image {
+                |            large
+                |          }
+                |        }
+                |      }
+                |    }
+                |    relations {
+                |      edges {
+                |        relationType(version: 2)
+                |        node {
+                |          id
+                |          title {
+                |            userPreferred
+                |            romaji
+                |            english
+                |          }
+                |          format
+                |          status
+                |          coverImage {
+                |            large
+                |          }
+                |          meanScore
+                |        }
+                |      }
+                |    }
+                |    recommendations(sort: [RATING_DESC], perPage: 15) {
+                |      nodes {
+                |        id
+                |        rating
+                |        mediaRecommendation {
+                |          id
+                |          title {
+                |            userPreferred
+                |            romaji
+                |            english
+                |          }
+                |          coverImage {
+                |            large
+                |          }
+                |          meanScore
+                |        }
+                |      }
+                |    }
+                |    reviews(sort: [RATING_DESC], perPage: 10) {
+                |      nodes {
+                |        id
+                |        summary
+                |        body(asHtml: false)
+                |        score
+                |        rating
+                |        user {
+                |          name
+                |          avatar {
+                |            large
+                |          }
+                |        }
+                |      }
+                |    }
+                |  }
+                |}
+                """.trimMargin()
+
+                val payload = buildJsonObject {
+                    put("query", query)
+                    putJsonObject("variables") {
+                        put("id", mediaId.toInt())
+                        put("type", if (isAnime) "ANIME" else "MANGA")
+                    }
+                }
+
+                val okClient = try {
+                    if (interceptor.anilist.isLoggedIn) authClient else publicClient
+                } catch (_: Exception) {
+                    publicClient
+                }
+
+                val responseBody = okClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                ).awaitSuccess().body.string()
+
+                val jsonElement = json.parseToJsonElement(responseBody)
+                val mediaObj = jsonElement.jsonObject["data"].asJsonObjectOrNull?.get("Media").asJsonObjectOrNull
+                    ?: throw IllegalStateException("Media data missing in AniList response for id=$mediaId")
+
+                parseDeepMediaDetails(mediaObj, mediaId)
+            }.onFailure { e ->
+                logcat(LogPriority.ERROR, e) { "DailyAL: Error fetching deep media details for mediaId=$mediaId" }
+            }
+        }
+    }
+
+    /**
+     * Executes an advanced multi-parameter search query matching DailyAL's rich filtering capabilities.
+     *
+     * Supports filtering by free-text keywords, genre inclusion/exclusion, format, status, season,
+     * release year, minimum score threshold, and sorting criteria.
+     *
+     * @param filter The active [DailyALFilterState] specifying search constraints.
+     * @param page Page index for paginated browsing (1-based).
+     * @return [Result] containing list of [ALAnime] entries, or error on failure.
+     */
+    suspend fun searchAdvanced(filter: DailyALFilterState, page: Int = 1): Result<List<ALAnime>> {
+        return withIOContext {
+            runCatching {
+                val variableDefs = mutableListOf(
+                    "${'$'}page: Int",
+                    "${'$'}perPage: Int",
+                )
+                val mediaArgs = mutableListOf(
+                    "type: ANIME",
+                )
+
+                if (filter.query.isNotBlank()) {
+                    variableDefs.add("${'$'}search: String")
+                    mediaArgs.add("search: ${'$'}search")
+                }
+                if (filter.includedGenres.isNotEmpty()) {
+                    variableDefs.add("${'$'}genre_in: [String]")
+                    mediaArgs.add("genre_in: ${'$'}genre_in")
+                }
+                if (filter.excludedGenres.isNotEmpty()) {
+                    variableDefs.add("${'$'}genre_not_in: [String]")
+                    mediaArgs.add("genre_not_in: ${'$'}genre_not_in")
+                }
+                if (!filter.format.isNullOrBlank()) {
+                    variableDefs.add("${'$'}format_in: [MediaFormat]")
+                    mediaArgs.add("format_in: ${'$'}format_in")
+                }
+                if (!filter.status.isNullOrBlank()) {
+                    variableDefs.add("${'$'}status_in: [MediaStatus]")
+                    mediaArgs.add("status_in: ${'$'}status_in")
+                }
+                if (!filter.season.isNullOrBlank()) {
+                    variableDefs.add("${'$'}season: MediaSeason")
+                    mediaArgs.add("season: ${'$'}season")
+                }
+                if (filter.seasonYear != null && filter.seasonYear > 0) {
+                    variableDefs.add("${'$'}seasonYear: Int")
+                    mediaArgs.add("seasonYear: ${'$'}seasonYear")
+                }
+                if (filter.minScore != null && filter.minScore > 0) {
+                    variableDefs.add("${'$'}averageScore_greater: Int")
+                    mediaArgs.add("averageScore_greater: ${'$'}averageScore_greater")
+                }
+                variableDefs.add("${'$'}sort: [MediaSort]")
+                mediaArgs.add("sort: ${'$'}sort")
+
+                val query = """
+                |query AdvancedSearch(${variableDefs.joinToString(", ")}) {
+                |  Page(page: ${'$'}page, perPage: ${'$'}perPage) {
+                |    media(${mediaArgs.joinToString(", ")}) {
+                |      id
+                |      title {
+                |        userPreferred
+                |        romaji
+                |        english
+                |        native
+                |      }
+                |      coverImage {
+                |        large
+                |      }
+                |      description
+                |      format
+                |      status
+                |      startDate {
+                |        year
+                |        month
+                |        day
+                |      }
+                |      episodes
+                |      averageScore
+                |      studios(isMain: true) {
+                |        edges {
+                |          isMain
+                |          node {
+                |            name
+                |          }
+                |        }
+                |      }
+                |    }
+                |  }
+                |}
+                """.trimMargin()
+
+                val payload = buildJsonObject {
+                    put("query", query)
+                    putJsonObject("variables") {
+                        put("page", page)
+                        put("perPage", 25)
+                        if (filter.query.isNotBlank()) {
+                            put("search", filter.query.trim())
+                        }
+                        if (filter.includedGenres.isNotEmpty()) {
+                            put(
+                                "genre_in",
+                                kotlinx.serialization.json.JsonArray(
+                                    filter.includedGenres.map { kotlinx.serialization.json.JsonPrimitive(it) },
+                                ),
+                            )
+                        }
+                        if (filter.excludedGenres.isNotEmpty()) {
+                            put(
+                                "genre_not_in",
+                                kotlinx.serialization.json.JsonArray(
+                                    filter.excludedGenres.map { kotlinx.serialization.json.JsonPrimitive(it) },
+                                ),
+                            )
+                        }
+                        if (!filter.format.isNullOrBlank()) {
+                            val formatVal = filter.format.replace("-", "_").uppercase()
+                            put(
+                                "format_in",
+                                kotlinx.serialization.json.JsonArray(
+                                    listOf(kotlinx.serialization.json.JsonPrimitive(formatVal)),
+                                ),
+                            )
+                        }
+                        if (!filter.status.isNullOrBlank()) {
+                            val statusVal = filter.status.uppercase()
+                            put(
+                                "status_in",
+                                kotlinx.serialization.json.JsonArray(
+                                    listOf(kotlinx.serialization.json.JsonPrimitive(statusVal)),
+                                ),
+                            )
+                        }
+                        if (!filter.season.isNullOrBlank()) {
+                            put("season", filter.season.uppercase())
+                        }
+                        if (filter.seasonYear != null && filter.seasonYear > 0) {
+                            put("seasonYear", filter.seasonYear)
+                        }
+                        if (filter.minScore != null && filter.minScore > 0) {
+                            put("averageScore_greater", filter.minScore)
+                        }
+                        val sortEnum = when (filter.sortBy.uppercase()) {
+                            "SCORE_DESC" -> "SCORE_DESC"
+                            "TRENDING_DESC" -> "TRENDING_DESC"
+                            "START_DATE_DESC" -> "START_DATE_DESC"
+                            "TITLE_ROMAJI" -> "TITLE_ROMAJI"
+                            else -> "POPULARITY_DESC"
+                        }
+                        put(
+                            "sort",
+                            kotlinx.serialization.json.JsonArray(
+                                listOf(kotlinx.serialization.json.JsonPrimitive(sortEnum)),
+                            ),
+                        )
+                    }
+                }
+
+                with(json) {
+                    publicClient.newCall(
+                        POST(
+                            API_URL,
+                            body = payload.toString().toRequestBody(jsonMime),
+                        ),
+                    )
+                        .awaitSuccess()
+                        .parseAs<ALSearchResult>()
+                        .data.page.media
+                        .map { it.toALAnime() }
+                }
+            }.onFailure { e ->
+                logcat(LogPriority.ERROR, e) { "DailyAL: Error executing advanced search with query='${filter.query}'" }
+            }
+        }
+    }
+
+    /**
+     * Queries profile metrics and watch statistics for the currently authenticated AniList user.
+     *
+     * Ported from DailyAL's user profile dashboard to display total watch time, mean score,
+     * status breakdown, and score distribution histogram.
+     *
+     * @return [Result] containing [DailyALProfileStats] on success, or failure if unauthenticated or network error.
+     */
+    suspend fun getUserProfileStats(): Result<DailyALProfileStats> {
+        return withIOContext {
+            runCatching {
+                val query = """
+                |query CurrentUserStats {
+                |  Viewer {
+                |    id
+                |    name
+                |    avatar {
+                |      large
+                |    }
+                |    bannerImage
+                |    statistics {
+                |      anime {
+                |        count
+                |        meanScore
+                |        minutesWatched
+                |        episodesWatched
+                |        statuses {
+                |          status
+                |          count
+                |        }
+                |        scores {
+                |          score
+                |          count
+                |        }
+                |      }
+                |    }
+                |  }
+                |}
+                """.trimMargin()
+
+                val payload = buildJsonObject {
+                    put("query", query)
+                }
+
+                val responseBody = authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                ).awaitSuccess().body.string()
+
+                val jsonElement = json.parseToJsonElement(responseBody)
+                val viewer = jsonElement.jsonObject["data"].asJsonObjectOrNull?.get("Viewer").asJsonObjectOrNull
+                    ?: throw IllegalStateException("Viewer data missing or user not authenticated with AniList")
+
+                val userName = viewer["name"]?.jsonPrimitive?.contentOrNull ?: "AniList User"
+                val avatarUrl = viewer["avatar"].asJsonObjectOrNull?.get("large")?.jsonPrimitive?.contentOrNull
+                val bannerUrl = viewer["bannerImage"]?.jsonPrimitive?.contentOrNull
+
+                val animeStats = viewer["statistics"].asJsonObjectOrNull?.get("anime").asJsonObjectOrNull
+                val count = animeStats?.get("count")?.jsonPrimitive?.intOrNull ?: 0
+                val meanScore = animeStats?.get("meanScore")?.jsonPrimitive?.doubleOrNull ?: 0.0
+                val minutesWatched = animeStats?.get("minutesWatched")?.jsonPrimitive?.longOrNull ?: 0L
+                val daysWatched = if (minutesWatched > 0) {
+                    (minutesWatched / 1440.0 * 10.0).roundToLong() / 10.0
+                } else {
+                    0.0
+                }
+                val episodesWatched = animeStats?.get("episodesWatched")?.jsonPrimitive?.intOrNull ?: 0
+
+                val statusMap = mutableMapOf<String, Int>()
+                animeStats?.get("statuses").asJsonArrayOrNull?.forEach { elem ->
+                    val sObj = elem.asJsonObjectOrNull ?: return@forEach
+                    val status = sObj["status"]?.jsonPrimitive?.contentOrNull
+                    val c = sObj["count"]?.jsonPrimitive?.intOrNull ?: 0
+                    if (status != null) {
+                        statusMap[status] = c
+                    }
+                }
+
+                val scoreMap = mutableMapOf<Int, Int>()
+                animeStats?.get("scores").asJsonArrayOrNull?.forEach { elem ->
+                    val sObj = elem.asJsonObjectOrNull ?: return@forEach
+                    val score = sObj["score"]?.jsonPrimitive?.intOrNull
+                    val c = sObj["count"]?.jsonPrimitive?.intOrNull ?: 0
+                    if (score != null) {
+                        scoreMap[score] = c
+                    }
+                }
+
+                DailyALProfileStats(
+                    userName = userName,
+                    avatarUrl = avatarUrl,
+                    bannerUrl = bannerUrl,
+                    animeDaysWatched = daysWatched,
+                    meanScore = meanScore,
+                    totalEpisodes = episodesWatched,
+                    totalEntries = count,
+                    statusDistribution = statusMap,
+                    scoreDistribution = scoreMap,
+                )
+            }.onFailure { e ->
+                logcat(LogPriority.ERROR, e) { "DailyAL: Failed to retrieve user profile statistics from AniList" }
+            }
+        }
+    }
+
+    /**
+     * Fetches a slice of the authenticated user's anime list for a given status
+     * (CURRENT, PLANNING, COMPLETED, PAUSED, DROPPED), most recently updated first.
+     *
+     * Powers the Discover profile's "My Lists" browser with inline editing.
+     */
+    suspend fun getUserAnimeList(status: String): Result<List<DailyALUserListEntry>> =
+        getUserList(status, isAnime = true)
+
+    /**
+     * Fetches a slice of the authenticated user's manga list for a given status,
+     * most recently updated first.
+     */
+    suspend fun getUserMangaList(status: String): Result<List<DailyALUserListEntry>> =
+        getUserList(status, isAnime = false)
+
+    private suspend fun getUserList(status: String, isAnime: Boolean): Result<List<DailyALUserListEntry>> {
+        return withIOContext {
+            runCatching {
+                val query = """
+                |query UserList(${'$'}status: MediaListStatus, ${'$'}type: MediaType) {
+                |  Viewer {
+                |    mediaListCollection(status: ${'$'}status, type: ${'$'}type, sort: UPDATED_TIME_DESC) {
+                |      entries {
+                |        id
+                |        score(format: POINT_100)
+                |        progress
+                |        status
+                |        media {
+                |          id
+                |          title { romaji }
+                |          coverImage { medium }
+                |          format
+                |          status
+                |          averageScore
+                |          episodes
+                |          chapters
+                |        }
+                |      }
+                |    }
+                |  }
+                |}
+                """.trimMargin()
+                val payload = buildJsonObject {
+                    put("query", query)
+                    putJsonObject("variables") {
+                        put("status", status)
+                        put("type", if (isAnime) "ANIME" else "MANGA")
+                    }
+                }
+
+                val responseBody = authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                ).awaitSuccess().body.string()
+
+                val jsonElement = json.parseToJsonElement(responseBody)
+                val collection = jsonElement.jsonObject["data"].asJsonObjectOrNull
+                    ?.get("Viewer").asJsonObjectOrNull
+                    ?.get("mediaListCollection").asJsonObjectOrNull
+                    ?: return@runCatching emptyList()
+
+                collection["entries"].asJsonArrayOrNull.orEmpty().mapNotNull { elem ->
+                    val entry = elem.asJsonObjectOrNull ?: return@mapNotNull null
+                    val media = entry["media"].asJsonObjectOrNull ?: return@mapNotNull null
+                    val total = if (isAnime) {
+                        media["episodes"]?.jsonPrimitive?.intOrNull
+                    } else {
+                        media["chapters"]?.jsonPrimitive?.intOrNull
+                    }
+                    DailyALUserListEntry(
+                        entryId = entry["id"]?.jsonPrimitive?.longOrNull ?: 0L,
+                        mediaId = media["id"]?.jsonPrimitive?.longOrNull ?: 0L,
+                        title = media["title"].asJsonObjectOrNull?.get("romaji")
+                            ?.jsonPrimitive?.contentOrNull
+                            ?: media["title"].asJsonObjectOrNull?.get("userPreferred")
+                                ?.jsonPrimitive?.contentOrNull
+                            ?: "Unknown",
+                        coverUrl = media["coverImage"].asJsonObjectOrNull?.get("medium")
+                            ?.jsonPrimitive?.contentOrNull,
+                        scoreRaw = entry["score"]?.jsonPrimitive?.intOrNull ?: 0,
+                        progress = entry["progress"]?.jsonPrimitive?.intOrNull ?: 0,
+                        status = entry["status"]?.jsonPrimitive?.contentOrNull ?: status,
+                        format = media["format"]?.jsonPrimitive?.contentOrNull,
+                        mediaStatus = media["status"]?.jsonPrimitive?.contentOrNull,
+                        averageScore = media["averageScore"]?.jsonPrimitive?.intOrNull ?: -1,
+                        totalEpisodes = total ?: 0,
+                        isManga = !isAnime,
+                    )
+                }
+            }.onFailure { e ->
+                logcat(
+                    LogPriority.ERROR,
+                    e,
+                ) { "DailyAL: Failed to retrieve user ${if (isAnime) "anime" else "manga"} list from AniList" }
+            }
+        }
+    }
+
+    /**
+     * Fetches the authenticated user's recent list activity (watching/reading
+     * updates), newest first, for the Discover profile's activity feed.
+     */
+    suspend fun getUserActivityFeed(): Result<List<DailyALActivityEntry>> {
+        return withIOContext {
+            runCatching {
+                val viewerId = getCurrentUser().id
+                val query = """
+                |query UserActivity(${'$'}userId: Int) {
+                |  Page(perPage: 15) {
+                |    activities(userId: ${'$'}userId, sort: ID_DESC) {
+                |      ... on ListActivity {
+                |        status
+                |        progress
+                |        createdAt
+                |        media {
+                |          id
+                |          title { romaji }
+                |          coverImage { medium }
+                |        }
+                |      }
+                |    }
+                |  }
+                |}
+                """.trimMargin()
+                val payload = buildJsonObject {
+                    put("query", query)
+                    putJsonObject("variables") {
+                        put("userId", viewerId)
+                    }
+                }
+
+                val responseBody = authClient.newCall(
+                    POST(
+                        API_URL,
+                        body = payload.toString().toRequestBody(jsonMime),
+                    ),
+                ).awaitSuccess().body.string()
+
+                val jsonElement = json.parseToJsonElement(responseBody)
+                val page = jsonElement.jsonObject["data"].asJsonObjectOrNull
+                    ?.get("Page").asJsonObjectOrNull
+                    ?: return@runCatching emptyList()
+
+                page["activities"].asJsonArrayOrNull.orEmpty().mapNotNull { elem ->
+                    val activity = elem.asJsonObjectOrNull ?: return@mapNotNull null
+                    val media = activity["media"].asJsonObjectOrNull ?: return@mapNotNull null
+                    val status = activity["status"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                    DailyALActivityEntry(
+                        mediaId = media["id"]?.jsonPrimitive?.longOrNull ?: 0L,
+                        mediaTitle = media["title"].asJsonObjectOrNull?.get("romaji")
+                            ?.jsonPrimitive?.contentOrNull ?: "Unknown",
+                        mediaCoverUrl = media["coverImage"].asJsonObjectOrNull?.get("medium")
+                            ?.jsonPrimitive?.contentOrNull,
+                        status = status,
+                        progress = activity["progress"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                        createdAt = activity["createdAt"]?.jsonPrimitive?.longOrNull ?: 0L,
+                    )
+                }
+            }.onFailure { e ->
+                logcat(LogPriority.ERROR, e) { "DailyAL: Failed to retrieve user activity feed from AniList" }
+            }
+        }
+    }
+
+    private fun parseDeepMediaDetails(media: JsonObject, requestedId: Long): DailyALMediaDetails {
+        val id = media["id"]?.jsonPrimitive?.longOrNull ?: requestedId
+        val titleObj = media["title"].asJsonObjectOrNull
+        val userPreferred = titleObj?.get("userPreferred")?.jsonPrimitive?.contentOrNull
+        val english = titleObj?.get("english")?.jsonPrimitive?.contentOrNull
+        val romaji = titleObj?.get("romaji")?.jsonPrimitive?.contentOrNull
+        val native = titleObj?.get("native")?.jsonPrimitive?.contentOrNull
+        val displayTitle = userPreferred ?: english ?: romaji ?: native ?: "Unknown"
+
+        val coverImg = media["coverImage"].asJsonObjectOrNull
+        val coverUrl = coverImg?.get("extraLarge")?.jsonPrimitive?.contentOrNull
+            ?: coverImg?.get("large")?.jsonPrimitive?.contentOrNull
+        val bannerUrl = media["bannerImage"]?.jsonPrimitive?.contentOrNull
+        val format = media["format"]?.jsonPrimitive?.contentOrNull
+        val status = media["status"]?.jsonPrimitive?.contentOrNull
+        val episodes = media["episodes"]?.jsonPrimitive?.intOrNull
+        val duration = media["duration"]?.jsonPrimitive?.intOrNull
+        val season = media["season"]?.jsonPrimitive?.contentOrNull
+        val seasonYear = media["seasonYear"]?.jsonPrimitive?.intOrNull
+        val meanScore = media["meanScore"]?.jsonPrimitive?.intOrNull
+            ?: media["averageScore"]?.jsonPrimitive?.intOrNull
+        val popularity = media["popularity"]?.jsonPrimitive?.intOrNull
+
+        val rank = media["rankings"].asJsonArrayOrNull?.firstOrNull().asJsonObjectOrNull?.get("rank")?.jsonPrimitive?.intOrNull
+        val synopsis = media["description"]?.jsonPrimitive?.contentOrNull?.htmlDecode()
+        val genres = media["genres"].asJsonArrayOrNull?.mapNotNull { it.jsonPrimitive.contentOrNull } ?: emptyList()
+        val tags = media["tags"].asJsonArrayOrNull?.mapNotNull { it.asJsonObjectOrNull?.get("name")?.jsonPrimitive?.contentOrNull } ?: emptyList()
+
+        val trailerObj = media["trailer"].asJsonObjectOrNull
+        val trailerId = trailerObj?.get("id")?.jsonPrimitive?.contentOrNull
+        val trailerSite = trailerObj?.get("site")?.jsonPrimitive?.contentOrNull
+        val trailerUrl = when {
+            trailerId == null -> null
+            trailerSite.equals("youtube", ignoreCase = true) -> "https://www.youtube.com/watch?v=$trailerId"
+            trailerSite.equals("dailymotion", ignoreCase = true) -> "https://www.dailymotion.com/video/$trailerId"
+            else -> trailerId
+        }
+
+        // Characters
+        val characters = media["characters"].asJsonObjectOrNull?.get("edges").asJsonArrayOrNull?.mapNotNull { edgeElem ->
+            val edge = edgeElem.asJsonObjectOrNull ?: return@mapNotNull null
+            val role = edge["role"]?.jsonPrimitive?.contentOrNull ?: "SUPPORTING"
+            val charNode = edge["node"].asJsonObjectOrNull ?: return@mapNotNull null
+            val charId = charNode["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
+            val charNameObj = charNode["name"].asJsonObjectOrNull
+            val charName = charNameObj?.get("userPreferred")?.jsonPrimitive?.contentOrNull
+                ?: charNameObj?.get("full")?.jsonPrimitive?.contentOrNull
+                ?: "Unknown Character"
+            val charNative = charNameObj?.get("native")?.jsonPrimitive?.contentOrNull
+            val charImage = charNode["image"].asJsonObjectOrNull?.get("large")?.jsonPrimitive?.contentOrNull
+
+            val voiceActors = edge["voiceActors"].asJsonArrayOrNull?.mapNotNull { vaElem ->
+                val vaNode = vaElem.asJsonObjectOrNull ?: return@mapNotNull null
+                val vaId = vaNode["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
+                val vaNameObj = vaNode["name"].asJsonObjectOrNull
+                val vaName = vaNameObj?.get("userPreferred")?.jsonPrimitive?.contentOrNull
+                    ?: vaNameObj?.get("full")?.jsonPrimitive?.contentOrNull
+                    ?: "Unknown Voice Actor"
+                val vaNative = vaNameObj?.get("native")?.jsonPrimitive?.contentOrNull
+                val vaLang = vaNode["language"]?.jsonPrimitive?.contentOrNull ?: "Japanese"
+                val vaImage = vaNode["image"].asJsonObjectOrNull?.get("large")?.jsonPrimitive?.contentOrNull
+                DailyALVoiceActor(
+                    id = vaId,
+                    name = vaName,
+                    nativeName = vaNative,
+                    language = vaLang,
+                    imageUrl = vaImage,
+                )
+            } ?: emptyList()
+
+            DailyALCharacterRole(
+                id = charId,
+                name = charName,
+                nativeName = charNative,
+                imageUrl = charImage,
+                role = role,
+                voiceActors = voiceActors,
+            )
+        } ?: emptyList()
+
+        // Staff
+        val staff = media["staff"].asJsonObjectOrNull?.get("edges").asJsonArrayOrNull?.mapNotNull { edgeElem ->
+            val edge = edgeElem.asJsonObjectOrNull ?: return@mapNotNull null
+            val role = edge["role"]?.jsonPrimitive?.contentOrNull ?: "Staff"
+            val staffNode = edge["node"].asJsonObjectOrNull ?: return@mapNotNull null
+            val staffId = staffNode["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
+            val staffNameObj = staffNode["name"].asJsonObjectOrNull
+            val staffName = staffNameObj?.get("userPreferred")?.jsonPrimitive?.contentOrNull
+                ?: staffNameObj?.get("full")?.jsonPrimitive?.contentOrNull
+                ?: "Unknown Staff"
+            val staffImage = staffNode["image"].asJsonObjectOrNull?.get("large")?.jsonPrimitive?.contentOrNull
+            DailyALStaffRole(
+                id = staffId,
+                name = staffName,
+                role = role,
+                imageUrl = staffImage,
+            )
+        } ?: emptyList()
+
+        // Relations
+        val relations = media["relations"].asJsonObjectOrNull?.get("edges").asJsonArrayOrNull?.mapNotNull { edgeElem ->
+            val edge = edgeElem.asJsonObjectOrNull ?: return@mapNotNull null
+            val relationType = edge["relationType"]?.jsonPrimitive?.contentOrNull ?: "RELATED"
+            val relNode = edge["node"].asJsonObjectOrNull ?: return@mapNotNull null
+            val relId = relNode["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
+            val relTitleObj = relNode["title"].asJsonObjectOrNull
+            val relTitle = relTitleObj?.get("userPreferred")?.jsonPrimitive?.contentOrNull
+                ?: relTitleObj?.get("romaji")?.jsonPrimitive?.contentOrNull
+                ?: relTitleObj?.get("english")?.jsonPrimitive?.contentOrNull
+                ?: "Unknown Related"
+            val relFormat = relNode["format"]?.jsonPrimitive?.contentOrNull
+            val relStatus = relNode["status"]?.jsonPrimitive?.contentOrNull
+            val relCover = relNode["coverImage"].asJsonObjectOrNull?.get("large")?.jsonPrimitive?.contentOrNull
+            val relScore = relNode["meanScore"]?.jsonPrimitive?.intOrNull
+            DailyALRelation(
+                id = relId,
+                title = relTitle,
+                format = relFormat,
+                status = relStatus,
+                relationType = relationType,
+                coverUrl = relCover,
+                meanScore = relScore,
+            )
+        } ?: emptyList()
+
+        // Recommendations
+        val recommendations = media["recommendations"].asJsonObjectOrNull?.get("nodes").asJsonArrayOrNull?.mapNotNull { nodeElem ->
+            val recNode = nodeElem.asJsonObjectOrNull ?: return@mapNotNull null
+            val rating = recNode["rating"]?.jsonPrimitive?.intOrNull ?: 0
+            val recMedia = recNode["mediaRecommendation"].asJsonObjectOrNull ?: return@mapNotNull null
+            val recMediaId = recMedia["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
+            val recTitleObj = recMedia["title"].asJsonObjectOrNull
+            val recTitle = recTitleObj?.get("userPreferred")?.jsonPrimitive?.contentOrNull
+                ?: recTitleObj?.get("romaji")?.jsonPrimitive?.contentOrNull
+                ?: recTitleObj?.get("english")?.jsonPrimitive?.contentOrNull
+                ?: "Recommended Media"
+            val recCover = recMedia["coverImage"].asJsonObjectOrNull?.get("large")?.jsonPrimitive?.contentOrNull
+            val recScore = recMedia["meanScore"]?.jsonPrimitive?.intOrNull
+            DailyALRecommendation(
+                id = recMediaId,
+                title = recTitle,
+                coverUrl = recCover,
+                meanScore = recScore,
+                ratingCount = rating,
+            )
+        } ?: emptyList()
+
+        // Reviews
+        val reviews = media["reviews"].asJsonObjectOrNull?.get("nodes").asJsonArrayOrNull?.mapNotNull { nodeElem ->
+            val revNode = nodeElem.asJsonObjectOrNull ?: return@mapNotNull null
+            val revId = revNode["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
+            val summary = revNode["summary"]?.jsonPrimitive?.contentOrNull
+            val body = revNode["body"]?.jsonPrimitive?.contentOrNull ?: ""
+            val score = revNode["score"]?.jsonPrimitive?.intOrNull ?: 0
+            val rating = revNode["rating"]?.jsonPrimitive?.intOrNull ?: 0
+            val userObj = revNode["user"].asJsonObjectOrNull
+            val userName = userObj?.get("name")?.jsonPrimitive?.contentOrNull ?: "Anonymous"
+            val userAvatar = userObj?.get("avatar").asJsonObjectOrNull?.get("large")?.jsonPrimitive?.contentOrNull
+            DailyALReview(
+                id = revId,
+                summary = summary,
+                body = body,
+                score = score,
+                rating = rating,
+                userName = userName,
+                userAvatarUrl = userAvatar,
+            )
+        } ?: emptyList()
+
+        return DailyALMediaDetails(
+            id = id,
+            title = displayTitle,
+            romajiTitle = romaji,
+            nativeTitle = native,
+            coverUrl = coverUrl,
+            bannerUrl = bannerUrl,
+            format = format,
+            episodes = episodes,
+            duration = duration,
+            status = status,
+            season = season,
+            seasonYear = seasonYear,
+            meanScore = meanScore,
+            popularity = popularity,
+            rank = rank,
+            synopsis = synopsis,
+            genres = genres,
+            tags = tags,
+            trailerUrl = trailerUrl,
+            characters = characters,
+            staff = staff,
+            relations = relations,
+            recommendations = recommendations,
+            reviews = reviews,
+        )
+    }
+
     private fun createDate(dateValue: Long): JsonObject {
         if (dateValue == 0L) {
             return buildJsonObject {
@@ -1367,5 +2262,8 @@ class AnilistApi(val client: OkHttpClient, interceptor: AnilistInterceptor) {
     }
 }
 
+private val JsonElement?.asJsonObjectOrNull: JsonObject?
+    get() = this as? JsonObject
 
-
+private val JsonElement?.asJsonArrayOrNull: JsonArray?
+    get() = this as? JsonArray

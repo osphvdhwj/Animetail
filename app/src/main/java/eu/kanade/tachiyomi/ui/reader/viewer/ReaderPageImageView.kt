@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader.viewer
+﻿package eu.kanade.tachiyomi.ui.reader.viewer
 
 import android.content.Context
 import android.graphics.PointF
@@ -61,6 +61,9 @@ open class ReaderPageImageView @JvmOverloads constructor(
 
     private var config: Config? = null
 
+/**
+ * Core component for ReaderPageImageView within the Animetail presentation and UI layer.
+ */
     var onImageLoaded: (() -> Unit)? = null
     var onImageLoadError: (() -> Unit)? = null
     var onScaleChanged: ((newScale: Float) -> Unit)? = null

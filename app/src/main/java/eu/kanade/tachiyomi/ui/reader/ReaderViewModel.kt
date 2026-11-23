@@ -321,11 +321,6 @@ class ReaderViewModel(
         deletePendingChapters()
     }
 
-    /**
-     * Initializes this presenter with the [mangaId] and [initialChapterId] the reader was launched
-     * with. This method will fetch the manga from the database and initialize the initial chapter.
-     * Failures are reported through [State.initError].
-     */
     private val initialPage = savedState.get<Int>("page")?.takeUnless { it == -1 }
 
     /**

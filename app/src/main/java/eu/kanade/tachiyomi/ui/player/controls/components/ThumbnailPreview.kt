@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.controls.components
+﻿package eu.kanade.tachiyomi.ui.player.controls.components
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
@@ -43,6 +43,12 @@ import kotlinx.collections.immutable.ImmutableList
 // From https://github.com/MakD/AFinity/blob/master/app/src/main/java/com/makd/afinity/ui/player/components/TrickplayPreview.kt
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
+/**
+ * UI presentation composable for ThumbnailPreview.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun ThumbnailPreview(
     visible: Boolean,
     image: ImageBitmap?,

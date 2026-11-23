@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.manga.components
+﻿package eu.kanade.presentation.entries.manga.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -69,6 +69,12 @@ import tachiyomi.presentation.core.components.material.padding
 const val MARKDOWN_INLINE_IMAGE_TAG = "MARKDOWN_INLINE_IMAGE"
 
 @Composable
+/**
+ * UI presentation composable for MarkdownRender.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MarkdownRender(
     content: String,
     modifier: Modifier = Modifier,

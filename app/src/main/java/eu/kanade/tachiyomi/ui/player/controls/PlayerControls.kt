@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -95,6 +95,12 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Suppress("CompositionLocalAllowlist")
+/**
+ * UI presentation composable for PlayerControls.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 val LocalPlayerButtonsClickEvent = staticCompositionLocalOf { {} }
 
 @Composable
@@ -635,6 +641,7 @@ fun PlayerControls(
         val decoder by viewModel.currentDecoder.collectAsState()
         val speed by viewModel.playbackSpeed.collectAsState()
         val sleepTimerTimeRemaining by viewModel.remainingTime.collectAsState()
+        val abLoopState by viewModel.abLoopState.collectAsState()
         val showSubtitles by subtitlePreferences.screenshotSubtitles().collectAsState()
         val currentSource by viewModel.currentSource.collectAsState()
         val showFailedHosters by playerPreferences.showFailedHosters().collectAsState()
@@ -674,6 +681,9 @@ fun PlayerControls(
             onSpeedChange = { viewModel.mpv.setPropertyDouble("speed", it.toFixed(2).toDouble()) },
             sleepTimerTimeRemaining = sleepTimerTimeRemaining,
             onStartSleepTimer = viewModel::startTimer,
+            abLoopState = abLoopState,
+            onToggleABLoop = viewModel::toggleABLoop,
+            onClearABLoop = viewModel::clearABLoop,
             buttons = customButtons.getButtons().toImmutableList(),
 
             isLocalSource = currentSource?.id == LocalAnimeSource.ID,

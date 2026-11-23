@@ -1,4 +1,4 @@
-import android.annotation.SuppressLint
+﻿import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,6 +33,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
+/**
+ * UI presentation composable for CastControlSheet.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun CastControlSheet(
     castManager: CastManager,
     viewModel: PlayerViewModel,

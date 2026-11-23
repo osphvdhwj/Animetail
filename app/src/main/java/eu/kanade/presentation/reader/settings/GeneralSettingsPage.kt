@@ -1,4 +1,4 @@
-package eu.kanade.presentation.reader.settings
+﻿package eu.kanade.presentation.reader.settings
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material3.FilterChip
@@ -33,6 +33,9 @@ private val flashColors = listOf(
 
 @Composable
 internal fun ColumnScope.GeneralPage(viewModel: ReaderSettingsViewModel) {
+/**
+ * Core component for GeneralSettingsPage within the Animetail presentation and UI layer.
+ */
     val readerTheme by viewModel.preferences.readerTheme.collectAsState()
 
     val flashPageState by viewModel.preferences.flashOnPageChange.collectAsState()

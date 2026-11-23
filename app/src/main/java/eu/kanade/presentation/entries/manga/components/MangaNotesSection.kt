@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.manga.components
+﻿package eu.kanade.presentation.entries.manga.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,6 +26,12 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for MangaNotesSection.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MangaNotesSection(
     content: String,
     expanded: Boolean,

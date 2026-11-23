@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.migration.search
+﻿package eu.kanade.tachiyomi.ui.browse.manga.migration.search
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FilterList
@@ -40,6 +40,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.manga.LocalMangaSource
 
+/**
+ * Screen-level composable hierarchy for MangaSourceSearchScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 data class MangaSourceSearchScreen(
     private val oldManga: Manga,
     private val sourceId: Long,

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.controls.components.dialogs
+﻿package eu.kanade.tachiyomi.ui.player.controls.components.dialogs
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -50,6 +50,12 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
+/**
+ * UI presentation composable for EpisodeListDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun EpisodeListDialog(
     displayMode: Long?,
     currentEpisodeIndex: Int,

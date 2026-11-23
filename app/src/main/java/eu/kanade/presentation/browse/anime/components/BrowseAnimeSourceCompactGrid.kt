@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.anime.components
+﻿package eu.kanade.presentation.browse.anime.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,6 +21,12 @@ import tachiyomi.domain.entries.anime.model.AnimeCover
 import tachiyomi.presentation.core.util.plus
 
 @Composable
+/**
+ * UI presentation composable for BrowseAnimeSourceCompactGrid.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun BrowseAnimeSourceCompactGrid(
     animeList: LazyPagingItems<StateFlow<Anime>>,
     columns: GridCells,

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.reader.appbars
+﻿package eu.kanade.presentation.reader.appbars
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -43,6 +43,12 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for ExhUtils.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun ExhUtils(
     isVisible: Boolean,
     onSetExhUtilsVisibility: (Boolean) -> Unit,

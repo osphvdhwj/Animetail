@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player.custombutton
+﻿package eu.kanade.presentation.more.settings.screen.player.custombutton
 
 import androidx.compose.runtime.Immutable
 import animetail.feature.mpvfiles.MpvConfig
@@ -26,6 +26,12 @@ import tachiyomi.i18n.MR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * State and business logic coordinator for PlayerSettingsCustomButtonScreenModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class PlayerSettingsCustomButtonScreenModel(
     private val getCustomButtons: GetCustomButtons = Injekt.get(),
     private val createCustomButton: CreateCustomButton = Injekt.get(),

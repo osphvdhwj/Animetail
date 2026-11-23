@@ -1,5 +1,6 @@
-package eu.kanade.presentation.history.anime
+﻿package eu.kanade.presentation.history.anime
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
@@ -19,11 +20,18 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.ListGroupHeader
+import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 @Composable
+/**
+ * UI presentation composable for AnimeHistoryScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AnimeHistoryScreen(
     state: AnimeHistoryViewModel.State,
     snackbarHostState: SnackbarHostState,
@@ -31,6 +39,7 @@ fun AnimeHistoryScreen(
     onClickResume: (animeId: Long, episodeId: Long) -> Unit,
     onClickFavorite: (animeId: Long) -> Unit,
     onDialogChange: (AnimeHistoryViewModel.Dialog?) -> Unit,
+    onMarkSeen: (AnimeHistoryWithRelations, Boolean) -> Unit,
     searchQuery: String? = null,
 ) {
     Scaffold(
@@ -57,6 +66,7 @@ fun AnimeHistoryScreen(
                     onClickResume = { history -> onClickResume(history.animeId, history.episodeId) },
                     onClickDelete = { item -> onDialogChange(AnimeHistoryViewModel.Dialog.Delete(item)) },
                     onClickFavorite = { history -> onClickFavorite(history.animeId) },
+                    onMarkSeen = onMarkSeen,
                 )
             }
         }
@@ -71,13 +81,37 @@ private fun AnimeHistoryScreenContent(
     onClickResume: (AnimeHistoryWithRelations) -> Unit,
     onClickDelete: (AnimeHistoryWithRelations) -> Unit,
     onClickFavorite: (AnimeHistoryWithRelations) -> Unit,
+    onMarkSeen: (AnimeHistoryWithRelations, Boolean) -> Unit,
 ) {
     FastScrollLazyColumn(
         contentPadding = contentPadding,
     ) {
+        // Native "resume" row for the most recent entry
+        history.firstOrNull { it is AnimeHistoryUiModel.Item }
+            ?.let { (it as AnimeHistoryUiModel.Item).item }
+            ?.let { latest ->
+                item(key = "resume_last") {
+                    Column {
+                        ListGroupHeader(text = stringResource(MR.strings.action_resume))
+                        AnimeHistoryItem(
+                            history = latest,
+                            onClickCover = { onClickCover(latest) },
+                            onClickResume = { onClickResume(latest) },
+                            onClickDelete = { onClickDelete(latest) },
+                            onClickFavorite = { onClickFavorite(latest) },
+                            onMarkSeen = { onMarkSeen(latest, it) },
+                        )
+                    }
+                }
+            }
         items(
             items = history,
-            key = { "history-${it.hashCode()}" },
+            key = {
+                when (it) {
+                    is AnimeHistoryUiModel.Header -> "header_${it.date}"
+                    is AnimeHistoryUiModel.Item -> "item_${it.item.id}"
+                }
+            },
             contentType = {
                 when (it) {
                     is AnimeHistoryUiModel.Header -> "header"
@@ -102,6 +136,7 @@ private fun AnimeHistoryScreenContent(
                         onClickResume = { onClickResume(value) },
                         onClickDelete = { onClickDelete(value) },
                         onClickFavorite = { onClickFavorite(value) },
+                        onMarkSeen = { onMarkSeen(value, it) },
                     )
                 }
             }
@@ -129,6 +164,7 @@ internal fun HistoryScreenPreviews(
             onClickResume = { _, _ -> run {} },
             onDialogChange = {},
             onClickFavorite = {},
+            onMarkSeen = { _, _ -> },
         )
     }
 }

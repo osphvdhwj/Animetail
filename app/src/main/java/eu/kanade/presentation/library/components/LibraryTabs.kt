@@ -1,4 +1,4 @@
-package eu.kanade.presentation.library.components
+﻿package eu.kanade.presentation.library.components
 
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material3.MaterialTheme
@@ -17,6 +17,9 @@ internal fun LibraryTabs(
     getNumberOfItemsForCategory: (Category) -> Int?,
     onTabItemClick: (Int) -> Unit,
 ) {
+/**
+ * Core component for LibraryTabs within the Animetail presentation and UI layer.
+ */
     val currentPageIndex = pagerState.currentPage.coerceAtMost(categories.lastIndex)
     PrimaryScrollableTabRow(
         selectedTabIndex = currentPageIndex,

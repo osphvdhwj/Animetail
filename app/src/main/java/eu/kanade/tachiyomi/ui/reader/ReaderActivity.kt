@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader
+﻿package eu.kanade.tachiyomi.ui.reader
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -128,6 +128,9 @@ import java.io.ByteArrayOutputStream
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LargeClass")
+/**
+ * Core component for ReaderActivity within the Animetail presentation and UI layer.
+ */
 class ReaderActivity : BaseActivity() {
 
     private val graph: AppGraph by lazy { metroGraph() }

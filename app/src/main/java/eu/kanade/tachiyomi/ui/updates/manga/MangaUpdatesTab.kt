@@ -1,8 +1,9 @@
-package eu.kanade.tachiyomi.ui.updates.manga
+﻿package eu.kanade.tachiyomi.ui.updates.manga
 
 import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.DoneAll
 import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.FlipToBack
 import androidx.compose.material.icons.outlined.Refresh
@@ -38,10 +39,16 @@ import mihon.feature.upcoming.manga.UpcomingMangaScreen
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.theme.active
 
 @Composable
+/**
+ * Navigation tab descriptor for MangaUpdatesTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 fun Screen.mangaUpdatesTab(
     context: Context,
     fromMore: Boolean,
@@ -179,6 +186,11 @@ fun Screen.mangaUpdatesTab(
                     title = stringResource(MR.strings.action_view_upcoming),
                     icon = Icons.Outlined.CalendarMonth,
                     onClick = { navigator.push(UpcomingMangaScreen()) },
+                ),
+                AppBar.Action(
+                    title = stringResource(TLMR.strings.updates_mark_all_read),
+                    icon = Icons.Outlined.DoneAll,
+                    onClick = { viewModel.markAllUpdatesRead() },
                 ),
                 AppBar.Action(
                     title = stringResource(MR.strings.action_update_library),

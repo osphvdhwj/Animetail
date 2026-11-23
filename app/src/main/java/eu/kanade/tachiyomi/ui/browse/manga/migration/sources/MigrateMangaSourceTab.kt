@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.migration.sources
+﻿package eu.kanade.tachiyomi.ui.browse.manga.migration.sources
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
@@ -19,6 +19,11 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Navigation tab descriptor for MigrateMangaSourceTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 fun Screen.migrateMangaSourceTab(): TabContent {
     val uriHandler = LocalUriHandler.current
     val navigator = LocalNavigator.currentOrThrow

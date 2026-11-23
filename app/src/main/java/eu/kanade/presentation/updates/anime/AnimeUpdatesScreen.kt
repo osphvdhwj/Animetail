@@ -1,4 +1,4 @@
-package eu.kanade.presentation.updates.anime
+﻿package eu.kanade.presentation.updates.anime
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -34,6 +34,12 @@ import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
+/**
+ * Screen-level composable hierarchy for AnimeUpdatesScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 fun AnimeUpdateScreen(
     state: AnimeUpdatesViewModel.State,
     snackbarHostState: SnackbarHostState,
@@ -97,6 +103,7 @@ fun AnimeUpdateScreen(
                         contentPadding = contentPadding,
                     ) {
                         animeUpdatesLastUpdatedItem(lastUpdated)
+                        animeUpdatesSummaryItem(state.items.size)
 
                         animeUpdatesUiItems(
                             uiModels = state.getUiModel(),

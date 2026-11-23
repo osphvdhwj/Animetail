@@ -1,5 +1,8 @@
-package eu.kanade.tachiyomi.ui.reader.model
+﻿package eu.kanade.tachiyomi.ui.reader.model
 
+/**
+ * Core component for ChapterTransition within the Animetail presentation and UI layer.
+ */
 sealed class ChapterTransition : ReaderItem {
 
     abstract val from: ReaderChapter

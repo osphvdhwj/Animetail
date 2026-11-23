@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.widget
+﻿package eu.kanade.presentation.more.settings.widget
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,6 +11,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
+/**
+ * UI presentation composable for PreferenceGroupHeader.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun PreferenceGroupHeader(title: String) {
     Box(
         contentAlignment = Alignment.CenterStart,

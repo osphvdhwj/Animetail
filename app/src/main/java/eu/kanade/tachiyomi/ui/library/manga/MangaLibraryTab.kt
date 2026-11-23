@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.library.manga
+﻿package eu.kanade.tachiyomi.ui.library.manga
 import uy.kohesive.injekt.api.get
 import eu.kanade.core.preference.asState
 
@@ -75,6 +75,11 @@ import tachiyomi.presentation.core.screens.EmptyScreenAction
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.manga.isLocal
 
+/**
+ * Navigation tab descriptor for MangaLibraryTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 data object MangaLibraryTab : Tab {
 
     @OptIn(ExperimentalAnimationGraphicsApi::class)
@@ -124,6 +129,7 @@ data object MangaLibraryTab : Tab {
 
         val viewModel = metroViewModel<MangaLibraryViewModel>()
         val settingsViewModel = metroViewModel<MangaLibrarySettingsViewModel>()
+        var librarySettingsPage by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableIntStateOf(0) }
         val state by viewModel.state.collectAsStateWithLifecycle()
 
         val snackbarHostState = remember { SnackbarHostState() }
@@ -190,6 +196,14 @@ data object MangaLibraryTab : Tab {
                         )
                     },
                     onClickFilter = viewModel::showSettingsDialog,
+                    onClickSort = {
+                        librarySettingsPage = 1
+                        viewModel.showSettingsDialog()
+                    },
+                    onClickDisplay = {
+                        librarySettingsPage = 2
+                        viewModel.showSettingsDialog()
+                    },
                     onClickRefresh = {
                         onClickRefresh(
                             state.categories[viewModel.activeCategoryIndex],
@@ -320,6 +334,7 @@ data object MangaLibraryTab : Tab {
                 val category = state.categories.getOrNull(viewModel.activeCategoryIndex)
                 MangaLibrarySettingsDialog(
                     onDismissRequest = onDismissRequest,
+                    initialPage = librarySettingsPage,
                     viewModel = settingsViewModel,
                     category = category,
                     // SY -->

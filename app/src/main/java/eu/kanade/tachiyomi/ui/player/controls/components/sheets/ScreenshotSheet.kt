@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.controls.components.sheets
+﻿package eu.kanade.tachiyomi.ui.player.controls.components.sheets
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,6 +29,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import java.io.InputStream
 
 @Composable
+/**
+ * UI presentation composable for ScreenshotSheet.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun ScreenshotSheet(
     isLocalSource: Boolean,
     hasSubTracks: Boolean,

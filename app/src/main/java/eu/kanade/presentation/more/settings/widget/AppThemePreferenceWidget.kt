@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.widget
+﻿package eu.kanade.presentation.more.settings.widget
 
 import android.app.Activity
 import androidx.compose.foundation.background
@@ -79,6 +79,9 @@ private fun AppThemesList(
     amoled: Boolean,
     onItemClick: (AppTheme) -> Unit,
 ) {
+/**
+ * Core component for AppThemePreferenceWidget within the Animetail presentation and UI layer.
+ */
     val context = LocalContext.current
     val appThemes = remember {
         AppTheme.entries

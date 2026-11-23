@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.anime
+﻿package eu.kanade.tachiyomi.ui.entries.anime
 
 import android.content.res.Configuration
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -26,6 +26,12 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Composable
+/**
+ * UI presentation composable for RelatedAnimesScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun RelatedAnimesScreen(
     viewModel: AnimeViewModel,
     navigateUp: () -> Unit,

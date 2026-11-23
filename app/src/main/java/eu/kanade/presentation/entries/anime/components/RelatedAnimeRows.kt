@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime.components
+﻿package eu.kanade.presentation.entries.anime.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,6 +35,12 @@ private val RELATED_ITEM_WIDTH = 96.dp
 private const val MAX_ITEMS_PER_ROW = 3
 
 @Composable
+/**
+ * UI presentation composable for RelatedAnimeRows.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun RelatedAnimeRows(
     relations: List<AnimeRelationGroup>,
     displayMode: LibraryDisplayMode,

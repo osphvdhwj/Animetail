@@ -11,8 +11,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -43,8 +50,10 @@ import cafe.adriel.voyager.navigator.currentOrThrow
 import eu.kanade.presentation.components.AppBar
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
+import eu.kanade.tachiyomi.ui.player.PlayerPermissionHelper
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest
 import eu.kanade.tachiyomi.ui.player.network.NetworkStreamRequest.NetworkHeader
+import eu.kanade.tachiyomi.util.system.toast
 import kotlinx.coroutines.launch
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
@@ -84,6 +93,26 @@ object NetworkStreamScreen : Screen() {
         }
         val canPlay = isUrlValid && isSubtitleValid
 
+        val localVideoPicker = androidx.activity.compose.rememberLauncherForActivityResult(
+            contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument(),
+        ) { uri ->
+            if (uri != null) {
+                val intent = PlayerActivity.newFileIntent(context, uri)
+                context.startActivity(intent)
+            }
+        }
+
+        val localPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+            contract = androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+        ) { permissions ->
+            if (permissions.values.any { it }) {
+                localVideoPicker.launch(arrayOf("video/*", "audio/*", "application/octet-stream"))
+            } else {
+                context.toast("Storage permission is required to browse and play video files")
+                localVideoPicker.launch(arrayOf("video/*", "audio/*", "application/octet-stream"))
+            }
+        }
+
         Scaffold(
             topBarScrollBehavior = scrollBehavior,
             topBar = { behavior ->
@@ -101,6 +130,31 @@ object NetworkStreamScreen : Screen() {
                     .verticalScroll(scrollState)
                     .padding(horizontal = MaterialTheme.padding.large, vertical = MaterialTheme.padding.medium),
             ) {
+                OutlinedButton(
+                    onClick = {
+                        if (PlayerPermissionHelper.hasVideoPlaybackPermission(context)) {
+                            localVideoPicker.launch(arrayOf("video/*", "audio/*", "application/octet-stream"))
+                        } else {
+                            localPermissionLauncher.launch(PlayerPermissionHelper.getVideoPlaybackPermissions())
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.VideoLibrary,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("📂 Open & Play Local Video File")
+                }
+
+                Spacer(modifier = Modifier.height(MaterialTheme.padding.medium))
+
+                HorizontalDivider()
+
+                Spacer(modifier = Modifier.height(MaterialTheme.padding.medium))
+
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },

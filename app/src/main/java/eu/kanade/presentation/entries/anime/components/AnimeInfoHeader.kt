@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime.components
+﻿package eu.kanade.presentation.entries.anime.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
@@ -110,6 +110,9 @@ import kotlin.time.Instant
 private val whitespaceLineRegex = Regex("[\\r\\n]{2,}", setOf(RegexOption.MULTILINE))
 
 @Composable
+/**
+ * Core component for AnimeInfoHeader within the Animetail presentation and UI layer.
+ */
 fun AnimeInfoBox(
     isTabletUi: Boolean,
     appBarPadding: Dp,

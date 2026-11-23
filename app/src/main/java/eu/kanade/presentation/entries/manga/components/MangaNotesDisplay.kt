@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.manga.components
+﻿package eu.kanade.presentation.entries.manga.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
@@ -19,6 +19,12 @@ import com.mohamedrejeb.richeditor.ui.material3.RichText
 private val FADE_TIME = tween<Float>(500)
 
 @Composable
+/**
+ * UI presentation composable for MangaNotesDisplay.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MangaNotesDisplay(
     content: String,
     modifier: Modifier,

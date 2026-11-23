@@ -1,8 +1,13 @@
-package eu.kanade.tachiyomi.ui.library.manga
+﻿package eu.kanade.tachiyomi.ui.library.manga
 
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.library.manga.LibraryManga
 
+/**
+ * Presentation card/item component for MangaLibraryItem.
+ *
+ * Handles compact data display, visual badges, and click/long-press actions.
+ */
 class MangaLibraryItem(
     val libraryManga: LibraryManga,
     val downloadCount: Int,

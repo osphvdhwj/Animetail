@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.extension
+﻿package eu.kanade.tachiyomi.ui.browse.anime.extension
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,6 +15,12 @@ import kotlinx.coroutines.flow.collectLatest
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * Screen-level composable hierarchy for AnimeExtensionFilterScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class AnimeExtensionFilterScreen : Screen() {
 
     @Composable

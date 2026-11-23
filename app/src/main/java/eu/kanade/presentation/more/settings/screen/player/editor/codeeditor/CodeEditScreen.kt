@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player.editor.codeeditor
+﻿package eu.kanade.presentation.more.settings.screen.player.editor.codeeditor
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
@@ -52,6 +52,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * Screen-level composable hierarchy for CodeEditScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class CodeEditScreen(private val filePath: String) : Screen() {
     @Composable
     override fun Content() {

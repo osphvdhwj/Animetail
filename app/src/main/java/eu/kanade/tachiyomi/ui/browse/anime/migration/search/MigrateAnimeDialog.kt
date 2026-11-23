@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.migration.search
+﻿package eu.kanade.tachiyomi.ui.browse.anime.migration.search
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -78,6 +78,11 @@ internal fun MigrateAnimeDialog(
     onClickSeasons: () -> Unit,
     onPopScreen: () -> Unit,
 ) {
+/**
+ * Modal dialog / bottom sheet surface for MigrateAnimeDialog.
+ *
+ * Encapsulates modal options, user selections, and dismissible lifecycle state.
+ */
     val scope = rememberCoroutineScope()
     val state by screenModel.state.collectAsState()
 

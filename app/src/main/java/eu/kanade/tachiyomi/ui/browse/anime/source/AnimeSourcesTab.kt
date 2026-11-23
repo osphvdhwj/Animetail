@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.source
+﻿package eu.kanade.tachiyomi.ui.browse.anime.source
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FilterList
@@ -27,6 +27,11 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Navigation tab descriptor for AnimeSourcesTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 fun Screen.animeSourcesTab(): TabContent {
     val navigator = LocalNavigator.currentOrThrow
     val viewModel = metroViewModel<AnimeSourcesViewModel>()
@@ -63,6 +68,12 @@ fun Screen.animeSourcesTab(): TabContent {
                 },
                 onClickPin = viewModel::togglePin,
                 onLongClickItem = viewModel::showSourceDialog,
+                onGlobalSearchClick = { navigator.push(GlobalAnimeSearchScreen()) },
+                onExtensionsClick = { eu.kanade.tachiyomi.ui.browse.BrowseTab.showAnimeExtension() },
+                onWebPortalsClick = { eu.kanade.tachiyomi.ui.browse.BrowseTab.showWebPortals() },
+                onFeedClick = { eu.kanade.tachiyomi.ui.browse.BrowseTab.showFeed() },
+                onMigrateClick = { eu.kanade.tachiyomi.ui.browse.BrowseTab.showMigrate() },
+                onFilterClick = { navigator.push(AnimeSourcesFilterScreen()) },
             )
 
             state.dialog?.let { dialog ->

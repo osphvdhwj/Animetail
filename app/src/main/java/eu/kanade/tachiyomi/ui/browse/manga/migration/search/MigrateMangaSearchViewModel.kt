@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.migration.search
+﻿package eu.kanade.tachiyomi.ui.browse.manga.migration.search
 
 import androidx.lifecycle.viewModelScope
 import dev.zacsweers.metro.AppScope
@@ -19,6 +19,12 @@ import tachiyomi.domain.entries.manga.interactor.NetworkToLocalManga
 import tachiyomi.domain.source.manga.service.MangaSourceManager
 
 @AssistedInject
+/**
+ * State and business logic coordinator for MigrateMangaSearchViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MigrateMangaSearchViewModel(
     @Assisted val mangaId: Long,
     @Assisted initialExtensionFilter: String?,

@@ -1,4 +1,4 @@
-// AM (CONNECTIONS) -->
+﻿// AM (CONNECTIONS) -->
 package eu.kanade.presentation.more.settings.widget
 
 import androidx.compose.foundation.clickable
@@ -25,6 +25,9 @@ import eu.kanade.tachiyomi.data.connections.ConnectionsService
 
 @Composable
 @Suppress("ModifierNotUsedAtRoot", "MagicNumber")
+/**
+ * Core component for ConnectionsPreferenceWidget within the Animetail presentation and UI layer.
+ */
 fun ConnectionsPreferenceWidget(
     service: ConnectionsService,
     checked: Boolean,

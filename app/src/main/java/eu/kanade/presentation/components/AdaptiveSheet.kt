@@ -1,4 +1,4 @@
-package eu.kanade.presentation.components
+﻿package eu.kanade.presentation.components
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.tween
@@ -18,6 +18,10 @@ import eu.kanade.presentation.util.isTabletUi
 import tachiyomi.presentation.core.components.AdaptiveSheet as AdaptiveSheetImpl
 
 @OptIn(InternalVoyagerApi::class)
+/**
+ * Composable UI component rendering the $name interface in Material 3.
+ * Handles UI rendering, user interaction callbacks, and state presentation.
+ */
 @Composable
 fun NavigatorAdaptiveSheet(
     screen: Screen,

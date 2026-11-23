@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.manga
+﻿package eu.kanade.presentation.browse.manga
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -10,6 +10,12 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.presentation.core.components.material.Scaffold
 
 @Composable
+/**
+ * UI presentation composable for MigrateMangaSearchScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MigrateMangaSearchScreen(
     state: MangaSearchViewModel.State,
     fromSourceId: Long?,

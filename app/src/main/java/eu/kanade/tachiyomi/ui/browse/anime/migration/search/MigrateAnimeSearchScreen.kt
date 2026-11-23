@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.migration.search
+﻿package eu.kanade.tachiyomi.ui.browse.anime.migration.search
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -12,6 +12,12 @@ import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season.MigrateSeasonSelectScreen
 import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 
+/**
+ * Screen-level composable hierarchy for MigrateAnimeSearchScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class MigrateAnimeSearchScreen(private val animeId: Long) : Screen() {
 
     @Composable

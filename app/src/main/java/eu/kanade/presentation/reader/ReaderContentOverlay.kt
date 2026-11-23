@@ -1,4 +1,4 @@
-package eu.kanade.presentation.reader
+﻿package eu.kanade.presentation.reader
 
 import androidx.annotation.ColorInt
 import androidx.annotation.IntRange
@@ -13,6 +13,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import kotlin.math.abs
 
 @Composable
+/**
+ * UI presentation composable for ReaderContentOverlay.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun ReaderContentOverlay(
     @IntRange(from = -100, to = 100) brightness: Int,
     @ColorInt color: Int?,

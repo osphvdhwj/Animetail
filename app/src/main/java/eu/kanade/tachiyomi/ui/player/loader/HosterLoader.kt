@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.loader
+﻿package eu.kanade.tachiyomi.ui.player.loader
 
 import eu.kanade.tachiyomi.animesource.AnimeSource
 import eu.kanade.tachiyomi.animesource.model.Hoster
@@ -13,6 +13,9 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
+/**
+ * Core component for HosterLoader within the Animetail presentation and UI layer.
+ */
 class HosterLoader {
     companion object {
         /**

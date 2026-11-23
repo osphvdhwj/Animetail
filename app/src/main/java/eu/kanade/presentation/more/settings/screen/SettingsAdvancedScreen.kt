@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen
+﻿package eu.kanade.presentation.more.settings.screen
 
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
@@ -90,6 +90,12 @@ import java.io.File
 import java.net.InetAddress
 import tachiyomi.core.common.preference.Preference as BasePreference
 
+/**
+ * Screen-level composable hierarchy for SettingsAdvancedScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object SettingsAdvancedScreen : SearchableSettings {
 
     @ReadOnlyComposable

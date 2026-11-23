@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.manga.components
+﻿package eu.kanade.presentation.browse.manga.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
@@ -16,6 +16,12 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 @Composable
+/**
+ * UI presentation composable for BaseMangaSourceItem.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun BaseMangaSourceItem(
     source: Source,
     modifier: Modifier = Modifier,

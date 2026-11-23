@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -45,6 +45,11 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Modal dialog / bottom sheet surface for SubtitleTracksSheet.
+ *
+ * Encapsulates modal options, user selections, and dismissible lifecycle state.
+ */
 fun SubtitlesSheet(
     tracks: ImmutableList<VideoTrack>,
     selectedTracks: ImmutableList<Int>,

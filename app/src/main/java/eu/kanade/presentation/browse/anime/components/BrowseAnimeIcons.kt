@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.anime.components
+﻿package eu.kanade.presentation.browse.anime.components
 
 import android.util.DisplayMetrics
 import androidx.compose.foundation.Image
@@ -40,6 +40,9 @@ private val defaultModifier = Modifier
     .aspectRatio(1f)
 
 @Composable
+/**
+ * Core component for BrowseAnimeIcons within the Animetail presentation and UI layer.
+ */
 fun AnimeSourceIcon(
     source: AnimeSource,
     modifier: Modifier = Modifier,

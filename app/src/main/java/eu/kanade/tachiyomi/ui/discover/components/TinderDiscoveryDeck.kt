@@ -1,12 +1,8 @@
 package eu.kanade.tachiyomi.ui.discover.components
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -24,14 +20,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BookmarkAdd
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.RotateLeft
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -62,6 +64,7 @@ import coil3.compose.AsyncImage
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 data class SwipeableMediaCard(
@@ -74,6 +77,7 @@ data class SwipeableMediaCard(
     val summary: String = "",
     val sourceName: String = "Anime",
     val isAnime: Boolean = true,
+    val genres: List<String> = emptyList(),
     val animeItem: AnimeTrackSearch? = null,
     val mangaItem: MangaTrackSearch? = null,
 )
@@ -86,9 +90,19 @@ fun TinderDiscoveryDeck(
     onPass: (SwipeableMediaCard) -> Unit,
     onRefresh: () -> Unit,
     bothSidesDismiss: Boolean = false,
+    onSearchInSources: ((SwipeableMediaCard) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    if (items.isEmpty()) {
+    var mediaTypeFilter by remember { mutableIntStateOf(0) } // 0: All, 1: Anime, 2: Manga
+    val filteredItems = remember(items, mediaTypeFilter) {
+        when (mediaTypeFilter) {
+            1 -> items.filter { it.isAnime }
+            2 -> items.filter { !it.isAnime }
+            else -> items
+        }
+    }
+
+    if (filteredItems.isEmpty()) {
         Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
@@ -121,22 +135,72 @@ fun TinderDiscoveryDeck(
         return
     }
 
-    var currentIndex by remember(items) { mutableIntStateOf(0) }
+    var currentIndex by remember(filteredItems) { mutableIntStateOf(0) }
+    val historyStack = remember { mutableStateListOf<SwipeableMediaCard>() }
     val scope = rememberCoroutineScope()
     val offsetX = remember { Animatable(0f) }
     val offsetY = remember { Animatable(0f) }
 
-    val currentCard = items.getOrNull(currentIndex)
-    val nextCard = items.getOrNull(currentIndex + 1)
-    val isDraggingUp = offsetY.value < -40f
+    val currentCard = filteredItems.getOrNull(currentIndex)
+    val nextCard = filteredItems.getOrNull(currentIndex + 1)
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
+        // Top Filter Bar: [ All | 🎬 Anime | 📖 Manga ]
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 6.dp)
+                .graphicsLayer {
+                    val dragDistance = kotlin.math.abs(offsetX.value) + kotlin.math.abs(offsetY.value)
+                    alpha = (1f - (dragDistance / 110f)).coerceIn(0f, 1f)
+                },
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FilterChip(
+                selected = mediaTypeFilter == 0,
+                onClick = { mediaTypeFilter = 0; currentIndex = 0 },
+                label = { Text("All", fontSize = 12.sp) },
+                border = null,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+            FilterChip(
+                selected = mediaTypeFilter == 1,
+                onClick = { mediaTypeFilter = 1; currentIndex = 0 },
+                label = { Text("🎬 Anime", fontSize = 12.sp) },
+                border = null,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+            FilterChip(
+                selected = mediaTypeFilter == 2,
+                onClick = { mediaTypeFilter = 2; currentIndex = 0 },
+                label = { Text("📖 Manga", fontSize = 12.sp) },
+                border = null,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+        }
+
         // Deck Container
         Box(
             modifier = Modifier
@@ -144,16 +208,16 @@ fun TinderDiscoveryDeck(
                 .weight(1f),
             contentAlignment = Alignment.Center,
         ) {
-            // Background Next Card Preview with depth scaling
+            // Background Next Card Preview with subtle depth scaling
             if (nextCard != null) {
-                val nextScale = (0.94f + (kotlin.math.abs(offsetX.value) / 2000f)).coerceIn(0.94f, 1f)
+                val nextScale = (0.94f + (abs(offsetX.value) / 2000f)).coerceIn(0.94f, 1f)
                 DeckCardItem(
                     card = nextCard,
                     dragOffsetX = 0f,
                     bothSidesDismiss = bothSidesDismiss,
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(top = 16.dp, start = 12.dp, end = 12.dp)
+                        .padding(top = 14.dp, start = 10.dp, end = 10.dp)
                         .graphicsLayer {
                             scaleX = nextScale
                             scaleY = nextScale
@@ -179,8 +243,9 @@ fun TinderDiscoveryDeck(
                                 onDragEnd = {
                                     scope.launch {
                                         if (offsetX.value > 150f) {
-                                            // Swiped Right
+                                            // Swiped Right -> Save / Explore
                                             offsetX.animateTo(1000f, tween(200))
+                                            historyStack.add(currentCard)
                                             if (bothSidesDismiss) {
                                                 onPass(currentCard)
                                             } else {
@@ -192,14 +257,15 @@ fun TinderDiscoveryDeck(
                                         } else if (offsetX.value < -150f) {
                                             // Swiped Left -> Pass / Dismiss
                                             offsetX.animateTo(-1000f, tween(200))
+                                            historyStack.add(currentCard)
                                             onPass(currentCard)
                                             currentIndex++
                                             offsetX.snapTo(0f)
                                             offsetY.snapTo(0f)
                                         } else {
-                                            // Snap back
-                                            offsetX.animateTo(0f, tween(150))
-                                            offsetY.animateTo(0f, tween(150))
+                                            // Snap back seamlessly
+                                            offsetX.animateTo(0f, spring(dampingRatio = 0.8f))
+                                            offsetY.animateTo(0f, spring(dampingRatio = 0.8f))
                                         }
                                     }
                                 },
@@ -217,88 +283,114 @@ fun TinderDiscoveryDeck(
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Action Buttons Row (Pass, Info, Like) - Automatically hides when dragging up
-        AnimatedVisibility(
-            visible = !isDraggingUp,
-            enter = fadeIn(tween(150)) + expandVertically(tween(150)),
-            exit = fadeOut(tween(150)) + shrinkVertically(tween(150)),
+        // Action Buttons Row: Smoothly disappears when card is swiped, appears back when idle!
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .graphicsLayer {
+                    val dragDistance = kotlin.math.abs(offsetX.value) + kotlin.math.abs(offsetY.value)
+                    alpha = (1f - (dragDistance / 120f)).coerceIn(0f, 1f)
+                },
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
+            // Undo / Rewind Button
+            FilledTonalIconButton(
+                onClick = {
+                    if (currentIndex > 0 && historyStack.isNotEmpty()) {
+                        currentIndex--
+                        historyStack.removeLastOrNull()
+                        scope.launch {
+                            offsetX.snapTo(-400f)
+                            offsetX.animateTo(0f, spring(dampingRatio = 0.8f))
+                        }
+                    }
+                },
+                enabled = currentIndex > 0 && historyStack.isNotEmpty(),
+                modifier = Modifier.size(46.dp),
             ) {
-                // Pass / Dismiss Left Button
-                FilledIconButton(
-                    onClick = {
-                        if (currentCard != null) {
-                            scope.launch {
-                                offsetX.animateTo(-1000f, tween(200))
+                Icon(Icons.Outlined.RotateLeft, contentDescription = "Undo Previous Card", modifier = Modifier.size(22.dp))
+            }
+
+            // Dismiss / Pass Left Button
+            FilledIconButton(
+                onClick = {
+                    if (currentCard != null) {
+                        scope.launch {
+                            offsetX.animateTo(-1000f, tween(200))
+                            historyStack.add(currentCard)
+                            onPass(currentCard)
+                            currentIndex++
+                            offsetX.snapTo(0f)
+                            offsetY.snapTo(0f)
+                        }
+                    }
+                },
+                modifier = Modifier.size(54.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                ),
+            ) {
+                Icon(Icons.Outlined.Close, contentDescription = "Dismiss", modifier = Modifier.size(26.dp))
+            }
+
+            // Quick Search in Extension Sources
+            FilledTonalIconButton(
+                onClick = {
+                    if (currentCard != null) {
+                        onSearchInSources?.invoke(currentCard) ?: onSaveToLibrary(currentCard)
+                    }
+                },
+                modifier = Modifier.size(46.dp),
+            ) {
+                Icon(Icons.Outlined.Search, contentDescription = "Search Sources", modifier = Modifier.size(22.dp))
+            }
+
+            // Info / Details Button
+            FilledTonalIconButton(
+                onClick = {
+                    if (currentCard != null) {
+                        onCardClick(currentCard)
+                    }
+                },
+                modifier = Modifier.size(46.dp),
+            ) {
+                Icon(Icons.Outlined.Info, contentDescription = "Details", modifier = Modifier.size(22.dp))
+            }
+
+            // Like / Save to Library Right Button
+            FilledIconButton(
+                onClick = {
+                    if (currentCard != null) {
+                        scope.launch {
+                            offsetX.animateTo(1000f, tween(200))
+                            historyStack.add(currentCard)
+                            if (bothSidesDismiss) {
                                 onPass(currentCard)
-                                currentIndex++
-                                offsetX.snapTo(0f)
-                                offsetY.snapTo(0f)
+                            } else {
+                                onSaveToLibrary(currentCard)
                             }
+                            currentIndex++
+                            offsetX.snapTo(0f)
+                            offsetY.snapTo(0f)
                         }
-                    },
-                    modifier = Modifier.size(56.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                    ),
-                ) {
-                    Icon(Icons.Outlined.Close, contentDescription = "Dismiss", modifier = Modifier.size(28.dp))
-                }
-
-                // Info / Details Button
-                FilledIconButton(
-                    onClick = {
-                        if (currentCard != null) {
-                            onCardClick(currentCard)
-                        }
-                    },
-                    modifier = Modifier.size(46.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                ) {
-                    Icon(Icons.Outlined.Info, contentDescription = "Details", modifier = Modifier.size(22.dp))
-                }
-
-                // Like / Save or Dismiss Right Button
-                FilledIconButton(
-                    onClick = {
-                        if (currentCard != null) {
-                            scope.launch {
-                                offsetX.animateTo(1000f, tween(200))
-                                if (bothSidesDismiss) {
-                                    onPass(currentCard)
-                                } else {
-                                    onSaveToLibrary(currentCard)
-                                }
-                                currentIndex++
-                                offsetX.snapTo(0f)
-                                offsetY.snapTo(0f)
-                            }
-                        }
-                    },
-                    modifier = Modifier.size(56.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = if (bothSidesDismiss) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = if (bothSidesDismiss) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
-                ) {
-                    Icon(
-                        if (bothSidesDismiss) Icons.Outlined.Close else Icons.Outlined.Favorite,
-                        contentDescription = if (bothSidesDismiss) "Dismiss" else "Explore",
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
+                    }
+                },
+                modifier = Modifier.size(54.dp),
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = if (bothSidesDismiss) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = if (bothSidesDismiss) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+            ) {
+                Icon(
+                    if (bothSidesDismiss) Icons.Outlined.Close else Icons.Outlined.BookmarkAdd,
+                    contentDescription = if (bothSidesDismiss) "Dismiss" else "Save to Library",
+                    modifier = Modifier.size(26.dp),
+                )
             }
         }
     }
@@ -314,8 +406,10 @@ private fun DeckCardItem(
 ) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = null,
         modifier = modifier,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -326,22 +420,22 @@ private fun DeckCardItem(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            // Dynamic Swipe Stamps (SAVE / PASS / DISMISS)
+            // Dynamic Swipe Stamps (SAVE / PASS)
             if (dragOffsetX > 40f) {
                 val alpha = ((dragOffsetX - 40f) / 100f).coerceIn(0f, 1f)
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = (if (bothSidesDismiss) Color(0xFFE53935) else Color(0xFF43A047)).copy(alpha = 0.9f * alpha),
+                    color = (if (bothSidesDismiss) Color(0xFFE53935) else Color(0xFF43A047)).copy(alpha = 0.92f * alpha),
                     contentColor = Color.White,
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .padding(top = 64.dp, start = 20.dp)
+                        .padding(top = 56.dp, start = 20.dp)
                         .rotate(-15f),
                 ) {
                     Text(
                         text = if (bothSidesDismiss) "DISMISS" else "SAVE",
                         fontWeight = FontWeight.Black,
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                     )
                 }
@@ -349,34 +443,35 @@ private fun DeckCardItem(
                 val alpha = ((-dragOffsetX - 40f) / 100f).coerceIn(0f, 1f)
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFFE53935).copy(alpha = 0.9f * alpha),
+                    color = Color(0xFFE53935).copy(alpha = 0.92f * alpha),
                     contentColor = Color.White,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(top = 64.dp, end = 20.dp)
+                        .padding(top = 56.dp, end = 20.dp)
                         .rotate(15f),
                 ) {
                     Text(
                         text = "PASS",
                         fontWeight = FontWeight.Black,
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
                     )
                 }
             }
 
-            // Gradient Overlay
+            // Gradient Overlay: Seamless fractional stops, NO pixel startY thick lines!
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.4f),
-                                Color.Black.copy(alpha = 0.95f),
+                            colorStops = arrayOf(
+                                0.0f to Color.Transparent,
+                                0.38f to Color.Transparent,
+                                0.65f to Color.Black.copy(alpha = 0.45f),
+                                0.85f to Color.Black.copy(alpha = 0.85f),
+                                1.0f to Color.Black.copy(alpha = 0.96f),
                             ),
-                            startY = 300f,
                         ),
                     ),
             )
@@ -385,8 +480,9 @@ private fun DeckCardItem(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(14.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
                     shape = RoundedCornerShape(8.dp),
@@ -404,7 +500,7 @@ private fun DeckCardItem(
                 if (card.score > 0f) {
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = Color.Black.copy(alpha = 0.7f),
+                        color = Color.Black.copy(alpha = 0.65f),
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -432,12 +528,12 @@ private fun DeckCardItem(
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(20.dp),
+                    .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(
                     text = card.title,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
                     maxLines = 2,
@@ -452,9 +548,9 @@ private fun DeckCardItem(
                         if (card.format.isNotBlank()) {
                             Text(
                                 text = card.format,
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primaryContainer,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Bold,
                             )
                         }
                         if (card.status.isNotBlank()) {
@@ -480,3 +576,4 @@ private fun DeckCardItem(
         }
     }
 }
+

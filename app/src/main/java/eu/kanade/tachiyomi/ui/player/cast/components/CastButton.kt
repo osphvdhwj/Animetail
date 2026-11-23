@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.cast.components
+﻿package eu.kanade.tachiyomi.ui.player.cast.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.combinedClickable
@@ -15,6 +15,12 @@ import androidx.compose.ui.draw.alpha
 import eu.kanade.tachiyomi.ui.player.CastManager
 
 @Composable
+/**
+ * UI presentation composable for CastButton.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun CastButton(
     castState: CastManager.CastState,
     onClick: () -> Unit,

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.manga
+﻿package eu.kanade.presentation.browse.manga
 
 import android.content.Intent
 import android.net.Uri
@@ -63,6 +63,12 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for MangaExtensionDetailsScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MangaExtensionDetailsScreen(
     navigateUp: () -> Unit,
     state: MangaExtensionDetailsViewModel.State.Success,

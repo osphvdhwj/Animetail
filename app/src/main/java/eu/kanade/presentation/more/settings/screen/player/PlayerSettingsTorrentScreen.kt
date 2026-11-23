@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player
+﻿package eu.kanade.presentation.more.settings.screen.player
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,6 +31,12 @@ import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * Screen-level composable hierarchy for PlayerSettingsTorrentScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object PlayerSettingsTorrentScreen : Screen(), SearchableSettings {
 
     @ReadOnlyComposable

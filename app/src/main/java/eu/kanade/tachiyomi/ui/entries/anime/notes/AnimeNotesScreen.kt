@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.anime.notes
+﻿package eu.kanade.tachiyomi.ui.entries.anime.notes
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -19,6 +19,12 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Serializable
+/**
+ * Screen-level composable hierarchy for AnimeNotesScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class AnimeNotesScreen(
     private val animeId: Long,
     private val animeTitle: String,

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.updates.manga
+﻿package eu.kanade.presentation.updates.manga
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +31,12 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
+/**
+ * Screen-level composable hierarchy for MangaUpdatesScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 fun MangaUpdateScreen(
     state: MangaUpdatesViewModel.State,
     snackbarHostState: SnackbarHostState,
@@ -91,6 +97,7 @@ fun MangaUpdateScreen(
                         contentPadding = contentPadding,
                     ) {
                         mangaUpdatesLastUpdatedItem(lastUpdated)
+                        mangaUpdatesSummaryItem(state.items.size)
 
                         mangaUpdatesUiItems(
                             uiModels = state.getUiModel(),

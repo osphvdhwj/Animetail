@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader.loader
+﻿package eu.kanade.tachiyomi.ui.reader.loader
 
 import android.content.Context
 import android.net.Uri
@@ -32,6 +32,11 @@ internal class DownloadPageLoader(
     override var isLocal: Boolean = true
 
     override suspend fun getPages(): List<ReaderPage> {
+/**
+ * Media playback / reader viewer engine component for DownloadPageLoader.
+ *
+ * Coordinates decoding, caching, gesture dispatch, and frame rendering.
+ */
         val dbChapter = chapter.chapter
         val chapterPath = downloadProvider.findChapterDir(
             dbChapter.name,

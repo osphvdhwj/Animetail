@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse
+﻿package eu.kanade.presentation.browse
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AlertDialog
@@ -21,6 +21,9 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Core component for BrowseSourceDialogs within the Animetail presentation and UI layer.
+ */
 fun RemoveEntryDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,

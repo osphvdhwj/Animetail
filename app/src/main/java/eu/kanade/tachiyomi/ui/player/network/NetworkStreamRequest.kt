@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.network
+﻿package eu.kanade.tachiyomi.ui.player.network
 
 import eu.kanade.tachiyomi.animesource.model.Track
 import eu.kanade.tachiyomi.animesource.model.Video
@@ -6,6 +6,9 @@ import kotlinx.serialization.Serializable
 import okhttp3.Headers
 
 @Serializable
+/**
+ * Core component for NetworkStreamRequest within the Animetail presentation and UI layer.
+ */
 data class NetworkStreamRequest(
     val url: String,
     val title: String,

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.library.anime
+﻿package eu.kanade.tachiyomi.ui.library.anime
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -99,6 +99,12 @@ typealias AnimeLibraryMap = Map<Category, List<AnimeLibraryItem>>
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @Suppress("LargeClass")
+/**
+ * State and business logic coordinator for AnimeLibraryViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class AnimeLibraryViewModel(
     private val getLibraryAnime: GetLibraryAnime,
     private val getCategories: GetVisibleAnimeCategories,

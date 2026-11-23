@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player.editor
+﻿package eu.kanade.presentation.more.settings.screen.player.editor
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
@@ -25,6 +25,12 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * State and business logic coordinator for PlayerSettingsEditorScreenModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class PlayerSettingsEditorScreenModel(
     private val context: Context,
     private val storageManager: StorageManager = Injekt.get(),

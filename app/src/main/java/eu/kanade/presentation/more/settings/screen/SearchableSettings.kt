@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen
+﻿package eu.kanade.presentation.more.settings.screen
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
@@ -9,6 +9,9 @@ import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.PreferenceScaffold
 import eu.kanade.presentation.util.LocalBackPress
 
+/**
+ * Core component for SearchableSettings within the Animetail presentation and UI layer.
+ */
 interface SearchableSettings : Screen {
 
     @Composable

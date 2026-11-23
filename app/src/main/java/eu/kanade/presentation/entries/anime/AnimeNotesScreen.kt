@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime
+﻿package eu.kanade.presentation.entries.anime
 
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.imePadding
@@ -14,6 +14,12 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for AnimeNotesScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AnimeNotesScreen(
     state: AnimeNotesScreen.State,
     navigateUp: () -> Unit,

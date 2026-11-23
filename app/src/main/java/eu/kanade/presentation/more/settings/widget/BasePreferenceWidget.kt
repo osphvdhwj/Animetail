@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.widget
+﻿package eu.kanade.presentation.more.settings.widget
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.RepeatMode
@@ -44,6 +44,9 @@ internal fun BasePreferenceWidget(
     onClick: (() -> Unit)? = null,
     widget: @Composable (() -> Unit)? = null,
 ) {
+/**
+ * Core component for BasePreferenceWidget within the Animetail presentation and UI layer.
+ */
     val highlighted = LocalPreferenceHighlighted.current
     val minHeight = LocalPreferenceMinHeight.current
     Row(

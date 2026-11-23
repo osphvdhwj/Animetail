@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.migration.search
+﻿package eu.kanade.tachiyomi.ui.browse.anime.migration.search
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.Icons
@@ -43,6 +43,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 
+/**
+ * Screen-level composable hierarchy for AnimeSourceSearchScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 data class AnimeSourceSearchScreen(
     private val oldAnime: Anime,
     private val sourceId: Long,

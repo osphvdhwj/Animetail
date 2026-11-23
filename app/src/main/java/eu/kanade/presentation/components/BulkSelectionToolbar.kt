@@ -1,4 +1,4 @@
-package eu.kanade.presentation.components
+﻿package eu.kanade.presentation.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
@@ -15,6 +15,10 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Composable UI component rendering the $name interface in Material 3.
+ * Handles UI rendering, user interaction callbacks, and state presentation.
+ */
 @Composable
 fun BulkSelectionToolbar(
     selectedCount: Int,

@@ -126,6 +126,7 @@ data object AnimeLibraryTab : Tab {
 
         val viewModel = metroViewModel<AnimeLibraryViewModel>()
         val settingsViewModel = metroViewModel<AnimeLibrarySettingsViewModel>()
+        var librarySettingsPage by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableIntStateOf(0) }
         val state by viewModel.state.collectAsStateWithLifecycle()
 
         val snackbarHostState = remember { SnackbarHostState() }
@@ -189,6 +190,14 @@ data object AnimeLibraryTab : Tab {
                         )
                     },
                     onClickFilter = viewModel::showSettingsDialog,
+                    onClickSort = {
+                        librarySettingsPage = 1
+                        viewModel.showSettingsDialog()
+                    },
+                    onClickDisplay = {
+                        librarySettingsPage = 2
+                        viewModel.showSettingsDialog()
+                    },
                     onClickRefresh = {
                         onClickRefresh(
                             state.categories[viewModel.activeCategoryIndex],
@@ -304,6 +313,7 @@ data object AnimeLibraryTab : Tab {
                 val category = state.categories.getOrNull(viewModel.activeCategoryIndex)
                 AnimeLibrarySettingsDialog(
                     onDismissRequest = onDismissRequest,
+                    initialPage = librarySettingsPage,
                     screenModel = settingsViewModel,
                     category = category,
                     // SY -->

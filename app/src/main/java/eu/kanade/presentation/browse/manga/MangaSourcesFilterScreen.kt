@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.manga
+﻿package eu.kanade.presentation.browse.manga
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -20,6 +20,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
 
 @Composable
+/**
+ * UI presentation composable for MangaSourcesFilterScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MangaSourcesFilterScreen(
     navigateUp: () -> Unit,
     state: MangaSourcesFilterViewModel.State.Success,

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.cast.components
+﻿package eu.kanade.tachiyomi.ui.player.cast.components
 import android.R
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
@@ -47,6 +47,12 @@ import tachiyomi.presentation.core.components.material.TextButton
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for CastPlayerDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun CastPlayerDialog(
     castManager: CastManager,
     onDismiss: () -> Unit,

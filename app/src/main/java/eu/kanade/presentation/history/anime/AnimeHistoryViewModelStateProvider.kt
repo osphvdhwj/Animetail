@@ -1,4 +1,4 @@
-package eu.kanade.presentation.history.anime
+﻿package eu.kanade.presentation.history.anime
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import eu.kanade.tachiyomi.ui.history.anime.AnimeHistoryViewModel
@@ -14,6 +14,9 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 import kotlin.time.toJavaInstant
 
+/**
+ * Core component for AnimeHistoryViewModelStateProvider within the Animetail presentation and UI layer.
+ */
 class AnimeHistoryViewModelStateProvider : PreviewParameterProvider<AnimeHistoryViewModel.State> {
 
     private val multiPage = AnimeHistoryViewModel.State(

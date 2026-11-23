@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.manga
+﻿package eu.kanade.presentation.browse.manga
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
@@ -69,6 +69,12 @@ import tachiyomi.presentation.core.util.plus
 import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 @Composable
+/**
+ * Screen-level composable hierarchy for MangaExtensionsScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 fun MangaExtensionScreen(
     state: MangaExtensionsViewModel.State,
     contentPadding: PaddingValues,

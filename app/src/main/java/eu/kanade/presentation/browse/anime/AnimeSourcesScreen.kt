@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.anime
+﻿package eu.kanade.presentation.browse.anime
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -42,21 +42,36 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.theme.header
 import tachiyomi.presentation.core.util.plus
+import eu.kanade.presentation.browse.components.BrowsePortalHeader
+import eu.kanade.presentation.browse.components.EmptySourcesDiscoveryCard
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 
 @Composable
+/**
+ * UI presentation composable for AnimeSourcesScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AnimeSourcesScreen(
     state: AnimeSourcesViewModel.State,
     contentPadding: PaddingValues,
     onClickItem: (AnimeSource, Listing) -> Unit,
     onClickPin: (AnimeSource) -> Unit,
     onLongClickItem: (AnimeSource) -> Unit,
+    onGlobalSearchClick: (() -> Unit)? = null,
+    onExtensionsClick: (() -> Unit)? = null,
+    onWebPortalsClick: (() -> Unit)? = null,
+    onFeedClick: (() -> Unit)? = null,
+    onMigrateClick: (() -> Unit)? = null,
+    onFilterClick: (() -> Unit)? = null,
 ) {
     when {
         state.isLoading -> LoadingScreen(Modifier.padding(contentPadding))
 
-        state.isEmpty -> EmptyScreen(
-            stringRes = MR.strings.source_empty_screen,
+        state.isEmpty -> EmptySourcesDiscoveryCard(
+            isAnime = true,
+            onInstallExtensionsClick = onExtensionsClick ?: {},
             modifier = Modifier.padding(contentPadding),
         )
 
@@ -64,6 +79,20 @@ fun AnimeSourcesScreen(
             ScrollbarLazyColumn(
                 contentPadding = contentPadding + topSmallPaddingValues,
             ) {
+                if (onGlobalSearchClick != null || onExtensionsClick != null) {
+                    item(key = "browse_discovery_banner") {
+                        BrowsePortalHeader(
+                            isAnime = true,
+                            onGlobalSearchClick = onGlobalSearchClick ?: {},
+                            onExtensionsClick = onExtensionsClick ?: {},
+                            onWebPortalsClick = onWebPortalsClick,
+                            onFeedClick = onFeedClick,
+                            onMigrateClick = onMigrateClick,
+                            onFilterClick = onFilterClick,
+                        )
+                    }
+                }
+
                 items(
                     items = state.items,
                     contentType = {

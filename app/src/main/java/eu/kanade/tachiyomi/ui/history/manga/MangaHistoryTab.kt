@@ -1,8 +1,9 @@
-package eu.kanade.tachiyomi.ui.history.manga
+﻿package eu.kanade.tachiyomi.ui.history.manga
 
 import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DeleteSweep
+import androidx.compose.material.icons.outlined.Sort
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +41,11 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Navigation tab descriptor for MangaHistoryTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 val resumeLastChapterReadEvent = Channel<Unit>()
 
 @Composable
@@ -88,6 +94,7 @@ fun Screen.mangaHistoryTab(
                 onClickResume = viewModel::getNextChapterForManga,
                 onDialogChange = viewModel::setDialog,
                 onClickFavorite = viewModel::addFavorite,
+                onMarkRead = viewModel::markChapterRead,
             )
 
             val onDismissRequest = { viewModel.setDialog(null) }
@@ -185,6 +192,11 @@ fun Screen.mangaHistoryTab(
         },
         actions =
         persistentListOf(
+            AppBar.Action(
+                title = stringResource(MR.strings.action_sort),
+                icon = Icons.Outlined.Sort,
+                onClick = { viewModel.setSortMode((state.sortMode + 1) % 3) },
+            ),
             AppBar.Action(
                 title = stringResource(MR.strings.pref_clear_history),
                 icon = Icons.Outlined.DeleteSweep,

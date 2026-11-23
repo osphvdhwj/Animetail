@@ -12,6 +12,7 @@ import eu.kanade.tachiyomi.util.system.buildNotificationChannelGroup
 import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 
 /**
  * Class to manage the basic information of all the notifications used in the app.
@@ -53,6 +54,12 @@ object Notifications {
     const val ID_NEW_EPISODES = -1301
     const val GROUP_NEW_CHAPTERS = "eu.kanade.tachiyomi.NEW_CHAPTERS"
     const val GROUP_NEW_EPISODES = "eu.kanade.tachiyomi.NEW_EPISODES"
+
+    /**
+     * Notification channel and ids used by airing notifications.
+     */
+    const val CHANNEL_AIRING = "airing_channel"
+    const val GROUP_AIRING = "eu.kanade.animetail.AIRING"
 
     /**
      * Notification channel and ids used by the backup/restore system.
@@ -159,6 +166,9 @@ object Notifications {
                 },
                 buildNotificationChannel(CHANNEL_NEW_CHAPTERS_EPISODES, IMPORTANCE_DEFAULT) {
                     setName(context.stringResource(AYMR.strings.channel_new_chapters_episodes))
+                },
+                buildNotificationChannel(CHANNEL_AIRING, IMPORTANCE_DEFAULT) {
+                    setName(context.stringResource(TLMR.strings.airing_notif_channel))
                 },
                 buildNotificationChannel(CHANNEL_DOWNLOADER_PROGRESS, IMPORTANCE_LOW) {
                     setName(context.stringResource(MR.strings.channel_progress))

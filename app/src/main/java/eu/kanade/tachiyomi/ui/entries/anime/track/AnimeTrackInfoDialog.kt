@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.anime.track
+﻿package eu.kanade.tachiyomi.ui.entries.anime.track
 
 import android.app.Application
 import android.content.Context
@@ -96,6 +96,11 @@ import uy.kohesive.injekt.api.get
 import kotlin.time.Clock
 import tachiyomi.domain.track.anime.model.AnimeTrack as DbAnimeTrack
 
+/**
+ * Modal dialog / bottom sheet surface for AnimeTrackInfoDialog.
+ *
+ * Encapsulates modal options, user selections, and dismissible lifecycle state.
+ */
 data class AnimeTrackInfoDialogHomeScreen(
     private val animeId: Long,
     private val animeTitle: String,

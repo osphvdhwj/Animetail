@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.source.browse
+﻿package eu.kanade.tachiyomi.ui.browse.anime.source.browse
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,6 +18,12 @@ import tachiyomi.domain.source.anime.model.EXHSavedSearch
 import tachiyomi.presentation.core.components.SettingsItemsPaddings
 
 @Composable
+/**
+ * UI presentation composable for SavedSearchItem.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun SavedSearchItem(
     savedSearches: ImmutableList<EXHSavedSearch>,
     onSavedSearch: (EXHSavedSearch) -> Unit,

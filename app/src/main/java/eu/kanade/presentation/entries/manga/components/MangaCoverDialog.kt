@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.manga.components
+﻿package eu.kanade.presentation.entries.manga.components
 
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
@@ -64,6 +64,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.clickableNoIndication
 
 @Composable
+/**
+ * UI presentation composable for MangaCoverDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MangaCoverDialog(
     manga: Manga,
     isCustomCover: Boolean,

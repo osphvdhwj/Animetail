@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.more
+﻿package eu.kanade.tachiyomi.ui.more
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -12,6 +12,12 @@ import eu.kanade.presentation.more.NewUpdateScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.util.system.openInBrowser
 
+/**
+ * Screen-level composable hierarchy for NewUpdateScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class NewUpdateScreen(
     private val versionName: String,
     private val changelogInfo: String,

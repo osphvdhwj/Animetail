@@ -1,4 +1,4 @@
-package eu.kanade.presentation.updates
+﻿package eu.kanade.presentation.updates
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +38,12 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.collectAsState
 
 @Composable
+/**
+ * UI presentation composable for UpdatesFilterDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun UpdatesFilterDialog(
     onDismissRequest: () -> Unit,
     viewModel: UpdatesSettingsViewModel,

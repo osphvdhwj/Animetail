@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.components
+﻿package eu.kanade.presentation.browse.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -55,6 +55,12 @@ import eu.kanade.tachiyomi.data.track.model.ExternalWebsite
 import eu.kanade.tachiyomi.data.track.model.WebsiteCategory
 
 @Composable
+/**
+ * UI presentation composable for UniversalWebsitePortalScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun UniversalWebsitePortalScreen(
     onWebsiteClick: (ExternalWebsite) -> Unit,
     modifier: Modifier = Modifier,

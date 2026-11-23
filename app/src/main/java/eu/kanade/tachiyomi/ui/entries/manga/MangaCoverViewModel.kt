@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.manga
+﻿package eu.kanade.tachiyomi.ui.entries.manga
 
 import android.content.Context
 import android.net.Uri
@@ -44,6 +44,12 @@ import tachiyomi.source.local.image.manga.LocalMangaCoverManager
 import kotlin.time.Duration.Companion.seconds
 
 @AssistedInject
+/**
+ * State and business logic coordinator for MangaCoverViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MangaCoverViewModel(
     @Assisted private val mangaId: Long,
     private val getManga: GetManga,

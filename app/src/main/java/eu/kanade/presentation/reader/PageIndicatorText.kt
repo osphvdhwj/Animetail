@@ -1,4 +1,4 @@
-package eu.kanade.presentation.reader
+﻿package eu.kanade.presentation.reader
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +15,12 @@ import androidx.compose.ui.unit.sp
 import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 
 @Composable
+/**
+ * UI presentation composable for PageIndicatorText.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun PageIndicatorText(
     // SY -->
     currentPage: String,

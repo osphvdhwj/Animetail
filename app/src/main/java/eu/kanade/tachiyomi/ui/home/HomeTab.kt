@@ -1,5 +1,6 @@
 package eu.kanade.tachiyomi.ui.home
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,8 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import dev.zacsweers.metrox.viewmodel.metroViewModel
 import eu.kanade.domain.ui.UiPreferences
+import eu.kanade.presentation.design.DS
+import eu.kanade.presentation.design.glassPill
 import eu.kanade.presentation.home.HomeFeedScreen
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.ui.discover.TrackingTab
@@ -38,6 +41,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
+import androidx.activity.compose.BackHandler
+import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import androidx.compose.runtime.collectAsState
 import tachiyomi.presentation.core.util.collectAsState
 
@@ -70,7 +75,9 @@ data object HomeTab : Tab {
     }
 
     override suspend fun onReselect(navigator: Navigator) {
-        if (activeSubTab.value != 0) {
+        if (activeSubTab.value == 1) {
+            eu.kanade.tachiyomi.ui.discover.TrackingTab.onReselectEvent()
+        } else if (activeSubTab.value != 0) {
             activeSubTab.value = 0
         } else {
             requestOpenSettingsSheet()
@@ -80,6 +87,10 @@ data object HomeTab : Tab {
     @Composable
     override fun Content() {
         val subTab by activeSubTab.collectAsState()
+
+        BackHandler(enabled = subTab != 0) {
+            activeSubTab.value = 0
+        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             when (subTab) {
@@ -101,21 +112,43 @@ fun HomeTabSwitcher(
     onSelectTab: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val tabNavigator = LocalTabNavigator.current
+
     Surface(
-        shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.65f),
-        modifier = modifier,
+        shape = DS.radiusPill,
+        color = Color.Transparent,
+        modifier = modifier.glassPill(
+            containerColor = DS.Glass.containerColorHigh(0.80f),
+            borderColor = DS.Glass.borderColor(0.35f),
+        ),
     ) {
         Row(
             modifier = Modifier.padding(3.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            val forYouColor by animateColorAsState(
+                targetValue = if (selectedTab == 0) MaterialTheme.colorScheme.primary else Color.Transparent,
+                animationSpec = DS.Motion.emphasized(),
+                label = "for_you_color",
+            )
+            val forYouContentColor by animateColorAsState(
+                targetValue = if (selectedTab == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                animationSpec = DS.Motion.emphasized(),
+                label = "for_you_content_color",
+            )
+
             Surface(
-                onClick = { onSelectTab(0) },
-                shape = RoundedCornerShape(50),
-                color = if (selectedTab == 0) MaterialTheme.colorScheme.primary else Color.Transparent,
-                contentColor = if (selectedTab == 0) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                onClick = {
+                    onSelectTab(0)
+                    HomeTab.activeSubTab.value = 0
+                    if (tabNavigator != null && tabNavigator.current != HomeTab) {
+                        tabNavigator.current = HomeTab
+                    }
+                },
+                shape = DS.radiusPill,
+                color = forYouColor,
+                contentColor = forYouContentColor,
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
@@ -137,11 +170,29 @@ fun HomeTabSwitcher(
                 }
             }
 
+            val discoverColor by animateColorAsState(
+                targetValue = if (selectedTab == 1) MaterialTheme.colorScheme.primary else Color.Transparent,
+                animationSpec = DS.Motion.emphasized(),
+                label = "discover_color",
+            )
+            val discoverContentColor by animateColorAsState(
+                targetValue = if (selectedTab == 1) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                animationSpec = DS.Motion.emphasized(),
+                label = "discover_content_color",
+            )
+
             Surface(
-                onClick = { onSelectTab(1) },
-                shape = RoundedCornerShape(50),
-                color = if (selectedTab == 1) MaterialTheme.colorScheme.primary else Color.Transparent,
-                contentColor = if (selectedTab == 1) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                onClick = {
+                    if (selectedTab == 1) {
+                        eu.kanade.tachiyomi.ui.discover.TrackingTab.onReselectEvent()
+                    } else {
+                        onSelectTab(1)
+                        HomeTab.activeSubTab.value = 1
+                    }
+                },
+                shape = DS.radiusPill,
+                color = discoverColor,
+                contentColor = discoverContentColor,
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),

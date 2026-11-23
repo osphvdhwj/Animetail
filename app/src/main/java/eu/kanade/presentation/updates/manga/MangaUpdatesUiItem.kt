@@ -1,4 +1,4 @@
-package eu.kanade.presentation.updates.manga
+﻿package eu.kanade.presentation.updates.manga
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -65,6 +65,28 @@ internal fun LazyListScope.mangaUpdatesLastUpdatedItem(
     }
 }
 
+/** Info line summarizing how many new chapters the current list holds. */
+internal fun LazyListScope.mangaUpdatesSummaryItem(count: Int) {
+    if (count == 0) return
+    item(key = "mangaUpdates-summary") {
+        Box(
+            modifier = Modifier
+                .animateItem(fadeInSpec = null, fadeOutSpec = null)
+                .padding(horizontal = MaterialTheme.padding.medium)
+                .padding(bottom = MaterialTheme.padding.extraSmall),
+        ) {
+            Text(
+                text = tachiyomi.presentation.core.i18n.pluralStringResource(
+                    tachiyomi.i18n.tail.TLMR.plurals.updates_summary_chapters,
+                    count = count,
+                    count,
+                ),
+                fontStyle = FontStyle.Italic,
+            )
+        }
+    }
+}
+
 internal fun LazyListScope.mangaUpdatesUiItems(
     uiModels: List<MangaUpdatesUiModel>,
     selectionMode: Boolean,
@@ -97,6 +119,11 @@ internal fun LazyListScope.mangaUpdatesUiItems(
             }
 
             is MangaUpdatesUiModel.Item -> {
+/**
+ * Presentation card/item component for MangaUpdatesUiItem.
+ *
+ * Handles compact data display, visual badges, and click/long-press actions.
+ */
                 val updatesItem = item.item
                 MangaUpdatesUiItem(
                     modifier = Modifier.animateItem(),

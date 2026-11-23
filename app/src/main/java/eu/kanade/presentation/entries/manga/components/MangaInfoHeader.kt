@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.manga.components
+﻿package eu.kanade.presentation.entries.manga.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
@@ -113,6 +113,9 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 @Composable
+/**
+ * Core component for MangaInfoHeader within the Animetail presentation and UI layer.
+ */
 fun MangaInfoBox(
     isTabletUi: Boolean,
     appBarPadding: Dp,

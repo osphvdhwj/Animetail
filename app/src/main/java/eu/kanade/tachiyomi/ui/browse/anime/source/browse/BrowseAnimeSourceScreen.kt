@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.source.browse
+﻿package eu.kanade.tachiyomi.ui.browse.anime.source.browse
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -75,6 +75,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 
+/**
+ * Screen-level composable hierarchy for BrowseAnimeSourceScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 data class BrowseAnimeSourceScreen(
     val sourceId: Long,
     private val listingQuery: String?,

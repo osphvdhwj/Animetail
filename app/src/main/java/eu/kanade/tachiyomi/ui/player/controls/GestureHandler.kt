@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -77,6 +77,12 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Composable
+/**
+ * UI presentation composable for GestureHandler.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun GestureHandler(
     viewModel: PlayerViewModel,
     interactionSource: MutableInteractionSource,
@@ -181,10 +187,15 @@ fun GestureHandler(
                         if (areControlsLocked) return@detectTapGestures
                         if (!isLongPressing) {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            isLongPressing = true
-                            val holdSpeed = gesturePreferences.defaultHoldSpeed().get()
-                            viewModel.mpv.setPropertyDouble("speed", holdSpeed.toDouble())
-                            viewModel.playerUpdate.update { PlayerUpdates.DoubleSpeed(holdSpeed.toDouble()) }
+                            if (!viewModel.paused.value) {
+                                isLongPressing = true
+                                val holdSpeed = gesturePreferences.defaultHoldSpeed().get()
+                                viewModel.mpv.setPropertyDouble("speed", holdSpeed.toDouble())
+                                viewModel.playerUpdate.update { PlayerUpdates.DoubleSpeed(holdSpeed.toDouble()) }
+                            } else {
+                                // If paused, use old hold feature (screenshot sheet), NOT 2X
+                                viewModel.sheetShown.update { Sheets.Screenshot }
+                            }
                         }
                     },
                 )
@@ -195,7 +206,7 @@ fun GestureHandler(
                 var startingX = 0f
                 var wasPlayerAlreadyPause = false
                 var startingSpeedIndex = 0
-                val speedList = listOf(0.25f, 0.5f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
+                val speedList = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.5f, 3.0f)
                 detectHorizontalDragGestures(
                     onDragStart = {
                         if (isLongPressing) {

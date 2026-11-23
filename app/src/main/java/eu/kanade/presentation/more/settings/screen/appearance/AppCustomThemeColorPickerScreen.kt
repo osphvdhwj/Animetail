@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.appearance
+﻿package eu.kanade.presentation.more.settings.screen.appearance
 
 import android.app.Activity
 import androidx.compose.foundation.layout.Column
@@ -27,6 +27,12 @@ import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * Screen-level composable hierarchy for AppCustomThemeColorPickerScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class AppCustomThemeColorPickerScreen : Screen() {
 
     @Composable

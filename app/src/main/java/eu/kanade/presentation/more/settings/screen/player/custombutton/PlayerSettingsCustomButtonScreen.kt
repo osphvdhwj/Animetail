@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player.custombutton
+﻿package eu.kanade.presentation.more.settings.screen.player.custombutton
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -21,6 +21,12 @@ import kotlinx.coroutines.flow.collectLatest
 import tachiyomi.domain.custombuttons.model.CustomButtonUpdate
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * Screen-level composable hierarchy for PlayerSettingsCustomButtonScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object PlayerSettingsCustomButtonScreen : Screen() {
 
     @Composable

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.components
+﻿package eu.kanade.presentation.entries.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -18,6 +18,12 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 @Composable
+/**
+ * UI presentation composable for MissingItemCountListItem.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MissingItemCountListItem(
     count: Int,
     modifier: Modifier = Modifier,

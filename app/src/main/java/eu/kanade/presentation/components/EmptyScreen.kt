@@ -1,4 +1,4 @@
-package eu.kanade.presentation.components
+﻿package eu.kanade.presentation.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
@@ -12,6 +12,10 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.EmptyScreenAction
 
 @PreviewLightDark
+/**
+ * Screen composable defining layout structure and scaffold hierarchy for $name.
+ * Manages top app bars, scroll states, content padding, and navigation routing.
+ */
 @Composable
 private fun NoActionPreview() {
     TachiyomiPreviewTheme {

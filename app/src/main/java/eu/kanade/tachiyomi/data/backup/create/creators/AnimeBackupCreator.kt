@@ -30,6 +30,10 @@ class AnimeBackupCreator(
         // Entry for this anime
         val animeObject = anime.toBackupAnime()
 
+        animeObject.excludedScanlators = handler.awaitList {
+            excluded_scanlatorsQueries.getExcludedScanlatorsByAnimeId(anime.id)
+        }
+
         if (options.chapters) {
             // Backup all the episodes
             handler.awaitList {

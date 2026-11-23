@@ -1,4 +1,4 @@
-package eu.kanade.presentation.components
+﻿package eu.kanade.presentation.components
 
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
@@ -10,6 +10,10 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Composable UI component rendering the $name interface in Material 3.
+ * Handles UI rendering, user interaction callbacks, and state presentation.
+ */
 @Composable
 fun EntryDownloadDropdownMenu(
     expanded: Boolean,

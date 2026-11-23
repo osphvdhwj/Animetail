@@ -7,13 +7,11 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
-import cafe.adriel.voyager.core.model.rememberScreenModel
 import cafe.adriel.voyager.navigator.tab.LocalTabNavigator
 import cafe.adriel.voyager.navigator.tab.TabOptions
 import eu.kanade.presentation.components.TabbedScreen
 import eu.kanade.presentation.util.Tab
 import eu.kanade.tachiyomi.R
-import eu.kanade.tachiyomi.ui.browse.feed.FeedScreenModel
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.stats.anime.animeStatsTab
 import eu.kanade.tachiyomi.ui.stats.manga.mangaStatsTab
@@ -22,6 +20,9 @@ import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Main Statistics tab with sub-tabs for Anime Stats, Manga Stats, and Profile Tracker Sync.
+ */
 data object StatsTab : Tab {
 
     override val options: TabOptions
@@ -46,15 +47,11 @@ data object StatsTab : Tab {
             profileStatsTab(),
         )
         val state = rememberPagerState { tabs.size }
-        // KMK -->
-        val feedScreenModel = rememberScreenModel { FeedScreenModel() }
-        // KMK <--
 
         TabbedScreen(
             titleRes = MR.strings.label_stats,
             tabs = tabs,
             state = state,
-            feedScreenModel = feedScreenModel,
         )
 
         LaunchedEffect(Unit) {

@@ -12,13 +12,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +43,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -63,10 +64,13 @@ import tachiyomi.presentation.core.util.runOnEnterKeyPressed
 import tachiyomi.presentation.core.util.secondaryItemAlpha
 import tachiyomi.presentation.core.util.showSoftKeyboard
 
+/**
+ * Composable UI component rendering the AppBar interface in Material 3.
+ * Handles UI rendering, user interaction callbacks, and state presentation.
+ */
 @Composable
 fun AppBar(
     title: String?,
-
     modifier: Modifier = Modifier,
     backgroundColor: Color? = null,
     // Text
@@ -80,7 +84,6 @@ fun AppBar(
     actionModeCounter: Int = 0,
     onCancelActionMode: () -> Unit = {},
     actionModeActions: @Composable RowScope.() -> Unit = {},
-
     scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
     val isActionMode by remember(actionModeCounter) {
@@ -116,7 +119,6 @@ fun AppBar(
 fun AppBar(
     // Title
     titleContent: @Composable () -> Unit,
-
     modifier: Modifier = Modifier,
     backgroundColor: Color? = null,
     // Up button
@@ -127,7 +129,6 @@ fun AppBar(
     // Action mode
     isActionMode: Boolean = false,
     onCancelActionMode: () -> Unit = {},
-
     scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
     Column(
@@ -172,7 +173,7 @@ fun AppBarTitle(
     if (count > 0) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = title!!,
+                text = title.orEmpty(),
                 maxLines = 1,
                 modifier = Modifier.weight(1f, false),
                 overflow = TextOverflow.Ellipsis,
@@ -215,27 +216,37 @@ fun AppBarActions(
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
-    actions.filterIsInstance<AppBar.Action>().map {
-        TooltipBox(
-            positionProvider = rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
-            tooltip = {
-                PlainTooltip {
-                    Text(it.title)
+    actions.forEach { action ->
+        when (action) {
+            is AppBar.Action -> {
+                TooltipBox(
+                    positionProvider = rememberTooltipPositionProvider(TooltipAnchorPosition.Above),
+                    tooltip = {
+                        PlainTooltip {
+                            Text(action.title)
+                        }
+                    },
+                    state = rememberTooltipState(),
+                    focusable = false,
+                ) {
+                    IconButton(
+                        onClick = action.onClick,
+                        enabled = action.enabled,
+                    ) {
+                        Icon(
+                            imageVector = action.icon,
+                            tint = action.iconTint ?: LocalContentColor.current,
+                            contentDescription = action.title,
+                        )
+                    }
                 }
-            },
-            state = rememberTooltipState(),
-            focusable = false,
-        ) {
-            IconButton(
-                onClick = it.onClick,
-                enabled = it.enabled,
-            ) {
-                Icon(
-                    imageVector = it.icon,
-                    tint = it.iconTint ?: LocalContentColor.current,
-                    contentDescription = it.title,
-                )
             }
+
+            is AppBar.ActionCompose -> {
+                action.content()
+            }
+
+            is AppBar.OverflowAction -> {}
         }
     }
 
@@ -267,13 +278,13 @@ fun AppBarActions(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
         ) {
-            overflowActions.map {
+            overflowActions.forEach { action ->
                 DropdownMenuItem(
                     onClick = {
-                        it.onClick()
+                        action.onClick()
                         showMenu = false
                     },
-                    text = { Text(it.title, fontWeight = FontWeight.Normal) },
+                    text = { Text(action.title, fontWeight = FontWeight.Normal) },
                 )
             }
         }
@@ -359,7 +370,7 @@ fun SearchToolbar(
                                     placeholderText ?: stringResource(
                                         MR.strings.action_search_hint,
                                     )
-                                    ),
+                                ),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.titleMedium.copy(
@@ -458,12 +469,10 @@ sealed interface AppBar {
         val enabled: Boolean = true,
     ) : AppBarAction
 
-    // KMK -->
     data class ActionCompose(
         val title: String,
         val content: @Composable () -> Unit,
     ) : AppBarAction
-    // KMK <--
 
     data class OverflowAction(
         val title: String,

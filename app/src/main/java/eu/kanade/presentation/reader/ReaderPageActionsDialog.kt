@@ -1,4 +1,4 @@
-package eu.kanade.presentation.reader
+﻿package eu.kanade.presentation.reader
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -28,6 +28,11 @@ import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 @Suppress("ParameterNaming", "LongMethod")
+/**
+ * Modal dialog / bottom sheet surface for ReaderPageActionsDialog.
+ *
+ * Encapsulates modal options, user selections, and dismissible lifecycle state.
+ */
 fun ReaderPageActionsDialog(
     onDismissRequest: () -> Unit,
     // SY -->

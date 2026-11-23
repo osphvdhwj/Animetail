@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader.setting
+﻿package eu.kanade.tachiyomi.ui.reader.setting
 
 import android.content.pm.ActivityInfo
 import androidx.compose.material.icons.Icons
@@ -11,6 +11,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import dev.icerock.moko.resources.StringResource
 import tachiyomi.i18n.MR
 
+/**
+ * Core component for ReaderOrientation within the Animetail presentation and UI layer.
+ */
 enum class ReaderOrientation(
     val flag: Int,
     val stringRes: StringResource,

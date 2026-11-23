@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.settings
+﻿package eu.kanade.tachiyomi.ui.player.settings
 
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
@@ -7,6 +7,9 @@ import tachiyomi.core.common.preference.PreferenceStore
 
 @Inject
 @SingleIn(AppScope::class)
+/**
+ * Core component for AdvancedPlayerPreferences within the Animetail presentation and UI layer.
+ */
 class AdvancedPlayerPreferences(
     private val preferenceStore: PreferenceStore,
 ) {

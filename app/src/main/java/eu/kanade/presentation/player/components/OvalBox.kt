@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -32,6 +32,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 
+/**
+ * Core component for OvalBox within the Animetail presentation and UI layer.
+ */
 object RightSideOvalShape : Shape {
     override fun createOutline(
         size: Size,

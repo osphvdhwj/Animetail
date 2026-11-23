@@ -1,4 +1,4 @@
-// AM (CONNECTIONS) -->
+﻿// AM (CONNECTIONS) -->
 package eu.kanade.presentation.components
 
 import androidx.compose.foundation.Image
@@ -17,6 +17,10 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.data.connections.ConnectionsService
 import tachiyomi.presentation.core.util.clickableNoIndication
 
+/**
+ * Core component for $name within the Animetail presentation and UI layer.
+ * Provides specialized functionality, rendering logic, or state management.
+ */
 @Composable
 @Suppress("ModifierMissing")
 fun ConnectionsLogoIcon(

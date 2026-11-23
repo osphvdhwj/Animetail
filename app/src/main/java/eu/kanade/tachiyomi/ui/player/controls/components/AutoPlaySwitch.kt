@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.controls.components
+﻿package eu.kanade.tachiyomi.ui.player.controls.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -30,6 +30,12 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.ui.player.controls.LocalPlayerButtonsClickEvent
 
 @Composable
+/**
+ * UI presentation composable for AutoPlaySwitch.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AutoPlaySwitch(
     isChecked: Boolean,
     onToggleAutoPlay: (Boolean) -> Unit,

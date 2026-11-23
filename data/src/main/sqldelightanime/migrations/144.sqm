@@ -1,0 +1,40 @@
+CREATE TABLE excluded_scanlators(
+    anime_id INTEGER NOT NULL,
+    scanlator TEXT NOT NULL,
+    FOREIGN KEY(anime_id) REFERENCES animes (_id)
+    ON DELETE CASCADE
+);
+
+CREATE INDEX excluded_scanlators_anime_id_index ON excluded_scanlators(anime_id);
+CREATE INDEX idx_excluded_scanlators_scanlator ON excluded_scanlators(scanlator);
+
+DROP VIEW IF EXISTS animeupdatesView;
+
+CREATE VIEW animeupdatesView AS
+SELECT
+    animes._id AS animeId,
+    animes.title AS animeTitle,
+    episodes._id AS episodeId,
+    episodes.name AS episodeName,
+    episodes.scanlator,
+    episodes.url AS episodeUrl,
+    episodes.seen,
+    episodes.bookmark,
+    episodes.fillermark,
+    episodes.last_second_seen,
+    episodes.total_seconds AS totalSeconds,
+    animes.source,
+    animes.favorite,
+    animes.thumbnail_url AS thumbnailUrl,
+    animes.cover_last_modified AS coverLastModified,
+    CASE WHEN episodes.date_upload_override > 0 THEN episodes.date_upload_override ELSE episodes.date_upload END AS dateUpload,
+    episodes.date_fetch AS datefetch,
+    excluded_scanlators.scanlator AS excludedScanlator
+FROM animes JOIN episodes
+ON animes._id = episodes.anime_id
+LEFT JOIN excluded_scanlators
+ON animes._id = excluded_scanlators.anime_id
+AND episodes.scanlator = excluded_scanlators.scanlator
+WHERE favorite = 1
+AND date_fetch > date_added
+ORDER BY date_fetch DESC;

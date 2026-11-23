@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.cast
+﻿package eu.kanade.tachiyomi.ui.player.cast
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -23,6 +23,9 @@ import eu.kanade.tachiyomi.ui.player.cast.components.ExpandedControllerScreen
 import tachiyomi.core.common.preference.PreferenceStore
 import uy.kohesive.injekt.injectLazy
 
+/**
+ * Core component for ExpandedControlsActivity within the Animetail presentation and UI layer.
+ */
 class ExpandedControlsActivity : ComponentActivity() {
     private val preferences: PreferenceStore by injectLazy()
     private val castManager by lazy { CastManager(this, preferences) }

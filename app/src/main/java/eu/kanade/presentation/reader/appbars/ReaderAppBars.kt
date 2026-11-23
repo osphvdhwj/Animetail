@@ -1,4 +1,4 @@
-package eu.kanade.presentation.reader.appbars
+﻿package eu.kanade.presentation.reader.appbars
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -55,6 +55,9 @@ private val readerBarsFadeAnimationSpec = tween<Float>(150)
 
 @Composable
 @Suppress("LongMethod")
+/**
+ * Core component for ReaderAppBars within the Animetail presentation and UI layer.
+ */
 fun ReaderAppBars(
     visible: Boolean,
     fullscreen: Boolean,

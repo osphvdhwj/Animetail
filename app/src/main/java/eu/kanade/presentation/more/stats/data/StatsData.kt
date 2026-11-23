@@ -13,6 +13,12 @@ sealed interface StatsData {
         val onHoldCount: Int = 0,
         val droppedCount: Int = 0,
         val topGenres: List<Pair<String, Int>> = emptyList(),
+        val topAuthors: List<Pair<String, Int>> = emptyList(),
+        val formatDistribution: Map<String, Int> = emptyMap(),
+        val averageChaptersPerManga: Double = 0.0,
+        val averageChapterDurationMs: Long = 0L,
+        val completionRate: Float = if (libraryMangaCount > 0) (completedMangaCount.toFloat() / libraryMangaCount) * 100f else 0f,
+        val startedRate: Float = 0f,
     ) : StatsData
 
     data class AnimeOverview(
@@ -25,6 +31,11 @@ sealed interface StatsData {
         val droppedCount: Int = 0,
         val topGenres: List<Pair<String, Int>> = emptyList(),
         val topStudios: List<Pair<String, Int>> = emptyList(),
+        val formatDistribution: Map<String, Int> = emptyMap(),
+        val averageEpisodesPerAnime: Double = 0.0,
+        val averageEpisodeDurationMs: Long = 0L,
+        val completionRate: Float = if (libraryAnimeCount > 0) (completedAnimeCount.toFloat() / libraryAnimeCount) * 100f else 0f,
+        val startedRate: Float = 0f,
     ) : StatsData
 
     data class MangaTitles(
@@ -43,12 +54,16 @@ sealed interface StatsData {
         val totalChapterCount: Int,
         val readChapterCount: Int,
         val downloadCount: Int,
+        val unreadChapterCount: Int = (totalChapterCount - readChapterCount).coerceAtLeast(0),
+        val downloadPercentage: Float = if (totalChapterCount > 0) (downloadCount.toFloat() / totalChapterCount) * 100f else 0f,
     ) : StatsData
 
     data class Episodes(
         val totalEpisodeCount: Int,
         val readEpisodeCount: Int,
         val downloadCount: Int,
+        val unwatchedEpisodeCount: Int = (totalEpisodeCount - readEpisodeCount).coerceAtLeast(0),
+        val downloadPercentage: Float = if (totalEpisodeCount > 0) (downloadCount.toFloat() / totalEpisodeCount) * 100f else 0f,
     ) : StatsData
 
     data class Trackers(

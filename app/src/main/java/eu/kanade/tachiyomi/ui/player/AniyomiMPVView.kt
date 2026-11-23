@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -38,6 +38,9 @@ import logcat.LogPriority
 import logcat.logcat
 import uy.kohesive.injekt.injectLazy
 
+/**
+ * Core component for AniyomiMPVView within the Animetail presentation and UI layer.
+ */
 class AniyomiMPVView(context: Context, attributes: AttributeSet?) : BaseMPVView(context, attributes) {
 
     private val playerPreferences: PlayerPreferences by injectLazy()

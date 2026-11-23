@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.manga
+﻿package eu.kanade.tachiyomi.ui.entries.manga
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -62,6 +62,11 @@ import uy.kohesive.injekt.api.get
 
 @Composable
 @Suppress("MagicNumber", "LongMethod")
+/**
+ * Modal dialog / bottom sheet surface for EditMangaDialog.
+ *
+ * Encapsulates modal options, user selections, and dismissible lifecycle state.
+ */
 fun EditMangaDialog(
     manga: Manga,
     onDismissRequest: () -> Unit,

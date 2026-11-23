@@ -19,6 +19,27 @@ class GetAnimeUpdates(
         return repository.subscribeAllAnimeUpdates(instant.toEpochMilliseconds(), limit = 500)
     }
 
+    fun subscribe(
+        instant: Instant,
+        unread: Boolean? = null,
+        started: Boolean? = null,
+        bookmarked: Boolean? = null,
+        hideExcludedScanlators: Boolean = false,
+        includedCategories: List<Long> = emptyList(),
+        excludedCategories: List<Long> = emptyList(),
+    ): Flow<List<AnimeUpdatesWithRelations>> {
+        return repository.subscribeAllAnimeUpdates(
+            instant.toEpochMilliseconds(),
+            limit = 500,
+            unread = unread,
+            started = started,
+            bookmarked = bookmarked,
+            hideExcludedScanlators = hideExcludedScanlators,
+            includedCategories = includedCategories,
+            excludedCategories = excludedCategories,
+        )
+    }
+
     fun subscribe(seen: Boolean, after: Long): Flow<List<AnimeUpdatesWithRelations>> {
         return repository.subscribeWithSeen(seen, after, limit = 500)
     }

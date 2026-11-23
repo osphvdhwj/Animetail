@@ -5,6 +5,7 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.Flow
+import tachiyomi.core.common.util.lang.toLong
 import tachiyomi.data.handlers.anime.AnimeDatabaseHandler
 import tachiyomi.domain.entries.anime.model.AnimeCover
 import tachiyomi.domain.updates.anime.model.AnimeUpdatesWithRelations
@@ -38,6 +39,54 @@ class AnimeUpdatesRepositoryImpl(
         }
     }
 
+    fun subscribeAllAnimeUpdates(
+        after: Long,
+        limit: Long,
+        unread: Boolean?,
+        started: Boolean?,
+        bookmarked: Boolean?,
+        includedCategories: List<Long>,
+        excludedCategories: List<Long>,
+    ): Flow<List<AnimeUpdatesWithRelations>> {
+        return subscribeAllAnimeUpdates(
+            after = after,
+            limit = limit,
+            unread = unread,
+            started = started,
+            bookmarked = bookmarked,
+            hideExcludedScanlators = false,
+            includedCategories = includedCategories,
+            excludedCategories = excludedCategories,
+        )
+    }
+
+    override fun subscribeAllAnimeUpdates(
+        after: Long,
+        limit: Long,
+        unread: Boolean?,
+        started: Boolean?,
+        bookmarked: Boolean?,
+        hideExcludedScanlators: Boolean,
+        includedCategories: List<Long>,
+        excludedCategories: List<Long>,
+    ): Flow<List<AnimeUpdatesWithRelations>> {
+        return databaseHandler.subscribeToList {
+            animeupdatesViewQueries.getRecentAnimeUpdatesWithFilters(
+                after = after,
+                limit = limit,
+                seen = unread?.let { !it },
+                started = started?.toLong(),
+                bookmarked = bookmarked,
+                hideExcludedScanlators = hideExcludedScanlators.toLong(),
+                includedEmpty = includedCategories.isEmpty(),
+                excludedEmpty = excludedCategories.isEmpty(),
+                includedCategories = includedCategories,
+                excludedCategories = excludedCategories,
+                mapper = ::mapUpdatesWithRelations,
+            )
+        }
+    }
+
     override fun subscribeWithSeen(seen: Boolean, after: Long, limit: Long): Flow<List<AnimeUpdatesWithRelations>> {
         return databaseHandler.subscribeToList {
             animeupdatesViewQueries.getUpdatesBySeenStatus(
@@ -67,6 +116,7 @@ class AnimeUpdatesRepositoryImpl(
         coverLastModified: Long,
         dateUpload: Long,
         dateFetch: Long,
+        excludedScanlator: String?,
     ): AnimeUpdatesWithRelations = AnimeUpdatesWithRelations(
         animeId = animeId,
         animeTitle = animeTitle,

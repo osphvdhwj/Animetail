@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.updates
+﻿package eu.kanade.tachiyomi.ui.updates
 
 import androidx.lifecycle.ViewModel
 import dev.zacsweers.metro.AppScope
@@ -16,6 +16,12 @@ import tachiyomi.domain.updates.service.UpdatesPreferences
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+/**
+ * State and business logic coordinator for UpdatesSettingsViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class UpdatesSettingsViewModel(
     val updatesPreferences: UpdatesPreferences,
     val getCategories: GetMangaCategories,

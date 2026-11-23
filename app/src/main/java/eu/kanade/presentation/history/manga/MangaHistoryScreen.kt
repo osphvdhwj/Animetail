@@ -1,5 +1,6 @@
-package eu.kanade.presentation.history.manga
+﻿package eu.kanade.presentation.history.manga
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.items
@@ -18,11 +19,18 @@ import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.FastScrollLazyColumn
 import tachiyomi.presentation.core.components.ListGroupHeader
+import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 
 @Composable
+/**
+ * UI presentation composable for MangaHistoryScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MangaHistoryScreen(
     state: MangaHistoryViewModel.State,
     snackbarHostState: SnackbarHostState,
@@ -30,6 +38,7 @@ fun MangaHistoryScreen(
     onClickResume: (mangaId: Long, chapterId: Long) -> Unit,
     onClickFavorite: (mangaId: Long) -> Unit,
     onDialogChange: (MangaHistoryViewModel.Dialog?) -> Unit,
+    onMarkRead: (MangaHistoryWithRelations, Boolean) -> Unit,
     searchQuery: String? = null,
 ) {
     Scaffold(
@@ -56,6 +65,7 @@ fun MangaHistoryScreen(
                     onClickResume = { history -> onClickResume(history.mangaId, history.chapterId) },
                     onClickDelete = { item -> onDialogChange(MangaHistoryViewModel.Dialog.Delete(item)) },
                     onClickFavorite = { history -> onClickFavorite(history.mangaId) },
+                    onMarkRead = onMarkRead,
                 )
             }
         }
@@ -70,13 +80,37 @@ private fun MangaHistoryScreenContent(
     onClickResume: (MangaHistoryWithRelations) -> Unit,
     onClickDelete: (MangaHistoryWithRelations) -> Unit,
     onClickFavorite: (MangaHistoryWithRelations) -> Unit,
+    onMarkRead: (MangaHistoryWithRelations, Boolean) -> Unit,
 ) {
     FastScrollLazyColumn(
         contentPadding = contentPadding,
     ) {
+        // Native "resume" row for the most recent entry
+        history.firstOrNull { it is MangaHistoryUiModel.Item }
+            ?.let { (it as MangaHistoryUiModel.Item).item }
+            ?.let { latest ->
+                item(key = "resume_last") {
+                    Column {
+                        ListGroupHeader(text = stringResource(MR.strings.action_resume))
+                        MangaHistoryItem(
+                            history = latest,
+                            onClickCover = { onClickCover(latest) },
+                            onClickResume = { onClickResume(latest) },
+                            onClickDelete = { onClickDelete(latest) },
+                            onClickFavorite = { onClickFavorite(latest) },
+                            onMarkRead = { onMarkRead(latest, it) },
+                        )
+                    }
+                }
+            }
         items(
             items = history,
-            key = { "history-${it.hashCode()}" },
+            key = {
+                when (it) {
+                    is MangaHistoryUiModel.Header -> "header_${it.date}"
+                    is MangaHistoryUiModel.Item -> "item_${it.item.id}"
+                }
+            },
             contentType = {
                 when (it) {
                     is MangaHistoryUiModel.Header -> "header"
@@ -101,6 +135,7 @@ private fun MangaHistoryScreenContent(
                         onClickResume = { onClickResume(value) },
                         onClickDelete = { onClickDelete(value) },
                         onClickFavorite = { onClickFavorite(value) },
+                        onMarkRead = { onMarkRead(value, it) },
                     )
                 }
             }
@@ -128,6 +163,7 @@ internal fun HistoryScreenPreviews(
             onClickResume = { _, _ -> run {} },
             onDialogChange = {},
             onClickFavorite = {},
+            onMarkRead = { _, _ -> },
         )
     }
 }

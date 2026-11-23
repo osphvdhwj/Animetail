@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime.components
+﻿package eu.kanade.presentation.entries.anime.components
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -56,6 +56,12 @@ import eu.kanade.tachiyomi.animesource.model.Credit
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
+/**
+ * UI presentation composable for CastRow.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun CastRow(
     cast: List<Credit>,
     modifier: Modifier = Modifier,

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.anime
+﻿package eu.kanade.presentation.browse.anime
 
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -12,6 +12,12 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for BrowseTabWrapper.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun BrowseTabWrapper(tab: TabContent) {
     val snackbarHostState = remember { SnackbarHostState() }
     val navigator = LocalNavigator.current

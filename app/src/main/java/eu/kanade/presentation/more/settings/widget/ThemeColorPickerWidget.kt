@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.widget
+﻿package eu.kanade.presentation.more.settings.widget
 
 import android.graphics.Bitmap
 import androidx.compose.animation.AnimatedVisibility
@@ -37,6 +37,9 @@ internal fun ThemeColorPickerWidget(
     controller: ColorPickerController,
     onItemClick: (Color, AppTheme) -> Unit,
 ) {
+/**
+ * Core component for ThemeColorPickerWidget within the Animetail presentation and UI layer.
+ */
     var selectedColor by remember { mutableStateOf(initialColor) }
     var showConfirmButton by remember { mutableStateOf(false) }
 

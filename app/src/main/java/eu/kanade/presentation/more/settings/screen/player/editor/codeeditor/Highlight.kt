@@ -1,9 +1,12 @@
-package eu.kanade.presentation.more.settings.screen.player.editor.codeeditor
+﻿package eu.kanade.presentation.more.settings.screen.player.editor.codeeditor
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 
+/**
+ * Core component for Highlight within the Animetail presentation and UI layer.
+ */
 sealed class HighlightType(open val regex: Regex, open val isString: Boolean) {
     data class Full(
         override val regex: Regex,

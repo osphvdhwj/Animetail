@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -51,6 +51,12 @@ import kotlinx.collections.immutable.persistentListOf
 import tachiyomi.presentation.core.components.material.padding
 
 @Immutable
+/**
+ * UI presentation composable for SeekBar.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 data class IndexedSegment(
     val name: String,
     val start: Float,
@@ -124,8 +130,7 @@ fun SeekbarWithTimers(
                         persistentListOf(Segment("", 0f)) + it
                     } else {
                         it
-                    } +
-                        it
+                    }
                 },
             modifier = Modifier.weight(1f),
             colors = SeekerDefaults.seekerColors(

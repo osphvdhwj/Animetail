@@ -59,7 +59,9 @@ class Anilist(id: Long) :
 
     private val interceptor by lazy { AnilistInterceptor(this, getPassword()) }
 
-    private val api by lazy { AnilistApi(client, interceptor) }
+    // Public so the Discover feed can reach the rich-content queries
+    // (deep details, advanced search, profile stats, progress upsert).
+    val api by lazy { AnilistApi(client, interceptor) }
 
     override val supportsReadingDates: Boolean = true
 

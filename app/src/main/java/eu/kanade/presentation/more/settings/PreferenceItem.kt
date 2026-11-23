@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings
+﻿package eu.kanade.presentation.more.settings
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -35,6 +35,11 @@ import tachiyomi.presentation.core.util.collectAsState
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * Presentation card/item component for PreferenceItem.
+ *
+ * Handles compact data display, visual badges, and click/long-press actions.
+ */
 val LocalPreferenceHighlighted = compositionLocalOf(structuralEqualityPolicy()) { false }
 val LocalPreferenceMinHeight = compositionLocalOf(structuralEqualityPolicy()) { 56.dp }
 

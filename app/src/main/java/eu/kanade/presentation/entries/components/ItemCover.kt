@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.components
+﻿package eu.kanade.presentation.entries.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.aspectRatio
@@ -15,6 +15,9 @@ import coil3.compose.AsyncImage
 import eu.kanade.presentation.util.rememberResourceBitmapPainter
 import eu.kanade.tachiyomi.R
 
+/**
+ * Core component for ItemCover within the Animetail presentation and UI layer.
+ */
 enum class ItemCover(val ratio: Float) {
     Square(1f / 1f),
     Book(2f / 3f),

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.anime
+﻿package eu.kanade.tachiyomi.ui.entries.anime
 
 import android.content.Context
 import android.view.LayoutInflater
@@ -62,6 +62,11 @@ import uy.kohesive.injekt.api.get
 
 @Composable
 @Suppress("MagicNumber", "LongMethod")
+/**
+ * Modal dialog / bottom sheet surface for EditAnimeDialog.
+ *
+ * Encapsulates modal options, user selections, and dismissible lifecycle state.
+ */
 fun EditAnimeDialog(
     anime: Anime,
     onDismissRequest: () -> Unit,

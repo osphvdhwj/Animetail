@@ -1,4 +1,4 @@
-package eu.kanade.presentation.library.anime
+﻿package eu.kanade.presentation.library.anime
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +17,12 @@ import tachiyomi.domain.entries.anime.model.AnimeCover
 import tachiyomi.domain.library.anime.LibraryAnime
 
 @Composable
+/**
+ * UI presentation composable for AnimeLibraryCompactGrid.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AnimeLibraryCompactGrid(
     items: List<AnimeLibraryItem>,
     showTitle: Boolean,

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.download.components
+﻿package eu.kanade.presentation.download.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -46,6 +46,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+/**
+ * UI presentation composable for DownloadQueuePriorityManager.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 data class DownloadQueueItem(
     val id: Long,
     val title: String,

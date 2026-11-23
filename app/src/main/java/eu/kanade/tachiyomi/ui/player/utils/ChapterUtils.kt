@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.utils
+﻿package eu.kanade.tachiyomi.ui.player.utils
 
 import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.StringResource
@@ -8,6 +8,9 @@ import eu.kanade.tachiyomi.ui.player.controls.components.IndexedSegment
 import tachiyomi.i18n.aniyomi.AYMR
 import kotlin.math.abs
 
+/**
+ * Helper utility functions and extension methods for ChapterUtils.
+ */
 class ChapterUtils {
     companion object {
         fun ChapterType.getStringRes(): StringResource? = when (this) {

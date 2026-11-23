@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.cast.components
+﻿package eu.kanade.tachiyomi.ui.player.cast.components
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.animateContentSize
@@ -92,6 +92,12 @@ import java.util.concurrent.TimeUnit
 
 @SuppressLint("DefaultLocale")
 @Composable
+/**
+ * UI presentation composable for ExpandedControllerScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun ExpandedControllerScreen(
     castManager: CastManager,
     castContext: CastContext,

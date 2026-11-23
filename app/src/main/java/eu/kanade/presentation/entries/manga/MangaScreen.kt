@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.manga
+﻿package eu.kanade.presentation.entries.manga
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
@@ -96,6 +96,12 @@ import kotlin.time.Instant
 
 @Composable
 @Suppress("ParameterNaming", "LongMethod")
+/**
+ * Screen-level composable hierarchy for MangaScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 fun MangaScreen(
     state: MangaViewModel.State.Success,
     snackbarHostState: SnackbarHostState,

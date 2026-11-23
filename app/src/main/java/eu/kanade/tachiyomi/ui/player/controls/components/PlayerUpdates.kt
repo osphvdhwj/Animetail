@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -18,8 +18,12 @@
 package eu.kanade.tachiyomi.ui.player.controls.components
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.material3.Surface
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -39,18 +43,24 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.border
+import eu.kanade.presentation.design.DS
 import androidx.compose.ui.unit.sp
 import tachiyomi.presentation.core.components.material.padding
 
 @Composable
+/**
+ * Core component for PlayerUpdates within the Animetail presentation and UI layer.
+ */
 fun PlayerUpdate(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit = {},
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.Black.copy(0.6f))
+            .clip(DS.radiusPill)
+            .background(Color.Black.copy(0.72f), DS.radiusPill)
+            .border(DS.strokeHairline, Color.White.copy(alpha = 0.22f), DS.radiusPill)
             .padding(vertical = MaterialTheme.padding.small, horizontal = MaterialTheme.padding.medium)
             .animateContentSize(),
         contentAlignment = Alignment.Center,
@@ -72,35 +82,67 @@ fun SpeedPlayerUpdate(
     speed: Double,
     modifier: Modifier = Modifier,
 ) {
-    Box(
+    val formattedSpeed = if (speed % 1.0 == 0.0) {
+        "${speed.toInt()}×"
+    } else {
+        "${speed}×"
+    }
+
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.90f),
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
         modifier = modifier
-            .clip(CircleShape)
-            .background(Color(0xE6141414))
-            .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .animateContentSize(),
-        contentAlignment = Alignment.Center,
+            .border(
+                width = 1.dp,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.35f),
+                        Color.White.copy(alpha = 0.10f),
+                    ),
+                ),
+                shape = CircleShape,
+            )
+            .animateContentSize(
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessMediumLow,
+                ),
+            ),
     ) {
         Row(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Icon(
-                imageVector = Icons.Filled.FastForward,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp),
-            )
-            val formattedSpeed = if (speed % 1.0 == 0.0) {
-                "${speed.toInt()}x"
-            } else {
-                "${speed}x"
+            Box(
+                modifier = Modifier
+                    .size(26.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.FastForward,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp),
+                )
             }
+
             Text(
-                text = "$formattedSpeed Speed",
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp,
+                text = formattedSpeed,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+
+            Text(
+                text = "Speed",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
             )
         }
     }

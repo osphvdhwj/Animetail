@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.components
+﻿package eu.kanade.presentation.entries.components
 
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -41,6 +41,9 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 
 @Composable
+/**
+ * Core component for ItemsDialogs within the Animetail presentation and UI layer.
+ */
 fun DeleteItemsDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,

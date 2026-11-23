@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader
+﻿package eu.kanade.tachiyomi.ui.reader
 
 import android.content.Context
 import android.graphics.Canvas
@@ -16,6 +16,9 @@ import eu.kanade.tachiyomi.ui.reader.viewer.navigation.DisabledNavigation
 import tachiyomi.core.common.i18n.stringResource
 import kotlin.math.abs
 
+/**
+ * Core component for ReaderNavigationOverlayView within the Animetail presentation and UI layer.
+ */
 class ReaderNavigationOverlayView(context: Context, attributeSet: AttributeSet) : View(
     context,
     attributeSet,

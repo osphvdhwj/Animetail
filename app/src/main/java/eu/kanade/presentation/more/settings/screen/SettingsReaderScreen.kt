@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen
+﻿package eu.kanade.presentation.more.settings.screen
 
 import android.os.Build
 import androidx.compose.runtime.Composable
@@ -23,6 +23,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 import java.text.NumberFormat
 
+/**
+ * Screen-level composable hierarchy for SettingsReaderScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object SettingsReaderScreen : SearchableSettings {
 
     private fun readResolve(): Any = SettingsReaderScreen

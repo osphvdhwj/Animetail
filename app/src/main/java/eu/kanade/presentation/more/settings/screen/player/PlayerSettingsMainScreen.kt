@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player
+﻿package eu.kanade.presentation.more.settings.screen.player
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -53,6 +53,12 @@ import tachiyomi.presentation.core.icons.CustomIcons
 import tachiyomi.presentation.core.icons.Magnet
 import cafe.adriel.voyager.core.screen.Screen as VoyagerScreen
 
+/**
+ * Screen-level composable hierarchy for PlayerSettingsMainScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class PlayerSettingsMainScreen(private val mainSettings: Boolean) : Screen() {
     @Composable
     override fun Content() {

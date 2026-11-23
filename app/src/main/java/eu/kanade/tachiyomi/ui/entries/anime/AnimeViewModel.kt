@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.anime
+﻿package eu.kanade.tachiyomi.ui.entries.anime
 
 import android.app.Application
 import android.content.Context
@@ -116,7 +116,9 @@ import tachiyomi.domain.entries.anime.interactor.GetAnimeWithEpisodesAndSeasons
 import tachiyomi.domain.entries.anime.interactor.GetDuplicateLibraryAnime
 import tachiyomi.domain.entries.anime.interactor.GetRelatedAnime
 import tachiyomi.domain.entries.anime.interactor.NetworkToLocalAnime
+import eu.kanade.domain.entries.anime.interactor.GetAnimeExcludedScanlators
 import tachiyomi.domain.entries.anime.interactor.SetAnimeEpisodeFlags
+import eu.kanade.domain.entries.anime.interactor.SetAnimeExcludedScanlators
 import tachiyomi.domain.entries.anime.interactor.SetAnimeSeasonFlags
 import tachiyomi.domain.entries.anime.interactor.SetCustomAnimeInfo
 import tachiyomi.domain.entries.anime.model.Anime
@@ -151,6 +153,12 @@ import kotlin.math.floor
 import androidx.compose.runtime.State as RuntimeState
 
 @AssistedInject
+/**
+ * State and business logic coordinator for AnimeViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class AnimeViewModel(
     private val context: Context,
     @Assisted private val animeId: Long,
@@ -186,6 +194,8 @@ class AnimeViewModel(
     private val setAnimeDefaultSeasonFlags: SetAnimeDefaultSeasonFlags,
     private val getRelatedAnime: GetRelatedAnime,
     private val syncRelatedAnimeWithSource: SyncRelatedAnimeWithSource,
+    private val getAnimeExcludedScanlators: GetAnimeExcludedScanlators,
+    private val setAnimeExcludedScanlators: SetAnimeExcludedScanlators,
     private val setSeenStatus: SetSeenStatus,
     private val updateEpisode: UpdateEpisode,
     private val updateAnime: UpdateAnime,
@@ -356,6 +366,11 @@ class AnimeViewModel(
             }
             // Start observe tracking since it only needs animeId
             observeTrackers()
+
+            viewModelScope.launchIO {
+                val excluded = getAnimeExcludedScanlators.await(animeId)
+                updateSuccessState { it.copy(excludedScanlators = excluded) }
+            }
 
             observeRelatedAnime()
             syncRelatedAnime()
@@ -1910,6 +1925,7 @@ class AnimeViewModel(
         data class SetEpisodeDate(val episodes: List<Episode>) : Dialog
         data object ChangeAnimeSkipIntro : Dialog
         data object EpisodeSettingsSheet : Dialog
+        data object ScanlatorFilter : Dialog
         data object SeasonSettingsSheet : Dialog
         data object TrackSheet : Dialog
         data object FullImages : Dialog
@@ -1929,6 +1945,21 @@ class AnimeViewModel(
                 FetchType.Seasons -> it.copy(dialog = Dialog.SeasonSettingsSheet)
                 FetchType.Episodes -> it.copy(dialog = Dialog.EpisodeSettingsSheet)
             }
+        }
+    }
+
+    fun showScanlatorFilterDialog() {
+        updateSuccessState { it.copy(dialog = Dialog.ScanlatorFilter) }
+    }
+
+    /**
+     * Replaces the scanlator groups excluded from this anime's updates feed and
+     * refreshes the in-memory state so the dialog reflects the change instantly.
+     */
+    fun setExcludedScanlators(excludedScanlators: Set<String>) {
+        viewModelScope.launchIO {
+            setAnimeExcludedScanlators.await(animeId, excludedScanlators)
+            updateSuccessState { it.copy(excludedScanlators = excludedScanlators) }
         }
     }
 
@@ -1972,6 +2003,7 @@ class AnimeViewModel(
             val isFromSource: Boolean,
             val episodes: List<EpisodeList.Item>,
             val seasons: List<AnimeSeasonItem>,
+            val excludedScanlators: Set<String> = emptySet(),
             val trackingCount: Int = 0,
             val hasLoggedInTrackers: Boolean = false,
             // AM -->

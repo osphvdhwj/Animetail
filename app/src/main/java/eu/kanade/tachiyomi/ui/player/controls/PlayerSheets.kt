@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -23,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import dev.vivvvek.seeker.Segment
 import eu.kanade.tachiyomi.ui.player.ArtType
+import eu.kanade.tachiyomi.ui.player.ABLoopState
 import eu.kanade.tachiyomi.ui.player.Decoder
 import eu.kanade.tachiyomi.ui.player.Panels
 import eu.kanade.tachiyomi.ui.player.PlayerViewModel.VideoTrack
@@ -42,6 +43,12 @@ import tachiyomi.domain.custombuttons.model.CustomButton
 import java.io.InputStream
 
 @Composable
+/**
+ * UI presentation composable for PlayerSheets.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun PlayerSheets(
     mpv: MPV,
     sheetShown: Sheets,
@@ -83,6 +90,9 @@ fun PlayerSheets(
     // More sheet
     sleepTimerTimeRemaining: Int,
     onStartSleepTimer: (Int) -> Unit,
+    abLoopState: ABLoopState,
+    onToggleABLoop: () -> Unit,
+    onClearABLoop: () -> Unit,
     buttons: ImmutableList<CustomButton>,
 
     // Screenshot sheet
@@ -170,6 +180,9 @@ fun PlayerSheets(
                 onSelectDecoder = onUpdateDecoder,
                 remainingTime = sleepTimerTimeRemaining,
                 onStartTimer = onStartSleepTimer,
+                abLoopState = abLoopState,
+                onToggleABLoop = onToggleABLoop,
+                onClearABLoop = onClearABLoop,
                 onDismissRequest = onDismissRequest,
                 onEnterFiltersPanel = { onOpenPanel(Panels.VideoFilters) },
                 customButtons = buttons,

@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoStories
@@ -65,6 +64,10 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import eu.kanade.tachiyomi.data.track.model.AnimeTrackSearch
 import eu.kanade.tachiyomi.data.track.model.MangaTrackSearch
+import eu.kanade.presentation.design.DS
+import eu.kanade.tachiyomi.ui.discover.DailyALMediaDetails
+import eu.kanade.tachiyomi.ui.discover.DailyALRecommendation
+import eu.kanade.tachiyomi.ui.discover.DailyALRelation
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -73,6 +76,12 @@ fun MediaDetailsBottomSheet(
     manga: MangaTrackSearch? = null,
     onDismiss: () -> Unit,
     onSearchInSources: (String, Boolean) -> Unit,
+    deepDetails: DailyALMediaDetails? = null,
+    deepDetailsLoading: Boolean = false,
+    onRelationClick: ((DailyALRelation) -> Unit)? = null,
+    onRecommendationClick: ((DailyALRecommendation) -> Unit)? = null,
+    onTagClick: ((String) -> Unit)? = null,
+    onProgressUpdate: ((progress: Int, statusLabel: String?) -> Unit)? = null,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val uriHandler = LocalUriHandler.current
@@ -82,7 +91,14 @@ fun MediaDetailsBottomSheet(
     val summary = anime?.summary ?: manga?.summary ?: ""
     val format = anime?.publishing_type ?: manga?.publishing_type ?: ""
     val status = anime?.publishing_status ?: manga?.publishing_status ?: ""
-    val trackingUrl = anime?.tracking_url ?: manga?.tracking_url ?: ""
+    val trackingUrl = (anime?.tracking_url ?: manga?.tracking_url ?: "").ifBlank {
+        // AniList search results always carry a remote id even when the tracker URL is blank
+        when {
+            anime != null -> "https://anilist.co/anime/${anime.remote_id}"
+            manga != null -> "https://anilist.co/manga/${manga.remote_id}"
+            else -> ""
+        }
+    }
     val rawScore = anime?.score ?: manga?.score ?: -1.0
     val formattedScore = if (rawScore > 0) {
         if (rawScore > 10) {
@@ -120,7 +136,7 @@ fun MediaDetailsBottomSheet(
             ) {
                 // Cover Card
                 Card(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = DS.radiusCard,
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                     modifier = Modifier
                         .width(115.dp)
@@ -154,7 +170,7 @@ fun MediaDetailsBottomSheet(
                     ) {
                         if (format.isNotBlank()) {
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
+                                shape = DS.radiusMedium,
                                 color = MaterialTheme.colorScheme.secondaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                             ) {
@@ -169,7 +185,7 @@ fun MediaDetailsBottomSheet(
 
                         if (formattedScore != null) {
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
+                                shape = DS.radiusMedium,
                                 color = MaterialTheme.colorScheme.primaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                             ) {
@@ -241,7 +257,7 @@ fun MediaDetailsBottomSheet(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                     ),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = DS.radiusMedium,
                 ) {
                     Icon(
                         imageVector = if (isAnime) Icons.Outlined.PlayArrow else Icons.Outlined.AutoStories,
@@ -259,12 +275,17 @@ fun MediaDetailsBottomSheet(
                 if (trackingUrl.isNotBlank()) {
                     FilledTonalButton(
                         onClick = { uriHandler.openUri(trackingUrl) },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = DS.radiusMedium,
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.OpenInNew,
-                            contentDescription = "Open Web",
+                            contentDescription = null,
                             modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Open Website",
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                 }
@@ -274,7 +295,7 @@ fun MediaDetailsBottomSheet(
 
             // Interactive Tracking Entry Status & Progress Manager (Custom-made for all tracking sites)
             Card(
-                shape = RoundedCornerShape(16.dp),
+                shape = DS.radiusCard,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.55f),
                 ),
@@ -310,6 +331,7 @@ fun MediaDetailsBottomSheet(
                                 onClick = {
                                     userStatus = statusOption
                                     context.toast("Tracking status set to $statusOption")
+                                    onProgressUpdate?.invoke(userProgress, statusOption)
                                 },
                                 label = { Text(statusOption, fontSize = 12.sp) },
                                 leadingIcon = if (isSel) {
@@ -344,6 +366,7 @@ fun MediaDetailsBottomSheet(
                                     if (userProgress > 0) {
                                         userProgress--
                                         context.toast("Progress: $userProgress")
+                                        onProgressUpdate?.invoke(userProgress, userStatus)
                                     }
                                 },
                                 modifier = Modifier.size(32.dp),
@@ -362,6 +385,14 @@ fun MediaDetailsBottomSheet(
                                     if (totalCount == 0 || userProgress < totalCount) {
                                         userProgress++
                                         context.toast("Progress: $userProgress")
+                                        onProgressUpdate?.invoke(
+                                            userProgress,
+                                            if (userProgress == totalCount && totalCount > 0) {
+                                                "Completed"
+                                            } else {
+                                                userStatus
+                                            },
+                                        )
                                     }
                                 },
                                 modifier = Modifier.size(32.dp),
@@ -401,6 +432,35 @@ fun MediaDetailsBottomSheet(
                             .clickable { isSummaryExpanded = !isSummaryExpanded },
                     )
                 }
+            }
+
+            // Deep details: characters & VAs, staff, relations, recommendations, reviews
+            if (deepDetailsLoading && deepDetails == null) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Loading cast & details…",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else if (deepDetails != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                DailyALDeepDetailsContent(
+                    details = deepDetails,
+                    onRelationClick = { relation -> onRelationClick?.invoke(relation) },
+                    onRecommendationClick = { recommendation -> onRecommendationClick?.invoke(recommendation) },
+                    onTagClick = { tag -> onTagClick?.invoke(tag) },
+                )
             }
         }
     }

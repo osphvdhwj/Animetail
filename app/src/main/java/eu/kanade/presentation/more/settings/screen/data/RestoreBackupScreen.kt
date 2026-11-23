@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.data
+﻿package eu.kanade.presentation.more.settings.screen.data
 
 import android.content.Context
 import android.net.Uri
@@ -49,6 +49,12 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Screen-level composable hierarchy for RestoreBackupScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class RestoreBackupScreen(
     private val uri: String,
 ) : Screen() {

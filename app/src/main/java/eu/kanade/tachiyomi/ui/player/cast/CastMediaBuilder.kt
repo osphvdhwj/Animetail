@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.cast
+﻿package eu.kanade.tachiyomi.ui.player.cast
 
 import android.content.Intent
 import android.net.Uri
@@ -22,6 +22,9 @@ import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.net.URLEncoder
 
+/**
+ * Core component for CastMediaBuilder within the Animetail presentation and UI layer.
+ */
 class CastMediaBuilder(
     private val viewModel: PlayerViewModel,
     private val activity: PlayerActivity,

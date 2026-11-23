@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -29,6 +29,9 @@ import tachiyomi.core.common.i18n.stringResource
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 
+/**
+ * Core component for PipActions within the Animetail presentation and UI layer.
+ */
 fun createPipActions(
     context: Context,
     isPaused: Boolean,

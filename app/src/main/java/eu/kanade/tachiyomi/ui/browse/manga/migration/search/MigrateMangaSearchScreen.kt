@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.migration.search
+﻿package eu.kanade.tachiyomi.ui.browse.manga.migration.search
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -11,6 +11,12 @@ import eu.kanade.presentation.browse.manga.MigrateMangaSearchScreen
 import eu.kanade.presentation.util.Screen
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 
+/**
+ * Screen-level composable hierarchy for MigrateMangaSearchScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class MigrateMangaSearchScreen(private val mangaId: Long) : Screen() {
 
     @Composable

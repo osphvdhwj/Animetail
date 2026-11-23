@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.settings
+﻿package eu.kanade.tachiyomi.ui.player.settings
 
 import dev.icerock.moko.resources.StringResource
 import dev.zacsweers.metro.AppScope
@@ -10,6 +10,9 @@ import tachiyomi.i18n.aniyomi.AYMR
 
 @Inject
 @SingleIn(AppScope::class)
+/**
+ * Core component for AudioPreferences within the Animetail presentation and UI layer.
+ */
 class AudioPreferences(
     private val preferenceStore: PreferenceStore,
 ) {

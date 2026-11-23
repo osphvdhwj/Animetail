@@ -1,4 +1,4 @@
-// AM (CONNECTIONS) -->
+﻿// AM (CONNECTIONS) -->
 package eu.kanade.presentation.more.settings.screen
 
 import android.content.Context
@@ -55,6 +55,12 @@ import tachiyomi.i18n.tail.TLMR
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * Screen-level composable hierarchy for SettingsConnectionsScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object SettingsConnectionsScreen : SearchableSettings {
 
     @ReadOnlyComposable

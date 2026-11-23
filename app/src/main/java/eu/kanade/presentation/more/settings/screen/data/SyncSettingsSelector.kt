@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.data
+﻿package eu.kanade.presentation.more.settings.screen.data
 
 import android.content.Context
 import androidx.compose.runtime.Composable
@@ -29,6 +29,9 @@ import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * Core component for SyncSettingsSelector within the Animetail presentation and UI layer.
+ */
 class SyncSettingsSelector : Screen() {
     @Composable
     override fun Content() {

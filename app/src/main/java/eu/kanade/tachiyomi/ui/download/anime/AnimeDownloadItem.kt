@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.download.anime
+﻿package eu.kanade.tachiyomi.ui.download.anime
 
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
@@ -8,6 +8,11 @@ import eu.davidea.flexibleadapter.items.IFlexible
 import eu.kanade.tachiyomi.R
 import eu.kanade.tachiyomi.data.download.anime.model.AnimeDownload
 
+/**
+ * Presentation card/item component for AnimeDownloadItem.
+ *
+ * Handles compact data display, visual badges, and click/long-press actions.
+ */
 class AnimeDownloadItem(
     val download: AnimeDownload,
     header: AnimeDownloadHeaderItem,

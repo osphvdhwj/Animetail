@@ -1,6 +1,9 @@
-package eu.kanade.presentation.reader.components
+﻿package eu.kanade.presentation.reader.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import eu.kanade.presentation.design.DS
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -50,6 +53,9 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 import kotlin.math.roundToInt
 
+/**
+ * Core component for ChapterNavigator within the Animetail presentation and UI layer.
+ */
 enum class ChapterNavigatorType {
     HORIZONTAL_LTR,
     HORIZONTAL_RTL,
@@ -176,7 +182,9 @@ fun HorizontalChapterNavigator(
             FilledIconButton(
                 enabled = if (isRtl) enabledNext else enabledPrevious,
                 onClick = if (isRtl) onNextChapter else onPreviousChapter,
+                shape = CircleShape,
                 colors = buttonColor,
+                modifier = Modifier.border(DS.strokeHairline, DS.Glass.borderColor(0.25f), CircleShape),
             ) {
                 Icon(
                     imageVector = Icons.Outlined.SkipPrevious,
@@ -191,8 +199,9 @@ fun HorizontalChapterNavigator(
                     Row(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(24.dp))
+                            .clip(DS.radiusPill)
                             .background(backgroundColor)
+                            .border(DS.strokeHairline, DS.Glass.borderColor(0.35f), DS.radiusPill)
                             .padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -222,7 +231,9 @@ fun HorizontalChapterNavigator(
             FilledIconButton(
                 enabled = if (isRtl) enabledPrevious else enabledNext,
                 onClick = if (isRtl) onPreviousChapter else onNextChapter,
+                shape = CircleShape,
                 colors = buttonColor,
+                modifier = Modifier.border(DS.strokeHairline, DS.Glass.borderColor(0.25f), CircleShape),
             ) {
                 Icon(
                     imageVector = Icons.Outlined.SkipNext,
@@ -260,7 +271,9 @@ fun VerticalChapterNavigator(
         FilledIconButton(
             enabled = enabledPrevious,
             onClick = onPreviousChapter,
+            shape = CircleShape,
             colors = buttonColor,
+            modifier = Modifier.border(DS.strokeHairline, DS.Glass.borderColor(0.25f), CircleShape),
         ) {
             Icon(
                 imageVector = Icons.Outlined.SkipPrevious,
@@ -273,8 +286,9 @@ fun VerticalChapterNavigator(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(DS.radiusPill)
                     .background(backgroundColor)
+                    .border(DS.strokeHairline, DS.Glass.borderColor(0.35f), DS.radiusPill)
                     .padding(vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -297,7 +311,9 @@ fun VerticalChapterNavigator(
         FilledIconButton(
             enabled = enabledNext,
             onClick = onNextChapter,
+            shape = CircleShape,
             colors = buttonColor,
+            modifier = Modifier.border(DS.strokeHairline, DS.Glass.borderColor(0.25f), CircleShape),
         ) {
             Icon(
                 imageVector = Icons.Outlined.SkipNext,

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.more
+﻿package eu.kanade.tachiyomi.ui.more
 
 import android.content.Context
 import android.content.Intent
@@ -31,6 +31,12 @@ import tachiyomi.core.common.util.system.logcat
 import java.io.File
 
 @AssistedInject
+/**
+ * State and business logic coordinator for NewUpdateScreenModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class NewUpdateScreenModel(
     @Assisted changelogInfo: String,
     @Assisted private val downloadLink: String,

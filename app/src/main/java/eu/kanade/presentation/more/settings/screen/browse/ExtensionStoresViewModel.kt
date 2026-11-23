@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.browse
+﻿package eu.kanade.presentation.more.settings.screen.browse
 
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
@@ -36,6 +36,12 @@ import tachiyomi.core.common.util.lang.launchIO
 import kotlin.time.Duration.Companion.seconds
 
 @AssistedInject
+/**
+ * State and business logic coordinator for ExtensionStoresViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class ExtensionStoresViewModel(
     @Assisted val isManga: Boolean,
     private val sourcePreferences: SourcePreferences,

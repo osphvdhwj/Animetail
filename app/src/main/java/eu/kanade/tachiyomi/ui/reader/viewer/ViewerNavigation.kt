@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader.viewer
+﻿package eu.kanade.tachiyomi.ui.reader.viewer
 
 import android.graphics.Color
 import android.graphics.PointF
@@ -10,6 +10,9 @@ import tachiyomi.i18n.MR
 
 abstract class ViewerNavigation {
 
+/**
+ * Core component for ViewerNavigation within the Animetail presentation and UI layer.
+ */
     sealed class NavigationRegion(val nameRes: StringResource, val color: Int) {
         data object MENU : NavigationRegion(
             MR.strings.action_menu,

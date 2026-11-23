@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.cast
+﻿package eu.kanade.tachiyomi.ui.player.cast
 
 import android.content.Intent
 import androidx.activity.ComponentActivity
@@ -51,6 +51,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
 @Composable
+/**
+ * UI presentation composable for CastMiniController.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun CastMiniController(
     castManager: CastManager,
     modifier: Modifier = Modifier,

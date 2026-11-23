@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.controls.components
+﻿package eu.kanade.tachiyomi.ui.player.controls.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -18,6 +18,12 @@ import androidx.compose.ui.unit.dp
 import eu.kanade.tachiyomi.R
 
 @Composable
+/**
+ * UI presentation composable for DoubleTapSeekTriangles.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun DoubleTapSeekTriangles(isForward: Boolean) {
     val animationDuration = 750L
 

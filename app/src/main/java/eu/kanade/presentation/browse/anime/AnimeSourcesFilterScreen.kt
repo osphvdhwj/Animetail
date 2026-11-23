@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.anime
+﻿package eu.kanade.presentation.browse.anime
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -20,6 +20,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.EmptyScreen
 
 @Composable
+/**
+ * UI presentation composable for AnimeSourcesFilterScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AnimeSourcesFilterScreen(
     navigateUp: () -> Unit,
     state: AnimeSourcesFilterViewModel.State.Success,

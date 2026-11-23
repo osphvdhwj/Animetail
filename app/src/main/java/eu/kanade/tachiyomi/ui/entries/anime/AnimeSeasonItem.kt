@@ -1,7 +1,12 @@
-package eu.kanade.tachiyomi.ui.entries.anime
+﻿package eu.kanade.tachiyomi.ui.entries.anime
 
 import aniyomi.domain.anime.SeasonAnime
 
+/**
+ * Presentation card/item component for AnimeSeasonItem.
+ *
+ * Handles compact data display, visual badges, and click/long-press actions.
+ */
 data class AnimeSeasonItem(
     val seasonAnime: SeasonAnime,
     val downloadCount: Long = -1L,

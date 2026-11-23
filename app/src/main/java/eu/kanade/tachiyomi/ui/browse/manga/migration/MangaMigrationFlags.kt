@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.migration
+﻿package eu.kanade.tachiyomi.ui.browse.manga.migration
 
 import dev.icerock.moko.resources.StringResource
 import eu.kanade.domain.entries.manga.model.hasCustomCover
@@ -8,6 +8,9 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.i18n.MR
 import uy.kohesive.injekt.injectLazy
 
+/**
+ * Core component for MangaMigrationFlags within the Animetail presentation and UI layer.
+ */
 data class MangaMigrationFlag(
     val flag: Int,
     val isDefaultSelected: Boolean,

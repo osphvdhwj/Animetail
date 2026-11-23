@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader.setting
+﻿package eu.kanade.tachiyomi.ui.reader.setting
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +9,12 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
+/**
+ * State and business logic coordinator for ReaderSettingsViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class ReaderSettingsViewModel(
     readerState: StateFlow<ReaderViewModel.State>,
     val hasDisplayCutout: Boolean,

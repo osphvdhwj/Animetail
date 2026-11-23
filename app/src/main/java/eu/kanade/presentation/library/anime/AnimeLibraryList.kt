@@ -1,4 +1,4 @@
-package eu.kanade.presentation.library.anime
+﻿package eu.kanade.presentation.library.anime
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,6 +50,9 @@ internal fun AnimeLibraryList(
             items = items,
             contentType = { "anime_library_list_item" },
         ) { libraryItem ->
+/**
+ * Core component for AnimeLibraryList within the Animetail presentation and UI layer.
+ */
             val anime = libraryItem.libraryAnime.anime
             EntryListItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryAnime.id },

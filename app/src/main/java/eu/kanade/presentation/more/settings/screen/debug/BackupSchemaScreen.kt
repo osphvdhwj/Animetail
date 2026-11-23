@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.debug
+﻿package eu.kanade.presentation.more.settings.screen.debug
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -24,6 +24,12 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Screen-level composable hierarchy for BackupSchemaScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class BackupSchemaScreen : Screen() {
 
     companion object {

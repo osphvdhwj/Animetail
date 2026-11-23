@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse
+﻿package eu.kanade.tachiyomi.ui.browse
 
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
@@ -45,6 +45,11 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import eu.kanade.domain.ui.UiPreferences
 
+/**
+ * Navigation tab descriptor for BrowseTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 data object BrowseTab : Tab {
     private fun readResolve(): Any = BrowseTab
 
@@ -75,19 +80,34 @@ data object BrowseTab : Tab {
     }
     // SY <--
 
-    private enum class ExtensionTabTarget {
-        ANIME,
-        MANGA,
+    private enum class PortalTabTarget {
+        ANIME_EXTENSIONS,
+        MANGA_EXTENSIONS,
+        FEED,
+        WEB_PORTALS,
+        MIGRATE,
     }
 
-    private val switchToExtensionTabChannel = Channel<ExtensionTabTarget>(1, BufferOverflow.DROP_OLDEST)
+    private val switchToPortalTabChannel = Channel<PortalTabTarget>(1, BufferOverflow.DROP_OLDEST)
 
     fun showExtension() {
-        switchToExtensionTabChannel.trySend(ExtensionTabTarget.MANGA)
+        switchToPortalTabChannel.trySend(PortalTabTarget.MANGA_EXTENSIONS)
     }
 
     fun showAnimeExtension() {
-        switchToExtensionTabChannel.trySend(ExtensionTabTarget.ANIME)
+        switchToPortalTabChannel.trySend(PortalTabTarget.ANIME_EXTENSIONS)
+    }
+
+    fun showFeed() {
+        switchToPortalTabChannel.trySend(PortalTabTarget.FEED)
+    }
+
+    fun showWebPortals() {
+        switchToPortalTabChannel.trySend(PortalTabTarget.WEB_PORTALS)
+    }
+
+    fun showMigrate() {
+        switchToPortalTabChannel.trySend(PortalTabTarget.MIGRATE)
     }
 
     @Composable
@@ -114,6 +134,15 @@ data object BrowseTab : Tab {
         val feedScreenModel = rememberScreenModel { FeedScreenModel() }
         // KMK <--
 
+        // Hoisted so portal tiles can switch to these tabs by index
+        val feedTabContent = feedTab(
+            // KMK -->
+            feedScreenModel,
+            // KMK <--
+        )
+        val universalPortalTabContent = universalPortalTab()
+        val migrateAnimeTabContent = migrateAnimeSourceTab()
+
         val tabs = when {
             hideFeedTab ->
                 listOf(
@@ -121,22 +150,18 @@ data object BrowseTab : Tab {
                     mangaSourcesTab(),
                     animeExtensionsTabContent,
                     mangaExtensionsTabContent,
-                    migrateAnimeSourceTab(),
+                    migrateAnimeTabContent,
                     migrateMangaSourceTab(),
                 )
 
             feedTabInFront ->
                 listOf(
-                    feedTab(
-                        // KMK -->
-                        feedScreenModel,
-                        // KMK <--
-                    ),
+                    feedTabContent,
                     animeSourcesTab(),
                     mangaSourcesTab(),
                     animeExtensionsTabContent,
                     mangaExtensionsTabContent,
-                    migrateAnimeSourceTab(),
+                    migrateAnimeTabContent,
                     migrateMangaSourceTab(),
                 )
 
@@ -144,15 +169,11 @@ data object BrowseTab : Tab {
                 listOf(
                     animeSourcesTab(),
                     mangaSourcesTab(),
-                    feedTab(
-                        // KMK -->
-                        feedScreenModel,
-                        // KMK <--
-                    ),
+                    feedTabContent,
                     animeExtensionsTabContent,
                     mangaExtensionsTabContent,
-                    universalPortalTab(),
-                    migrateAnimeSourceTab(),
+                    universalPortalTabContent,
+                    migrateAnimeTabContent,
                     migrateMangaSourceTab(),
                 )
             // SY <--
@@ -163,6 +184,13 @@ data object BrowseTab : Tab {
         }
         val mangaExtensionsTabIndex = remember(tabs, mangaExtensionsTabContent) {
             tabs.indexOf(mangaExtensionsTabContent)
+        }
+        val feedTabIndex = remember(tabs, feedTabContent) { tabs.indexOf(feedTabContent) }
+        val webPortalsTabIndex = remember(tabs, universalPortalTabContent) {
+            tabs.indexOf(universalPortalTabContent)
+        }
+        val migrateTabIndex = remember(tabs, migrateAnimeTabContent) {
+            tabs.indexOf(migrateAnimeTabContent)
         }
 
         val state = rememberPagerState { tabs.size }
@@ -182,12 +210,21 @@ data object BrowseTab : Tab {
             // KMK <--
             scrollable = true,
         )
-        LaunchedEffect(animeExtensionsTabIndex, mangaExtensionsTabIndex) {
-            switchToExtensionTabChannel.receiveAsFlow()
+        LaunchedEffect(
+            animeExtensionsTabIndex,
+            mangaExtensionsTabIndex,
+            feedTabIndex,
+            webPortalsTabIndex,
+            migrateTabIndex,
+        ) {
+            switchToPortalTabChannel.receiveAsFlow()
                 .collectLatest { target ->
                     val tabIndex = when (target) {
-                        ExtensionTabTarget.ANIME -> animeExtensionsTabIndex
-                        ExtensionTabTarget.MANGA -> mangaExtensionsTabIndex
+                        PortalTabTarget.ANIME_EXTENSIONS -> animeExtensionsTabIndex
+                        PortalTabTarget.MANGA_EXTENSIONS -> mangaExtensionsTabIndex
+                        PortalTabTarget.FEED -> feedTabIndex
+                        PortalTabTarget.WEB_PORTALS -> webPortalsTabIndex
+                        PortalTabTarget.MIGRATE -> migrateTabIndex
                     }
                     if (tabIndex >= 0) {
                         state.scrollToPage(tabIndex)

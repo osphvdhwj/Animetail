@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -34,6 +34,12 @@ import androidx.compose.ui.Modifier
 import kotlinx.collections.immutable.ImmutableList
 
 @Composable
+/**
+ * UI presentation composable for ExposedTextDropDownMenu.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun ExposedTextDropDownMenu(
     selectedValue: String,
     options: ImmutableList<String>,

@@ -78,8 +78,16 @@ class UiPreferences(
     val homeEnableTmdb: Preference<Boolean> = preferenceStore.getBoolean("home_enable_tmdb", true)
     val homeEnableAnilist: Preference<Boolean> = preferenceStore.getBoolean("home_enable_anilist", true)
 
+    /** Newline-ordered recent global-search queries, most recent first (max 10). */
+    val recentAnimeSearches: Preference<String> = preferenceStore.getString("recent_anime_searches", "")
+    val recentMangaSearches: Preference<String> = preferenceStore.getString("recent_manga_searches", "")
+
+    /** History list ordering: 0 = newest first, 1 = oldest first, 2 = title A–Z. */
+    val historySortMode: Preference<Int> = preferenceStore.getInt("history_sort_mode", 0)
+
     val homeShowFeatured: Preference<Boolean> = preferenceStore.getBoolean("home_show_featured", true)
     val homeShowContinue: Preference<Boolean> = preferenceStore.getBoolean("home_show_continue", true)
+    val homeShowAiringToday: Preference<Boolean> = preferenceStore.getBoolean("home_show_airing_today", true)
     val homeShowBecauseYouWatched: Preference<Boolean> = preferenceStore.getBoolean(
         "home_show_because_you_watched",
         true,

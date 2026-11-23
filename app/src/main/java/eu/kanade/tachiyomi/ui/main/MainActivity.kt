@@ -399,31 +399,32 @@ class MainActivity : BaseActivity() {
                 val filename = remember(videoUriToImport) { getFileName(context, videoUriToImport) }
                 AlertDialog(
                     onDismissRequest = { pendingVideoUri = null },
-                    title = { Text(text = "🎬 Add this to Animetail?") },
+                    title = { Text(text = "🎬 Video File") },
                     text = {
                         Column {
                             Text(text = filename, style = MaterialTheme.typography.bodyMedium)
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "This will link the video file into Animetail's local anime directory.",
+                                text = "Would you like to play this video now in Animetail Player?",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { pendingVideoUri = null }) {
-                            Text(text = "NO")
+                            Text(text = "Cancel")
                         }
                     },
                     confirmButton = {
                         Button(onClick = {
-                            injectToAnimetail(context, videoUriToImport, filename)
+                            val intent = eu.kanade.tachiyomi.ui.player.PlayerActivity.newFileIntent(context, videoUriToImport, filename)
+                            context.startActivity(intent)
                             pendingVideoUri = null
                         }) {
-                            Text(text = "YES")
+                            Text(text = "▶ Play Video")
                         }
-                    }
+                    },
                 )
             }
         }
@@ -578,7 +579,9 @@ class MainActivity : BaseActivity() {
     }
 
     private fun handleIntentAction(intent: Intent, navigator: Navigator): Boolean {
-        if (intent.type?.startsWith("video/") == true) {
+        if (intent.type?.startsWith("video/") == true ||
+            (intent.data?.scheme in listOf("content", "file") && eu.kanade.tachiyomi.ui.player.PlayerPermissionHelper.isVideoFile(intent.data?.path))
+        ) {
             val videoUri = if (intent.action == Intent.ACTION_SEND) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
@@ -590,7 +593,8 @@ class MainActivity : BaseActivity() {
                 intent.data
             }
             if (videoUri != null) {
-                pendingVideoUri = videoUri
+                val playerIntent = eu.kanade.tachiyomi.ui.player.PlayerActivity.newFileIntent(this, videoUri)
+                startActivity(playerIntent)
                 ready = true
                 return true
             }
@@ -607,6 +611,8 @@ class MainActivity : BaseActivity() {
 
         val tabToOpen = when (intent.action) {
             Constants.SHORTCUT_ANIMELIB -> HomeScreen.Tab.AnimeLib()
+
+            Constants.SHORTCUT_DISCOVER -> HomeScreen.Tab.Discover
 
             Constants.SHORTCUT_LIBRARY -> HomeScreen.Tab.Library()
 

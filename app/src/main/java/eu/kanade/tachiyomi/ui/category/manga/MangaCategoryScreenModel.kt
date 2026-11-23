@@ -112,6 +112,29 @@ class MangaCategoryScreenModel(
         }
     }
 
+    /**
+     * Reorders all user categories alphabetically (case-insensitive) via repeated
+     * reorder calls, so the same persistence path as drag-and-drop is used.
+     */
+    fun sortAlphabetically() {
+        screenModelScope.launch {
+            val current = state.value as? MangaCategoryScreenState.Success ?: return@launch
+            val sorted = current.categories.sortedWith(
+                compareBy(String.CASE_INSENSITIVE_ORDER) { it.name },
+            )
+            sorted.forEachIndexed { index, category ->
+                when (reorderCategory.await(category, index)) {
+                    is ReorderMangaCategory.Result.InternalError -> {
+                        _events.send(MangaCategoryEvent.InternalError)
+                        return@launch
+                    }
+
+                    else -> {}
+                }
+            }
+        }
+    }
+
     fun renameCategory(category: Category, name: String) {
         screenModelScope.launch {
             when (renameCategory.await(category, name)) {

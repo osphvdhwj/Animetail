@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.widget
+﻿package eu.kanade.presentation.more.settings.widget
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +22,12 @@ import com.github.skydoves.colorpicker.compose.BrightnessSlider
 import com.github.skydoves.colorpicker.compose.ColorPickerController
 
 @Composable
+/**
+ * UI presentation composable for CustomBrightnessSlider.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun CustomBrightnessSlider(
     initialColor: Color,
     controller: ColorPickerController,

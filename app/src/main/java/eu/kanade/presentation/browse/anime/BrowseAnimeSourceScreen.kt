@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.anime
+﻿package eu.kanade.presentation.browse.anime
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -37,6 +37,12 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 
 @Composable
+/**
+ * Screen-level composable hierarchy for BrowseAnimeSourceScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 fun BrowseAnimeSourceContent(
     source: AnimeSource?,
     animeList: LazyPagingItems<StateFlow<Anime>>,

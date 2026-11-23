@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -82,6 +82,12 @@ import uy.kohesive.injekt.api.get
 
 @SuppressLint("MutableCollectionMutableState")
 @Composable
+/**
+ * UI presentation composable for SubtitleSettingsTypographyCard.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun SubtitleSettingsTypographyCard(
     mpv: MPV,
     modifier: Modifier = Modifier,

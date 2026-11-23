@@ -1,4 +1,4 @@
-package eu.kanade.presentation.reader
+﻿package eu.kanade.presentation.reader
 
 import android.content.Context
 import androidx.compose.foundation.Canvas
@@ -21,6 +21,12 @@ import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.milliseconds
 
 @Stable
+/**
+ * UI presentation composable for DisplayRefreshHost.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 class DisplayRefreshHost {
 
     internal var currentDisplayRefresh by mutableStateOf(false)

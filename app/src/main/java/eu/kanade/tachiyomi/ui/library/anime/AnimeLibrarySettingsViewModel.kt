@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.library.anime
+﻿package eu.kanade.tachiyomi.ui.library.anime
 
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
@@ -28,6 +28,12 @@ import kotlin.time.Duration.Companion.seconds
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+/**
+ * State and business logic coordinator for AnimeLibrarySettingsViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class AnimeLibrarySettingsViewModel(
     val preferences: BasePreferences,
     val libraryPreferences: LibraryPreferences,

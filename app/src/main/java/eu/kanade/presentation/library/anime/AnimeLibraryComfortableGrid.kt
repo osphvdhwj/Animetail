@@ -1,4 +1,4 @@
-package eu.kanade.presentation.library.anime
+﻿package eu.kanade.presentation.library.anime
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +39,9 @@ internal fun AnimeLibraryComfortableGrid(
             items = items,
             contentType = { "anime_library_comfortable_grid_item" },
         ) { libraryItem ->
+/**
+ * Core component for AnimeLibraryComfortableGrid within the Animetail presentation and UI layer.
+ */
             val anime = libraryItem.libraryAnime.anime
             EntryComfortableGridItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryAnime.id },

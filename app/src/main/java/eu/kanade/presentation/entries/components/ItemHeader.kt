@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.components
+﻿package eu.kanade.presentation.entries.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +20,12 @@ import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for ItemHeader.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun ItemHeader(
     enabled: Boolean,
     itemCount: Int?,

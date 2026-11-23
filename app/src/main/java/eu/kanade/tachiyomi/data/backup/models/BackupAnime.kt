@@ -69,6 +69,9 @@ data class BackupAnime(
     // skipping 803 due to using duplicate value in previous builds
     @ProtoNumber(804) var customDescription: String? = null,
     @ProtoNumber(805) var customGenre: List<String>? = null,
+
+    // Animetail specific values
+    @ProtoNumber(806) var excludedScanlators: List<String> = emptyList(),
 ) {
     fun getAnimeImpl(): Anime {
         return Anime.create().copy(

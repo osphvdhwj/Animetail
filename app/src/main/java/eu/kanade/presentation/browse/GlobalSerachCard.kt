@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse
+﻿package eu.kanade.presentation.browse
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
@@ -10,6 +10,11 @@ import eu.kanade.presentation.library.components.EntryComfortableGridItem
 import tachiyomi.domain.entries.EntryCover
 
 @Composable
+/**
+ * Presentation card/item component for GlobalSerachCard.
+ *
+ * Handles compact data display, visual badges, and click/long-press actions.
+ */
 fun GlobalSearchCard(
     title: String,
     cover: EntryCover,

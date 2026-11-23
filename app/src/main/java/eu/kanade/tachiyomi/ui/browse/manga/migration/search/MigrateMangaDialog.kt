@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.migration.search
+﻿package eu.kanade.tachiyomi.ui.browse.manga.migration.search
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -68,6 +68,11 @@ internal fun MigrateMangaDialog(
     onClickTitle: () -> Unit,
     onPopScreen: () -> Unit,
 ) {
+/**
+ * Modal dialog / bottom sheet surface for MigrateMangaDialog.
+ *
+ * Encapsulates modal options, user selections, and dismissible lifecycle state.
+ */
     val scope = rememberCoroutineScope()
     val state by screenModel.state.collectAsState()
 

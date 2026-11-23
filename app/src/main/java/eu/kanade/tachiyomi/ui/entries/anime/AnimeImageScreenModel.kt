@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.anime
+﻿package eu.kanade.tachiyomi.ui.entries.anime
 
 import android.content.Context
 import android.net.Uri
@@ -44,6 +44,12 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * State and business logic coordinator for AnimeImageScreenModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class AnimeImageScreenModel(
     private val animeId: Long,
     private val getAnime: GetAnime = Injekt.get(),

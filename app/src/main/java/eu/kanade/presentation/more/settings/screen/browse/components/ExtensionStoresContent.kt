@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.browse.components
+﻿package eu.kanade.presentation.more.settings.screen.browse.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +45,12 @@ import tachiyomi.presentation.core.icons.CustomIcons
 import tachiyomi.presentation.core.icons.Discord
 
 @Composable
+/**
+ * UI presentation composable for ExtensionStoresContent.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun ExtensionStoresContent(
     repos: List<ExtensionStore>,
     lazyListState: LazyListState,

@@ -110,15 +110,58 @@ class MangaStatsViewModel(
                 )
             }
 
+            // Format distribution
+            val mangaFormatCounts = mutableMapOf<String, Int>()
+            distinctLibraryManga.forEach { libManga ->
+                val text = "${libManga.manga.title} ${libManga.manga.genre?.joinToString()} ${libManga.manga.description}".lowercase()
+                val format = when {
+                    text.contains("manhwa") || text.contains("webtoon") -> "Manhwa"
+                    text.contains("manhua") -> "Manhua"
+                    text.contains("novel") || text.contains("light novel") -> "Light Novel"
+                    text.contains("oneshot") || text.contains("one-shot") -> "One-shot"
+                    else -> "Manga"
+                }
+                mangaFormatCounts[format] = (mangaFormatCounts[format] ?: 0) + 1
+            }
+
+            // Top Authors
+            val authorCounts = mutableMapOf<String, Int>()
+            distinctLibraryManga.forEach { libManga ->
+                val author = libManga.manga.author?.trim()?.takeIf { it.isNotBlank() }
+                    ?: libManga.manga.artist?.trim()?.takeIf { it.isNotBlank() }
+                if (author != null) {
+                    authorCounts[author] = (authorCounts[author] ?: 0) + 1
+                }
+            }
+            val topAuthors = authorCounts.entries
+                .sortedByDescending { it.value }
+                .take(5)
+                .map { it.key to it.value }
+
+            val totalReadChapters = distinctLibraryManga.sumOf { it.readCount }.toInt()
+            val totalChapters = distinctLibraryManga.sumOf { it.totalChapters }.toInt()
+            val totalReadDurationMs = getTotalReadDuration.await()
+            val avgChPerManga = if (distinctLibraryManga.isNotEmpty()) totalChapters.toDouble() / distinctLibraryManga.size else 0.0
+            val avgChDuration = if (totalReadChapters > 0) totalReadDurationMs / totalReadChapters else 0L
+            val startedCount = distinctLibraryManga.count { it.hasStarted }
+            val startedRate = if (distinctLibraryManga.isNotEmpty()) (startedCount.toFloat() / distinctLibraryManga.size) * 100f else 0f
+            val completionRate = if (distinctLibraryManga.isNotEmpty()) (completedCount.toFloat() / distinctLibraryManga.size) * 100f else 0f
+
             val overviewStatData = StatsData.MangaOverview(
                 libraryMangaCount = distinctLibraryManga.size,
                 completedMangaCount = completedCount,
-                totalReadDuration = getTotalReadDuration.await(),
+                totalReadDuration = totalReadDurationMs,
                 readingCount = readingCount,
                 planToReadCount = planToReadCount,
                 onHoldCount = onHoldCount,
                 droppedCount = droppedCount,
                 topGenres = topGenres,
+                topAuthors = topAuthors,
+                formatDistribution = mangaFormatCounts,
+                averageChaptersPerManga = avgChPerManga,
+                averageChapterDurationMs = avgChDuration,
+                completionRate = completionRate,
+                startedRate = startedRate,
             )
 
             val titlesStatData = StatsData.MangaTitles(

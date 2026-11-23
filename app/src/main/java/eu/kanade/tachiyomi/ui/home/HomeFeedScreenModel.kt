@@ -12,7 +12,9 @@ import eu.kanade.domain.track.service.TrackPreferences
 import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.home.HomeItemData
 import eu.kanade.presentation.home.MediaType
+import eu.kanade.tachiyomi.data.discover.cache.DiscoverCacheStore
 import eu.kanade.tachiyomi.data.track.TrackerManager
+import eu.kanade.tachiyomi.data.track.model.AiringEpisode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,31 +24,25 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import logcat.LogPriority
-import tachiyomi.core.common.util.system.logcat
-import tachiyomi.domain.entries.anime.interactor.GetAnime
 import tachiyomi.domain.entries.anime.interactor.GetLibraryAnime
-import tachiyomi.domain.entries.anime.model.asAnimeCover
 import tachiyomi.domain.entries.manga.interactor.GetLibraryManga
-import tachiyomi.domain.entries.manga.model.asMangaCover
 import tachiyomi.domain.history.anime.interactor.GetAnimeHistory
 import tachiyomi.domain.history.anime.model.AnimeHistoryWithRelations
 import tachiyomi.domain.history.manga.interactor.GetMangaHistory
 import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
-import tachiyomi.domain.items.chapter.interactor.GetChapter
-import tachiyomi.domain.items.episode.interactor.GetEpisode
 import tachiyomi.domain.library.anime.LibraryAnime
 import tachiyomi.domain.library.manga.LibraryManga
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
-import tachiyomi.domain.track.anime.interactor.GetAnimeTracks
-import tachiyomi.domain.track.manga.interactor.GetMangaTracks
+import logcat.LogPriority
+import tachiyomi.core.common.util.system.logcat
+import tachiyomi.domain.entries.anime.model.asAnimeCover
+import tachiyomi.domain.entries.manga.model.asMangaCover
 import tachiyomi.source.local.entries.anime.isLocal
 import tachiyomi.source.local.entries.manga.isLocal
-import java.util.concurrent.TimeUnit
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 
 enum class HomeMediaFilter {
     ALL,
@@ -68,11 +64,6 @@ class HomeFeedScreenModel(
     private val getMangaHistory: GetMangaHistory,
     private val getLibraryAnime: GetLibraryAnime,
     private val getLibraryManga: GetLibraryManga,
-    private val getAnime: GetAnime,
-    private val getEpisode: GetEpisode,
-    private val getChapter: GetChapter,
-    private val getAnimeTracks: GetAnimeTracks,
-    private val getMangaTracks: GetMangaTracks,
     private val sourcePreferences: SourcePreferences,
     private val trackerManager: TrackerManager,
     private val uiPreferences: UiPreferences,
@@ -83,11 +74,15 @@ class HomeFeedScreenModel(
     private val _state = MutableStateFlow(State())
     val state: StateFlow<State> = _state.asStateFlow()
 
+    // Resolved via Injekt directly: this ViewModel's @Inject constructor is Metro-managed
+    private val discoverCacheStore: DiscoverCacheStore = Injekt.get()
+
     data class State(
         val isLoading: Boolean = true,
         val isRefreshing: Boolean = false,
         val heroList: List<HomeItemData> = emptyList(),
         val continueList: List<HomeItemData> = emptyList(),
+        val airingToday: List<AiringEpisode> = emptyList(),
         val becauseYouWatchedTitle: String? = null,
         val becauseYouWatchedIsAnime: Boolean = true,
         val becauseYouWatchedList: List<HomeItemData> = emptyList(),
@@ -98,6 +93,7 @@ class HomeFeedScreenModel(
         val seriesList: List<HomeItemData> = emptyList(),
         val showFeatured: Boolean = true,
         val showContinue: Boolean = true,
+        val showAiringToday: Boolean = true,
         val showBecauseYouWatched: Boolean = true,
         val showRecommended: Boolean = true,
         val showPopularAnime: Boolean = true,
@@ -129,6 +125,7 @@ class HomeFeedScreenModel(
     init {
         observeHomeData()
         fetchRemoteTrendsAsync()
+        loadAiringToday()
     }
 
     fun refresh() {
@@ -141,8 +138,22 @@ class HomeFeedScreenModel(
                 )
             }
             fetchRemoteTrendsAsync()
+            loadAiringToday()
             delay(600L)
             _state.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    /**
+     * Loads today's airing episodes from the Discover airing cache (refreshed by the
+     * Discover tab). Cache-only: the rail hides itself when the cache is empty or stale.
+     */
+    private fun loadAiringToday() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val airing = runCatching {
+                discoverCacheStore.loadAiringCache(maxAgeMs = 3 * 3600 * 1000L)
+            }.getOrNull().orEmpty()
+            _state.update { it.copy(airingToday = airing.take(15)) }
         }
     }
 
@@ -151,6 +162,8 @@ class HomeFeedScreenModel(
             "featured" -> uiPreferences.homeShowFeatured.set(!uiPreferences.homeShowFeatured.get())
 
             "continue" -> uiPreferences.homeShowContinue.set(!uiPreferences.homeShowContinue.get())
+
+            "airing_today" -> uiPreferences.homeShowAiringToday.set(!uiPreferences.homeShowAiringToday.get())
 
             "because_you_watched" -> uiPreferences.homeShowBecauseYouWatched.set(
                 !uiPreferences.homeShowBecauseYouWatched.get(),
@@ -215,9 +228,9 @@ class HomeFeedScreenModel(
                     remoteAnimeState.value = emptyList()
                     return@launch
                 }
-                android.util.Log.d("HomeFeedDebug", "Fetching AniList popular anime...")
+                logcat(LogPriority.DEBUG) { "Fetching AniList popular anime..." }
                 val popularAnime = trackerManager.aniList.getPopularAnime()
-                android.util.Log.d("HomeFeedDebug", "AniList popular anime returned ${popularAnime.size} items")
+                logcat(LogPriority.DEBUG) { "AniList popular anime returned ${popularAnime.size} items" }
                 val animeItems = popularAnime.map { track ->
                     val classified = classifyMedia(
                         title = track.title,
@@ -237,9 +250,9 @@ class HomeFeedScreenModel(
                     )
                 }
                 remoteAnimeState.value = animeItems
-                android.util.Log.d("HomeFeedDebug", "remoteAnimeState updated with ${animeItems.size} items")
+                logcat(LogPriority.DEBUG) { "remoteAnimeState updated with ${animeItems.size} items" }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Failed to fetch AniList popular anime", e)
+                logcat(LogPriority.ERROR, e) { "Failed to fetch AniList popular anime" }
             }
         }
 
@@ -250,9 +263,9 @@ class HomeFeedScreenModel(
                     remoteMangaState.value = emptyList()
                     return@launch
                 }
-                android.util.Log.d("HomeFeedDebug", "Fetching AniList popular manga...")
+                logcat(LogPriority.DEBUG) { "Fetching AniList popular manga..." }
                 val popularManga = trackerManager.aniList.getPopularManga()
-                android.util.Log.d("HomeFeedDebug", "AniList popular manga returned ${popularManga.size} items")
+                logcat(LogPriority.DEBUG) { "AniList popular manga returned ${popularManga.size} items" }
                 val mangaItems = popularManga.map { track ->
                     HomeItemData(
                         id = track.remote_id,
@@ -268,9 +281,9 @@ class HomeFeedScreenModel(
                     )
                 }
                 remoteMangaState.value = mangaItems
-                android.util.Log.d("HomeFeedDebug", "remoteMangaState updated with ${mangaItems.size} items")
+                logcat(LogPriority.DEBUG) { "remoteMangaState updated with ${mangaItems.size} items" }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Failed to fetch AniList popular manga", e)
+                logcat(LogPriority.ERROR, e) { "Failed to fetch AniList popular manga" }
             }
         }
 
@@ -283,14 +296,13 @@ class HomeFeedScreenModel(
                 }
                 val tmdbAvailable = trackerManager.tmdb.isAvailableForUse()
                 val tmdbLoggedIn = trackerManager.tmdb.isLoggedIn
-                android.util.Log.d(
-                    "HomeFeedDebug",
-                    "TMDB check: isAvailableForUse=$tmdbAvailable, isLoggedIn=$tmdbLoggedIn",
-                )
+                logcat(LogPriority.DEBUG) {
+                    "TMDB check: isAvailableForUse=$tmdbAvailable, isLoggedIn=$tmdbLoggedIn"
+                }
                 if (tmdbLoggedIn || tmdbAvailable) {
                     val movies = try {
                         trackerManager.tmdb.getTrendingMovies().also {
-                            android.util.Log.d("HomeFeedDebug", "TMDB getTrendingMovies returned ${it.size} items")
+                            logcat(LogPriority.DEBUG) { "TMDB getTrendingMovies returned ${it.size} items" }
                         }.map { track ->
                             HomeItemData(
                                 id = track.remote_id,
@@ -307,13 +319,13 @@ class HomeFeedScreenModel(
                             )
                         }
                     } catch (e: Exception) {
-                        android.util.Log.e("HomeFeedDebug", "Failed to fetch TMDB movies", e)
+                        logcat(LogPriority.ERROR, e) { "Failed to fetch TMDB movies" }
                         emptyList()
                     }
 
                     val series = try {
                         trackerManager.tmdb.getTrendingTv().also {
-                            android.util.Log.d("HomeFeedDebug", "TMDB getTrendingTv returned ${it.size} items")
+                            logcat(LogPriority.DEBUG) { "TMDB getTrendingTv returned ${it.size} items" }
                         }.map { track ->
                             HomeItemData(
                                 id = track.remote_id,
@@ -330,26 +342,25 @@ class HomeFeedScreenModel(
                             )
                         }
                     } catch (e: Exception) {
-                        android.util.Log.e("HomeFeedDebug", "Failed to fetch TMDB series", e)
+                        logcat(LogPriority.ERROR, e) { "Failed to fetch TMDB series" }
                         emptyList()
                     }
 
                     remoteMovieSeriesState.value = movies + series
-                    android.util.Log.d(
-                        "HomeFeedDebug",
-                        "remoteMovieSeriesState updated with ${movies.size + series.size} items",
-                    )
+                    logcat(LogPriority.DEBUG) {
+                        "remoteMovieSeriesState updated with ${movies.size + series.size} items"
+                    }
                 } else {
-                    android.util.Log.w("HomeFeedDebug", "TMDB skipped: not logged in and not available for use")
+                    logcat(LogPriority.WARN) { "TMDB skipped: not logged in and not available for use" }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Critical error in TMDB fetch coroutine", e)
+                logcat(LogPriority.ERROR, e) { "Critical error in TMDB fetch coroutine" }
             }
         }
     }
 
     private fun observeHomeData() {
-        android.util.Log.d("HomeFeedDebug", "observeHomeData: initializing observers...")
+        logcat(LogPriority.DEBUG) { "observeHomeData: initializing observers..." }
         // Set loading false immediately — UI is always interactive
         _state.update { it.copy(isLoading = false) }
 
@@ -359,6 +370,7 @@ class HomeFeedScreenModel(
                 merge(
                     uiPreferences.homeShowFeatured.changes(),
                     uiPreferences.homeShowContinue.changes(),
+                    uiPreferences.homeShowAiringToday.changes(),
                     uiPreferences.homeShowBecauseYouWatched.changes(),
                     uiPreferences.homeShowRecommended.changes(),
                     uiPreferences.homeShowPopularAnime.changes(),
@@ -373,13 +385,13 @@ class HomeFeedScreenModel(
                     uiPreferences.homeEnableTmdb.changes(),
                     uiPreferences.homeEnableAnilist.changes(),
                 )
-                    .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing uiPreferences", e) }
+                    .catch { e -> logcat(LogPriority.ERROR, e) { "Error observing uiPreferences" } }
                     .collect {
-                        android.util.Log.d("HomeFeedDebug", "uiPreferences changed, updating state")
+                        logcat(LogPriority.DEBUG) { "uiPreferences changed, updating state" }
                         updateStateWithData()
                     }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Fatal error in uiPreferences observer", e)
+                logcat(LogPriority.ERROR, e) { "Fatal error in uiPreferences observer" }
             }
         }
 
@@ -387,13 +399,13 @@ class HomeFeedScreenModel(
         viewModelScope.launch {
             try {
                 trackPreferences.trackApiKey(trackerManager.tmdb as eu.kanade.tachiyomi.data.track.Tracker).changes()
-                    .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing TMDB API key", e) }
+                    .catch { e -> logcat(LogPriority.ERROR, e) { "Error observing TMDB API key" } }
                     .collect {
-                        android.util.Log.d("HomeFeedDebug", "TMDB key changed, refetching trends")
+                        logcat(LogPriority.DEBUG) { "TMDB key changed, refetching trends" }
                         fetchRemoteTrendsAsync()
                     }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Fatal error observing TMDB API key", e)
+                logcat(LogPriority.ERROR, e) { "Fatal error observing TMDB API key" }
             }
         }
 
@@ -401,13 +413,13 @@ class HomeFeedScreenModel(
         viewModelScope.launch {
             try {
                 getLibraryAnime.subscribe()
-                    .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing library anime", e) }
+                    .catch { e -> logcat(LogPriority.ERROR, e) { "Error observing library anime" } }
                     .collect { libraryAnimeList ->
-                        android.util.Log.d("HomeFeedDebug", "Library anime collected: size=${libraryAnimeList.size}")
+                        logcat(LogPriority.DEBUG) { "Library anime collected: size=${libraryAnimeList.size}" }
                         updateStateWithData(libraryAnime = libraryAnimeList)
                     }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Fatal error in library anime observer", e)
+                logcat(LogPriority.ERROR, e) { "Fatal error in library anime observer" }
             }
         }
 
@@ -415,13 +427,13 @@ class HomeFeedScreenModel(
         viewModelScope.launch {
             try {
                 getLibraryManga.subscribe()
-                    .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing library manga", e) }
+                    .catch { e -> logcat(LogPriority.ERROR, e) { "Error observing library manga" } }
                     .collect { libraryMangaList ->
-                        android.util.Log.d("HomeFeedDebug", "Library manga collected: size=${libraryMangaList.size}")
+                        logcat(LogPriority.DEBUG) { "Library manga collected: size=${libraryMangaList.size}" }
                         updateStateWithData(libraryManga = libraryMangaList)
                     }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Fatal error in library manga observer", e)
+                logcat(LogPriority.ERROR, e) { "Fatal error in library manga observer" }
             }
         }
 
@@ -429,13 +441,13 @@ class HomeFeedScreenModel(
         viewModelScope.launch {
             try {
                 getAnimeHistory.subscribe("")
-                    .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing anime history", e) }
+                    .catch { e -> logcat(LogPriority.ERROR, e) { "Error observing anime history" } }
                     .collect { histories ->
-                        android.util.Log.d("HomeFeedDebug", "Anime history collected: size=${histories.size}")
+                        logcat(LogPriority.DEBUG) { "Anime history collected: size=${histories.size}" }
                         updateStateWithData(animeHistory = histories)
                     }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Fatal error in anime history observer", e)
+                logcat(LogPriority.ERROR, e) { "Fatal error in anime history observer" }
             }
         }
 
@@ -443,13 +455,13 @@ class HomeFeedScreenModel(
         viewModelScope.launch {
             try {
                 getMangaHistory.subscribe("")
-                    .catch { e -> android.util.Log.e("HomeFeedDebug", "Error observing manga history", e) }
+                    .catch { e -> logcat(LogPriority.ERROR, e) { "Error observing manga history" } }
                     .collect { histories ->
-                        android.util.Log.d("HomeFeedDebug", "Manga history collected: size=${histories.size}")
+                        logcat(LogPriority.DEBUG) { "Manga history collected: size=${histories.size}" }
                         updateStateWithData(mangaHistory = histories)
                     }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Fatal error in manga history observer", e)
+                logcat(LogPriority.ERROR, e) { "Fatal error in manga history observer" }
             }
         }
 
@@ -457,11 +469,11 @@ class HomeFeedScreenModel(
         viewModelScope.launch {
             try {
                 remoteAnimeState.collect { items ->
-                    android.util.Log.d("HomeFeedDebug", "remoteAnimeState collected: size=${items.size}")
+                    logcat(LogPriority.DEBUG) { "remoteAnimeState collected: size=${items.size}" }
                     updateStateWithData(remoteAnime = items)
                 }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Error observing remote anime", e)
+                logcat(LogPriority.ERROR, e) { "Error observing remote anime" }
             }
         }
 
@@ -469,11 +481,11 @@ class HomeFeedScreenModel(
         viewModelScope.launch {
             try {
                 remoteMangaState.collect { items ->
-                    android.util.Log.d("HomeFeedDebug", "remoteMangaState collected: size=${items.size}")
+                    logcat(LogPriority.DEBUG) { "remoteMangaState collected: size=${items.size}" }
                     updateStateWithData(remoteManga = items)
                 }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Error observing remote manga", e)
+                logcat(LogPriority.ERROR, e) { "Error observing remote manga" }
             }
         }
 
@@ -481,11 +493,11 @@ class HomeFeedScreenModel(
         viewModelScope.launch {
             try {
                 remoteMovieSeriesState.collect { items ->
-                    android.util.Log.d("HomeFeedDebug", "remoteMovieSeriesState collected: size=${items.size}")
+                    logcat(LogPriority.DEBUG) { "remoteMovieSeriesState collected: size=${items.size}" }
                     updateStateWithData(remoteMovieSeries = items)
                 }
             } catch (e: Exception) {
-                android.util.Log.e("HomeFeedDebug", "Error observing remote movie series", e)
+                logcat(LogPriority.ERROR, e) { "Error observing remote movie series" }
             }
         }
     }
@@ -527,6 +539,7 @@ class HomeFeedScreenModel(
 
             val showFeatured = uiPreferences.homeShowFeatured.get()
             val showContinue = uiPreferences.homeShowContinue.get()
+            val showAiringToday = uiPreferences.homeShowAiringToday.get()
             val showBecauseYouWatched = uiPreferences.homeShowBecauseYouWatched.get()
             val showRecommended = uiPreferences.homeShowRecommended.get()
             val showPopularAnime = uiPreferences.homeShowPopularAnime.get()
@@ -852,14 +865,13 @@ class HomeFeedScreenModel(
                 HeroSource.BOTH -> allRemoteHeroItems.ifEmpty { fallbackCarousel }
             }
 
-            android.util.Log.d(
-                "HomeFeedDebug",
+            logcat(LogPriority.DEBUG) {
                 "HomeFeed State build: heroList=${currentHeroList.size}, " +
                     "allRemoteHero=${allRemoteHeroItems.size}, fallback=${fallbackCarousel.size}, " +
                     "remoteAnime=${processedRemoteAnime.size}, remoteManga=${processedRemoteManga.size}, " +
                     "movies=${movieItems.size}, series=${seriesItems.size}, " +
-                    "heroSource=$heroSource",
-            )
+                    "heroSource=$heroSource"
+            }
 
             _state.value = State(
                 isLoading = false,
@@ -876,6 +888,7 @@ class HomeFeedScreenModel(
                 seriesList = displayPopularSeries.take(limit),
                 showFeatured = showFeatured,
                 showContinue = showContinue,
+                showAiringToday = showAiringToday,
                 showBecauseYouWatched = showBecauseYouWatched,
                 showRecommended = showRecommended,
                 showPopularAnime = showPopularAnime,
@@ -889,9 +902,11 @@ class HomeFeedScreenModel(
                 hideCompletedInRecommended = hideCompleted,
                 enableTmdb = enableTmdb,
                 enableAnilist = enableAnilist,
-            )
+                // airingToday is loaded asynchronously from the Discover cache; keep the
+                // latest loaded value instead of resetting it on every state rebuild
+            ).copy(airingToday = _state.value.airingToday)
         } catch (e: Exception) {
-            android.util.Log.e("HomeFeedDebug", "Error building home feed state", e)
+            logcat(LogPriority.ERROR, e) { "Error building home feed state" }
         }
     }
 
@@ -929,116 +944,6 @@ class HomeFeedScreenModel(
                 genreClean.contains("drama") -> MediaType.SERIES
 
             else -> MediaType.ANIME
-        }
-    }
-
-    /**
-     * Motor Híbrido por Capas para clasificar contenido en:
-     * - MediaType.MOVIES (Películas)
-     * - MediaType.SERIES (Series Live Action / Doramas / TV Shows)
-     * - MediaType.ANIME (Animación Japonesa / Donghua / Anime Series)
-     * - MediaType.MANGA (Manga / Manhwa / Manhua)
-     */
-    private suspend fun classifyMediaHybrid(
-        animeId: Long? = null,
-        title: String,
-        genre: List<String>? = null,
-        description: String? = null,
-        totalEpisodes: Long? = null,
-        sourceName: String? = null,
-    ): MediaType {
-        val titleClean = title.lowercase()
-        val genreClean = genre?.joinToString(" ")?.lowercase() ?: ""
-        val descClean = description?.lowercase() ?: ""
-        val sourceClean = sourceName?.lowercase() ?: ""
-        val combinedText = "$titleClean $genreClean $descClean $sourceClean"
-
-        // CAPA 1: Metadatos de Trackers vinculados (TMDB / AniList)
-        if (animeId != null) {
-            try {
-                val tracks = getAnimeTracks.await(animeId)
-                val tmdbTrack = tracks.firstOrNull {
-                    trackerManager.get(it.trackerId) is eu.kanade.tachiyomi.data.track.tmdb.Tmdb
-                }
-                if (tmdbTrack != null) {
-                    if (titleClean.contains(
-                            "película",
-                        ) || titleClean.contains("movie") || titleClean.contains("film") ||
-                        genreClean.contains("película") ||
-                        genreClean.contains("movie")
-                    ) {
-                        return MediaType.MOVIES
-                    }
-                    return MediaType.SERIES
-                }
-            } catch (_: Exception) {}
-        }
-
-        // CAPA 2: Análisis por Fuente/Extensión de Aniyomi
-        if (sourceClean.isNotEmpty()) {
-            when {
-                // Fuentes dedicadas exclusivamente a Cine y Series Live-Action
-                sourceClean.contains("tmdb") || sourceClean.contains("cuevana") ||
-                    sourceClean.contains("pelis") || sourceClean.contains("cine") ||
-                    sourceClean.contains("filmaffinity") || sourceClean.contains("movie") -> {
-                    return if (titleClean.contains("película") || titleClean.contains("movie") ||
-                        titleClean.contains("film") ||
-                        totalEpisodes == 1L
-                    ) {
-                        MediaType.MOVIES
-                    } else {
-                        MediaType.SERIES
-                    }
-                }
-
-                // Fuentes dedicadas a Doramas / K-Dramas
-                sourceClean.contains("dorama") || sourceClean.contains("kdrama") || sourceClean.contains("drama") -> {
-                    return MediaType.SERIES
-                }
-            }
-        }
-
-        // CAPA 3: Expresiones regulares de Películas y Películas Anime (Gekijouban / Movie)
-        val movieKeywordsRegex =
-            Regex("""\b(movie|película|pelicula|film|gekijouban|劇場版|the movie|eiga)\b""", RegexOption.IGNORE_CASE)
-        if (movieKeywordsRegex.containsMatchIn(titleClean) ||
-            (totalEpisodes == 1L && movieKeywordsRegex.containsMatchIn(combinedText))
-        ) {
-            return MediaType.MOVIES
-        }
-
-        // CAPA 4: Expresiones regulares de Series Live Action / Doramas
-        val seriesKeywordsRegex =
-            Regex(
-                """\b(dorama|kdrama|jdrama|live action|live-action|tv show|tv series|serie|temporada|season)\b""",
-                RegexOption.IGNORE_CASE,
-            )
-        if (seriesKeywordsRegex.containsMatchIn(combinedText)) {
-            return MediaType.SERIES
-        }
-
-        // CAPA 5: Si no es Película ni Serie Live-Action, se clasifica como ANIME
-        return MediaType.ANIME
-    }
-
-    private fun formatTime(milliseconds: Long): String {
-        if (milliseconds <= 0L) return "0:00"
-        return if (milliseconds > 3600000L) {
-            String.format(
-                "%d:%02d:%02d",
-                TimeUnit.MILLISECONDS.toHours(milliseconds),
-                TimeUnit.MILLISECONDS.toMinutes(milliseconds) -
-                    TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(milliseconds)),
-                TimeUnit.MILLISECONDS.toSeconds(milliseconds) -
-                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(milliseconds)),
-            )
-        } else {
-            String.format(
-                "%d:%02d",
-                TimeUnit.MILLISECONDS.toMinutes(milliseconds),
-                TimeUnit.MILLISECONDS.toSeconds(milliseconds) -
-                    TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(milliseconds)),
-            )
         }
     }
 }

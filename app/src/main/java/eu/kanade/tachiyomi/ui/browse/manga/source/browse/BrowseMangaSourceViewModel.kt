@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.source.browse
+﻿package eu.kanade.tachiyomi.ui.browse.manga.source.browse
 
 import android.content.res.Configuration
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -60,6 +60,12 @@ import kotlin.time.Clock
 import eu.kanade.tachiyomi.source.model.Filter as SourceModelFilter
 
 @AssistedInject
+/**
+ * State and business logic coordinator for BrowseMangaSourceViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class BrowseMangaSourceViewModel(
     @Assisted private val sourceId: Long,
     @Assisted listingQuery: String?,

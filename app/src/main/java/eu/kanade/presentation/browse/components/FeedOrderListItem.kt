@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.components
+﻿package eu.kanade.presentation.browse.components
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +23,12 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for FeedOrderListItem.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun FeedOrderListItem(
     title: String,
     canMoveUp: Boolean,

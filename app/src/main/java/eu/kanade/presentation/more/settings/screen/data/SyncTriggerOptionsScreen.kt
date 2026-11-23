@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.data
+﻿package eu.kanade.presentation.more.settings.screen.data
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -24,6 +24,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * Screen-level composable hierarchy for SyncTriggerOptionsScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class SyncTriggerOptionsScreen : Screen() {
 
     @Composable

@@ -1,9 +1,12 @@
-package eu.kanade.tachiyomi.ui.reader.viewer.webgpu
+﻿package eu.kanade.tachiyomi.ui.reader.viewer.webgpu
 
 import ca.mpreg.webgpuviewer.ImageViewContinuous
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.reader.model.ReaderPage
 
+/**
+ * Core component for WebGpuViewerContinuous within the Animetail presentation and UI layer.
+ */
 class WebGpuViewerContinuous(activity: ReaderActivity) :
     WebGpuViewer(activity, isReversed = false, isVertical = true, pager = ImageViewContinuous(activity)) {
 

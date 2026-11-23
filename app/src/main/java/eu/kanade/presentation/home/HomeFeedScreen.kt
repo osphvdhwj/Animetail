@@ -60,6 +60,7 @@ import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.home.HomeFeedScreenModel
 import eu.kanade.tachiyomi.ui.home.HomeTab
 import eu.kanade.tachiyomi.ui.home.HomeTabSwitcher
+import eu.kanade.tachiyomi.ui.discover.components.DailyALAiringRail
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.reader.ReaderActivity
 import eu.kanade.tachiyomi.ui.updates.UpdatesTab
@@ -69,6 +70,7 @@ import kotlinx.coroutines.launch
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.i18n.MR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.PullRefresh
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
@@ -256,7 +258,20 @@ fun HomeFeedScreen(
                         }
                     }
 
-                    // 4. Sección Inteligente "Porque viste / leíste [Título]..."
+                    // 4. Sección "Emitiéndose hoy" (desde la caché de Discover)
+                    if (state.showAiringToday && state.airingToday.isNotEmpty()) {
+                        item(key = "airing_today") {
+                            DailyALAiringRail(
+                                title = stringResource(TLMR.strings.home_feed_airing_today),
+                                items = state.airingToday,
+                                onItemClick = { episode ->
+                                    navigator?.push(GlobalAnimeSearchScreen(episode.title))
+                                },
+                            )
+                        }
+                    }
+
+                    // 5. Sección Inteligente "Porque viste / leíste [Título]..."
                     if (state.showBecauseYouWatched && state.becauseYouWatchedTitle != null) {
                         item {
                             val headerText = if (state.becauseYouWatchedIsAnime) {

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime
+﻿package eu.kanade.presentation.entries.anime
 
 import android.content.ClipData
 import android.content.Context
@@ -103,6 +103,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 private val playerPreferences = Injekt.get<PlayerPreferences>()
 
+/**
+ * Screen-level composable hierarchy for EpisodeOptionsDialogScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class EpisodeOptionsDialogScreen(
     private val useExternalDownloader: Boolean,
     private val episodeTitle: String,

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen
+﻿package eu.kanade.presentation.more.settings.screen
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
@@ -70,6 +70,12 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Screen-level composable hierarchy for SettingsTrackingScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object SettingsTrackingScreen : SearchableSettings {
 
     @ReadOnlyComposable

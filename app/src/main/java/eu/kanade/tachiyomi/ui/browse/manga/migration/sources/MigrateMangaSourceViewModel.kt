@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.migration.sources
+﻿package eu.kanade.tachiyomi.ui.browse.manga.migration.sources
 
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
@@ -30,6 +30,12 @@ import kotlin.time.Duration.Companion.seconds
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+/**
+ * State and business logic coordinator for MigrateMangaSourceViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MigrateMangaSourceViewModel(
     private val preferences: SourcePreferences,
     private val getSourcesWithFavoriteCount: GetMangaSourcesWithFavoriteCount,

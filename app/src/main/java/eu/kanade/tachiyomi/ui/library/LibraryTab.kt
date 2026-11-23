@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.library
+﻿package eu.kanade.tachiyomi.ui.library
 
 import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
 import androidx.compose.animation.graphics.res.animatedVectorResource
@@ -25,6 +25,11 @@ import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Navigation tab descriptor for LibraryTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 enum class LibraryMediaType {
     ANIME,
     MANGA,

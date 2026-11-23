@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.source.browse
+﻿package eu.kanade.tachiyomi.ui.browse.anime.source.browse
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -38,6 +38,12 @@ import tachiyomi.presentation.core.components.TriStateItem
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for SourceFilterAnimeDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun SourceFilterAnimeDialog(
     onDismissRequest: () -> Unit,
     filters: AnimeFilterList,

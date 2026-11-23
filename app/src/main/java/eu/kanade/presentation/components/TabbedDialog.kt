@@ -1,4 +1,4 @@
-package eu.kanade.presentation.components
+﻿package eu.kanade.presentation.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Box
@@ -33,6 +33,10 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.TabText
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Composable UI component rendering the $name interface in Material 3.
+ * Handles UI rendering, user interaction callbacks, and state presentation.
+ */
 object TabbedDialogPaddings {
     val Horizontal = 24.dp
     val Vertical = 8.dp

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.category.components
+﻿package eu.kanade.presentation.category.components
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
@@ -13,6 +13,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.shouldExpandFAB
 
 @Composable
+/**
+ * UI presentation composable for CategoryFloatingActionButton.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun CategoryFloatingActionButton(
     lazyListState: LazyListState,
     onCreate: () -> Unit,

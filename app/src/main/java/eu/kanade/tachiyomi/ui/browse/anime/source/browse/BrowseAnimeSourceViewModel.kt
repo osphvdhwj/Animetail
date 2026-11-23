@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.source.browse
+﻿package eu.kanade.tachiyomi.ui.browse.anime.source.browse
 
 import android.content.res.Configuration
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -89,6 +89,12 @@ import java.time.Instant
 import eu.kanade.tachiyomi.animesource.model.AnimeFilter as AnimeSourceModelFilter
 
 @AssistedInject
+/**
+ * State and business logic coordinator for BrowseAnimeSourceViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class BrowseAnimeSourceViewModel(
     @Assisted private val sourceId: Long,
     @Assisted listingQuery: String?,

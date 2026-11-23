@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.manga
+﻿package eu.kanade.presentation.browse.manga
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
@@ -19,6 +19,12 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.presentation.core.components.material.Scaffold
 
 @Composable
+/**
+ * UI presentation composable for GlobalMangaSearchScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun GlobalMangaSearchScreen(
     state: MangaSearchViewModel.State,
     navigateUp: () -> Unit,

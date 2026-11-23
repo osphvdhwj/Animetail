@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen
+﻿package eu.kanade.presentation.more.settings.screen
 
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -49,6 +49,7 @@ import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.screen.data.CreateBackupScreen
 import eu.kanade.presentation.more.settings.screen.data.RestoreBackupScreen
 import eu.kanade.presentation.more.settings.screen.data.StorageInfo
+import eu.kanade.tachiyomi.data.discover.cache.DiscoverCacheStore
 import eu.kanade.presentation.more.settings.screen.data.SyncSettingsSelector
 import eu.kanade.presentation.more.settings.screen.data.SyncTriggerOptionsScreen
 import eu.kanade.presentation.more.settings.widget.BasePreferenceWidget
@@ -89,10 +90,18 @@ import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.i18n.tail.TLMR
+import uy.kohesive.injekt.Injekt
+import uy.kohesive.injekt.api.get
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 
 @Suppress("TooManyFunctions")
+/**
+ * Screen-level composable hierarchy for SettingsDataScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object SettingsDataScreen : SearchableSettings {
 
     val restorePreferenceKeyString = MR.strings.label_backup
@@ -308,6 +317,10 @@ object SettingsDataScreen : SearchableSettings {
         var cacheReadableSizeSema by remember { mutableIntStateOf(0) }
         val cacheReadableSize = remember(cacheReadableSizeSema) { chapterCache.readableSize }
 
+        val discoverCacheStore = remember { Injekt.get<DiscoverCacheStore>() }
+        var discoverCacheSizeSema by remember { mutableIntStateOf(0) }
+        val discoverCacheSize = remember(discoverCacheSizeSema) { discoverCacheStore.readableSize() }
+
         // AM (FILE_SIZE) -->
         LaunchedEffect(Unit) {
             storagePreferences.showEpisodeFileSize.changes()
@@ -372,6 +385,27 @@ object SettingsDataScreen : SearchableSettings {
                     preference = libraryPreferences.autoClearItemCache,
                     title = stringResource(AYMR.strings.pref_auto_clear_chapter_cache),
                 ),
+
+                // AM (DISCOVER_CACHE) -->
+                Preference.PreferenceItem.TextPreference(
+                    title = stringResource(TLMR.strings.pref_discover_cache_clear),
+                    subtitle = stringResource(TLMR.strings.pref_discover_cache_size, discoverCacheSize),
+                    onClick = {
+                        scope.launchNonCancellable {
+                            try {
+                                val deletedFiles = discoverCacheStore.clearAll()
+                                withUIContext {
+                                    context.toast(context.stringResource(MR.strings.cache_deleted, deletedFiles))
+                                    discoverCacheSizeSema++
+                                }
+                            } catch (e: Throwable) {
+                                logcat(LogPriority.ERROR, e)
+                                withUIContext { context.toast(MR.strings.cache_delete_error) }
+                            }
+                        }
+                    },
+                ),
+                // <-- AM (DISCOVER_CACHE)
             ),
         )
     }

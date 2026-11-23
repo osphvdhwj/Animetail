@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.manga.track
+﻿package eu.kanade.tachiyomi.ui.entries.manga.track
 
 import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
@@ -94,6 +94,11 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 import tachiyomi.domain.track.manga.model.MangaTrack as DbMangaTrack
 
+/**
+ * Modal dialog / bottom sheet surface for MangaTrackInfoDialog.
+ *
+ * Encapsulates modal options, user selections, and dismissible lifecycle state.
+ */
 data class MangaTrackInfoDialogHomeScreen(
     private val mangaId: Long,
     private val mangaTitle: String,

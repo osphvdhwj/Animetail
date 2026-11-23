@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.anime
+﻿package eu.kanade.presentation.browse.anime
 
 import android.content.Intent
 import android.net.Uri
@@ -64,6 +64,12 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for AnimeExtensionDetailsScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AnimeExtensionDetailsScreen(
     navigateUp: () -> Unit,
     state: AnimeExtensionDetailsViewModel.State.Success,

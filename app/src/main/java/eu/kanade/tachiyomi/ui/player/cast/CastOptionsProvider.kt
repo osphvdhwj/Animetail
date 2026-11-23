@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.cast
+﻿package eu.kanade.tachiyomi.ui.player.cast
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -23,6 +23,9 @@ open class CastOptionsProvider : OptionsProvider {
 
     private fun getReceiverApplicationId(context: Context): String {
         return try {
+/**
+ * Core component for CastOptionsProvider within the Animetail presentation and UI layer.
+ */
             val packageInfo = context.packageManager.getPackageInfo(context.packageName, PackageManager.GET_META_DATA)
             packageInfo.applicationInfo?.metaData?.getString(context.getString(R.string.app_cast_id))
                 ?: CastMediaControlIntent.DEFAULT_MEDIA_RECEIVER_APPLICATION_ID

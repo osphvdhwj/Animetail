@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.components
+﻿package eu.kanade.presentation.browse.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +36,9 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Core component for SourceFeedDialogs within the Animetail presentation and UI layer.
+ */
 fun SourceFeedAddDialog(
     onDismissRequest: () -> Unit,
     name: String,

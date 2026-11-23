@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.extension.details
+﻿package eu.kanade.tachiyomi.ui.browse.anime.extension.details
 
 import android.content.Context
 import android.os.Bundle
@@ -42,6 +42,12 @@ import mihon.app.di.appGraph
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * Screen-level composable hierarchy for AnimeSourcePreferencesScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class AnimeSourcePreferencesScreen(val sourceId: Long) : Screen() {
 
     @Composable

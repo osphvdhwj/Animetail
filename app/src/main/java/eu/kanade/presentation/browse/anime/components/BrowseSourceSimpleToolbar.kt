@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.anime.components
+﻿package eu.kanade.presentation.browse.anime.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ViewList
@@ -21,6 +21,12 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for BrowseSourceSimpleToolbar.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun BrowseSourceSimpleToolbar(
     navigateUp: () -> Unit,
     title: String,

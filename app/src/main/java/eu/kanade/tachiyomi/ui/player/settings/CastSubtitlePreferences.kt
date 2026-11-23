@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.settings
+﻿package eu.kanade.tachiyomi.ui.player.settings
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -9,6 +9,9 @@ import logcat.LogPriority
 import tachiyomi.core.common.preference.PreferenceStore
 import tachiyomi.core.common.util.system.logcat
 
+/**
+ * Core component for CastSubtitlePreferences within the Animetail presentation and UI layer.
+ */
 class CastSubtitlePreferences(
     private val preferenceStore: PreferenceStore,
 ) {

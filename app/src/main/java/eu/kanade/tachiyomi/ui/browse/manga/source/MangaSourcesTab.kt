@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.source
+﻿package eu.kanade.tachiyomi.ui.browse.manga.source
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FilterList
@@ -25,6 +25,11 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Navigation tab descriptor for MangaSourcesTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 fun Screen.mangaSourcesTab(): TabContent {
     val navigator = LocalNavigator.currentOrThrow
     val viewModel = metroViewModel<MangaSourcesViewModel>()
@@ -53,6 +58,12 @@ fun Screen.mangaSourcesTab(): TabContent {
                 },
                 onClickPin = viewModel::togglePin,
                 onLongClickItem = viewModel::showSourceDialog,
+                onGlobalSearchClick = { navigator.push(eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch.GlobalMangaSearchScreen()) },
+                onExtensionsClick = { eu.kanade.tachiyomi.ui.browse.BrowseTab.showExtension() },
+                onWebPortalsClick = { eu.kanade.tachiyomi.ui.browse.BrowseTab.showWebPortals() },
+                onFeedClick = { eu.kanade.tachiyomi.ui.browse.BrowseTab.showFeed() },
+                onMigrateClick = { eu.kanade.tachiyomi.ui.browse.BrowseTab.showMigrate() },
+                onFilterClick = { navigator.push(MangaSourcesFilterScreen()) },
             )
 
             state.dialog?.let { dialog ->

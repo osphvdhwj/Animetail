@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.library.manga
+﻿package eu.kanade.tachiyomi.ui.library.manga
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -97,6 +97,12 @@ typealias MangaLibraryMap = Map<Category, List<MangaLibraryItem>>
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
 @Suppress("LargeClass")
+/**
+ * State and business logic coordinator for MangaLibraryViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MangaLibraryViewModel(
     private val getLibraryManga: GetLibraryManga,
     private val getCategories: GetVisibleMangaCategories,

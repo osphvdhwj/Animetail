@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.manga
+﻿package eu.kanade.tachiyomi.ui.entries.manga
 
 import android.content.Context
 import androidx.compose.material3.SnackbarDuration
@@ -118,6 +118,12 @@ import kotlin.math.floor
 import androidx.compose.runtime.State as RuntimeState
 
 @AssistedInject
+/**
+ * State and business logic coordinator for MangaViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MangaViewModel(
     @Assisted private val mangaId: Long,
     @Assisted private val isFromSource: Boolean,

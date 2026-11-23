@@ -1,4 +1,4 @@
-package eu.kanade.presentation.reader
+﻿package eu.kanade.presentation.reader
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +27,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 private val ReaderOrientationsWithoutDefault = ReaderOrientation.entries - ReaderOrientation.DEFAULT
 
 @Composable
+/**
+ * UI presentation composable for OrientationSelectDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun OrientationSelectDialog(
     onDismissRequest: () -> Unit,
     viewModel: ReaderSettingsViewModel,

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player
+﻿package eu.kanade.presentation.more.settings.screen.player
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -18,6 +18,12 @@ import uy.kohesive.injekt.api.get
 import java.util.Locale
 import java.util.MissingResourceException
 
+/**
+ * Screen-level composable hierarchy for PlayerSettingsAudioScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object PlayerSettingsAudioScreen : Screen(), SearchableSettings {
 
     @ReadOnlyComposable

@@ -11,11 +11,18 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 
-    <!-- Storage -->
+    <!-- Storage & Media Permissions for Video Player -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29"
+        tools:ignore="ScopedStorage" />
 
 
     <!-- For background jobs -->
@@ -128,21 +135,6 @@
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
-
-            <!-- Handle external video files -->
-            <intent-filter android:label="Add to Animetail Library">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:mimeType="video/*" />
-                <data android:scheme="file" />
-                <data android:scheme="content" />
-            </intent-filter>
-            <intent-filter android:label="Add to Animetail Library">
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="video/*" />
-            </intent-filter>
         </activity>
 
         <activity
@@ -234,33 +226,47 @@
                 <action android:name="com.samsung.android.support.REMOTE_ACTION" />
             </intent-filter>
 
+            <!-- Video Player Intent Filter: All Video & Audio MIME types -->
             <intent-filter android:label="@string/app_name">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:scheme="http" />
+                <data android:scheme="https" />
+                <!-- All video containers so file managers & messengers can offer Animetail -->
                 <data android:mimeType="video/*" />
+                <data android:mimeType="application/x-matroska" />
+                <data android:mimeType="audio/*" />
                 <data android:mimeType="application/x-mpegURL" />
                 <data android:mimeType="application/vnd.apple.mpegurl" />
+                <data android:mimeType="application/dash+xml" />
+                <data android:mimeType="application/ogg" />
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>
+
+            <!-- Same types without schemes, for VIEW intents that carry a MIME type but no data URI -->
             <intent-filter android:label="@string/app_name">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="file" />
-                <data android:scheme="content" />
-                <data android:scheme="http" />
-                <data android:scheme="https" />
                 <data android:mimeType="video/*" />
+                <data android:mimeType="application/x-matroska" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/x-mpegURL" />
+                <data android:mimeType="application/vnd.apple.mpegurl" />
+                <data android:mimeType="application/dash+xml" />
+                <data android:mimeType="application/ogg" />
+                <data android:mimeType="application/octet-stream" />
             </intent-filter>
+
+            <!-- Video Player Intent Filter: File Extensions for File Managers & Browsers (file:// URIs sent without a MIME type) -->
             <intent-filter android:label="@string/app_name">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="file" />
                 <data android:scheme="content" />
-                <data android:scheme="http" />
-                <data android:scheme="https" />
                 <data android:host="*" />
                 <data android:pathPattern=".*\\.mp4" />
                 <data android:pathPattern=".*\\.mkv" />
@@ -269,9 +275,37 @@
                 <data android:pathPattern=".*\\.mov" />
                 <data android:pathPattern=".*\\.flv" />
                 <data android:pathPattern=".*\\.ts" />
+                <data android:pathPattern=".*\\.m2ts" />
                 <data android:pathPattern=".*\\.m3u8" />
                 <data android:pathPattern=".*\\.3gp" />
                 <data android:pathPattern=".*\\.wmv" />
+                <data android:pathPattern=".*\\.vob" />
+                <data android:pathPattern=".*\\.ogv" />
+                <data android:pathPattern=".*\\.rmvb" />
+                <data android:pathPattern=".*\\.f4v" />
+                <data android:pathPattern=".*\\.divx" />
+                <data android:pathPattern=".*\\.m4v" />
+                <data android:pathPattern=".*\\.mp3" />
+                <data android:pathPattern=".*\\.aac" />
+                <data android:pathPattern=".*\\.flac" />
+                <data android:pathPattern=".*\\.opus" />
+                <data android:pathPattern=".*\\.ogg" />
+                <data android:pathPattern=".*\\.m4a" />
+            </intent-filter>
+
+            <!-- Video Player Intent Filter: Share media to play -->
+            <intent-filter android:label="@string/app_name">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+
+            <intent-filter android:label="@string/app_name">
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="audio/*" />
             </intent-filter>
 
             <meta-data android:name="com.samsung.android.support.REMOTE_ACTION"

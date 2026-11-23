@@ -1,6 +1,7 @@
 package eu.kanade.domain.items.episode.interactor
 
 import dev.zacsweers.metro.Inject
+import eu.kanade.domain.entries.anime.interactor.GetAnimeExcludedScanlators
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.entries.anime.model.toSAnime
 import eu.kanade.domain.items.episode.model.copyFromSEpisode
@@ -35,6 +36,7 @@ class SyncEpisodesWithSource(
     private val updateAnime: UpdateAnime,
     private val updateEpisode: UpdateEpisode,
     private val getEpisodesByAnimeId: GetEpisodesByAnimeId,
+    private val getAnimeExcludedScanlators: GetAnimeExcludedScanlators,
     private val libraryPreferences: LibraryPreferences,
 ) {
 
@@ -240,6 +242,10 @@ class SyncEpisodesWithSource(
         // Note that last_update actually represents last time the episode list changed at all
         updateAnime.awaitUpdateLastUpdate(anime.id)
 
-        return updatedToAdd.filterNot { it.url in changedOrDuplicateReadUrls }
+        val excludedScanlators = getAnimeExcludedScanlators.await(anime.id).toHashSet()
+
+        return updatedToAdd.filterNot {
+            it.url in changedOrDuplicateReadUrls || it.scanlator in excludedScanlators
+        }
     }
 }

@@ -49,9 +49,11 @@ import tachiyomi.domain.storage.service.StoragePreferences
 import tachiyomi.domain.updates.anime.model.AnimeUpdatesWithRelations
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.ListGroupHeader
 import tachiyomi.presentation.core.components.material.DISABLED_ALPHA
 import tachiyomi.presentation.core.components.material.padding
+import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.selectedBackground
 import uy.kohesive.injekt.injectLazy
@@ -71,6 +73,24 @@ internal fun LazyListScope.animeUpdatesLastUpdatedItem(
         ) {
             Text(
                 text = stringResource(MR.strings.updates_last_update_info, relativeTimeSpanString(lastUpdated)),
+                fontStyle = FontStyle.Italic,
+            )
+        }
+    }
+}
+
+/** Info line summarizing how many new episodes the current list holds. */
+internal fun LazyListScope.animeUpdatesSummaryItem(count: Int) {
+    if (count == 0) return
+    item(key = "animeUpdates-summary") {
+        Box(
+            modifier = Modifier
+                .animateItem(fadeInSpec = null, fadeOutSpec = null)
+                .padding(horizontal = MaterialTheme.padding.medium)
+                .padding(bottom = MaterialTheme.padding.extraSmall),
+        ) {
+            Text(
+                text = pluralStringResource(TLMR.plurals.updates_summary_episodes, count = count, count),
                 fontStyle = FontStyle.Italic,
             )
         }

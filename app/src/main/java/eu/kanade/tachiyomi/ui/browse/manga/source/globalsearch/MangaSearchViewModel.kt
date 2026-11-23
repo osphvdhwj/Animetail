@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch
+﻿package eu.kanade.tachiyomi.ui.browse.manga.source.globalsearch
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -39,6 +39,12 @@ abstract class MangaSearchViewModel(
     private val preferences: SourcePreferences,
 ) : ViewModel() {
 
+/**
+ * State and business logic coordinator for MangaSearchViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
     val state: StateFlow<State>
         field = MutableStateFlow<State>(initialState)
 
@@ -126,7 +132,7 @@ abstract class MangaSearchViewModel(
         preferences.globalSearchFilterState.toggle()
     }
 
-    fun search() {
+    open fun search() {
         val query = state.value.searchQuery
         val sourceFilter = state.value.sourceFilter
 

@@ -1,7 +1,8 @@
-package eu.kanade.presentation.library.anime
+﻿package eu.kanade.presentation.library.anime
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -49,24 +50,33 @@ import tachiyomi.presentation.core.util.collectAsState
 
 @Composable
 @Suppress("MagicNumber")
+/**
+ * Modal dialog / bottom sheet surface for AnimeLibrarySettingsDialog.
+ *
+ * Encapsulates modal options, user selections, and dismissible lifecycle state.
+ */
 fun AnimeLibrarySettingsDialog(
     onDismissRequest: () -> Unit,
+    initialPage: Int = 0,
     screenModel: AnimeLibrarySettingsViewModel,
     category: Category?,
     // SY -->
     hasCategories: Boolean,
     // SY <--
 ) {
+    val tabTitles = persistentListOf(
+        stringResource(MR.strings.action_filter),
+        stringResource(MR.strings.action_sort),
+        stringResource(MR.strings.action_display),
+        // SY -->
+        stringResource(TLMR.strings.group),
+        // SY <--
+    )
+
     TabbedDialog(
         onDismissRequest = onDismissRequest,
-        tabTitles = persistentListOf(
-            stringResource(MR.strings.action_filter),
-            stringResource(MR.strings.action_sort),
-            stringResource(MR.strings.action_display),
-            // SY -->
-            stringResource(TLMR.strings.group),
-            // SY <--
-        ),
+        pagerState = rememberPagerState(initialPage = initialPage) { tabTitles.size },
+        tabTitles = tabTitles,
     ) { page ->
         Column(
             modifier = Modifier

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime.components
+﻿package eu.kanade.presentation.entries.anime.components
 
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
@@ -63,6 +63,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.clickableNoIndication
 
 @Composable
+/**
+ * UI presentation composable for AnimeImagesDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AnimeImagesDialog(
     anime: Anime,
     isCustomCover: Boolean,

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.data
+﻿package eu.kanade.presentation.more.settings.screen.data
 
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
@@ -23,6 +23,12 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 import java.io.File
 
 @Composable
+/**
+ * UI presentation composable for StorageInfo.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun StorageInfo(
     modifier: Modifier = Modifier,
 ) {

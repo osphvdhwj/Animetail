@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player.custombutton.components
+﻿package eu.kanade.presentation.more.settings.screen.player.custombutton.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
@@ -27,6 +27,11 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Presentation card/item component for CustomButtonListItem.
+ *
+ * Handles compact data display, visual badges, and click/long-press actions.
+ */
 fun ReorderableCollectionItemScope.CustomButtonListItem(
     customButton: CustomButton,
     isFavorite: Boolean,

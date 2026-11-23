@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player.editor
+﻿package eu.kanade.presentation.more.settings.screen.player.editor
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -13,6 +13,12 @@ import eu.kanade.presentation.more.settings.screen.player.editor.components.File
 import eu.kanade.presentation.more.settings.screen.player.editor.components.FileDeleteDialog
 import eu.kanade.presentation.util.Screen
 
+/**
+ * Screen-level composable hierarchy for PlayerSettingsEditorScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object PlayerSettingsEditorScreen : Screen() {
 
     @Composable

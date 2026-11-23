@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.controls
+﻿package eu.kanade.tachiyomi.ui.player.controls
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -40,6 +40,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import kotlin.math.abs
 
 @Composable
+/**
+ * UI presentation composable for MiddlePlayerControls.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MiddlePlayerControls(
     // previous
     hasPrevious: Boolean,

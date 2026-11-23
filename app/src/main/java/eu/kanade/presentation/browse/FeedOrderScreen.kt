@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse
+﻿package eu.kanade.presentation.browse
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +19,12 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.plus
 
 @Composable
+/**
+ * UI presentation composable for FeedOrderScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun FeedOrderScreen(
     state: FeedScreenState,
     onClickDelete: (FeedSavedSearch) -> Unit,

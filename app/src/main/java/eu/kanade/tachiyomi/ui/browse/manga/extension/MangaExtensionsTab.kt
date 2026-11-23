@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.extension
+﻿package eu.kanade.tachiyomi.ui.browse.manga.extension
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
@@ -26,6 +26,12 @@ import tachiyomi.i18n.aniyomi.AYMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for MangaExtensionsTab.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun mangaExtensionsTab(
     extensionsViewModel: MangaExtensionsViewModel,
 ): TabContent {

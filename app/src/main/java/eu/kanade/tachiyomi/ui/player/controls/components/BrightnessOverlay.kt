@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.controls.components
+﻿package eu.kanade.tachiyomi.ui.player.controls.components
 
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.Canvas
@@ -11,6 +11,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import kotlin.math.abs
 
 @Composable
+/**
+ * UI presentation composable for BrightnessOverlay.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun BrightnessOverlay(
     @FloatRange(from = -0.75, to = 1.0) brightness: Float,
     modifier: Modifier = Modifier,

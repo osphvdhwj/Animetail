@@ -1,4 +1,4 @@
-package eu.kanade.presentation.category.components
+﻿package eu.kanade.presentation.category.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -34,6 +34,9 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Core component for CategoryDialogs within the Animetail presentation and UI layer.
+ */
 fun CategoryCreateDialog(
     onDismissRequest: () -> Unit,
     onCreate: (String) -> Unit,

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader.setting
+﻿package eu.kanade.tachiyomi.ui.reader.setting
 
 import android.os.Build
 import androidx.compose.ui.graphics.BlendMode
@@ -16,6 +16,9 @@ import tachiyomi.i18n.tail.TLMR
 
 @Inject
 @SingleIn(AppScope::class)
+/**
+ * Core component for ReaderPreferences within the Animetail presentation and UI layer.
+ */
 class ReaderPreferences(
     private val preferenceStore: PreferenceStore,
 ) {

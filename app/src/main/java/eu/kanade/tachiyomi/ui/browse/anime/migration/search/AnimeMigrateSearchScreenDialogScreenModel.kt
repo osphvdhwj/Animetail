@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.migration.search
+﻿package eu.kanade.tachiyomi.ui.browse.anime.migration.search
 
 import androidx.compose.runtime.Immutable
 import cafe.adriel.voyager.core.model.StateScreenModel
@@ -10,6 +10,12 @@ import tachiyomi.domain.entries.anime.model.Anime
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
+/**
+ * State and business logic coordinator for AnimeMigrateSearchScreenDialogScreenModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class AnimeMigrateSearchScreenDialogScreenModel(
     val animeId: Long,
     getAnime: GetAnime = Injekt.get(),

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime
+﻿package eu.kanade.presentation.entries.anime
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +31,12 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for DuplicateAnimeDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun DuplicateAnimeDialog(
     onDismissRequest: () -> Unit,
     onConfirm: () -> Unit,

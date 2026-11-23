@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.anime
+﻿package eu.kanade.presentation.browse.anime
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -11,6 +11,12 @@ import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.presentation.core.components.material.Scaffold
 
 @Composable
+/**
+ * UI presentation composable for MigrateAnimeSearchScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MigrateAnimeSearchScreen(
     state: AnimeSearchViewModel.State,
     fromSourceId: Long?,

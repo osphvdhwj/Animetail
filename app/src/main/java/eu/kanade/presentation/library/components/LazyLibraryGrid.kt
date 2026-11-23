@@ -1,4 +1,4 @@
-package eu.kanade.presentation.library.components
+﻿package eu.kanade.presentation.library.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,6 +28,9 @@ internal fun LazyLibraryGrid(
     )
 }
 
+/**
+ * Core component for LazyLibraryGrid within the Animetail presentation and UI layer.
+ */
 fun LazyGridScope.globalSearchItem(
     searchQuery: String?,
     onGlobalSearchClicked: () -> Unit,

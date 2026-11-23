@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.source.feed
+﻿package eu.kanade.tachiyomi.ui.browse.anime.source.feed
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
@@ -46,6 +46,12 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.domain.source.anime.model.AnimeSource as ModelSource
 
+/**
+ * Screen-level composable hierarchy for SourceFeedScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class SourceFeedScreen(val sourceId: Long) : Screen() {
 
     @Composable

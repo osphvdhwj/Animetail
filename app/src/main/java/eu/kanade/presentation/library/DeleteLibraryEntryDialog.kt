@@ -1,4 +1,4 @@
-package eu.kanade.presentation.library
+﻿package eu.kanade.presentation.library
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.AlertDialog
@@ -17,6 +17,12 @@ import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for DeleteLibraryEntryDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun DeleteLibraryEntryDialog(
     containsLocalEntry: Boolean,
     onDismissRequest: () -> Unit,

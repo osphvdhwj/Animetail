@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.cast.components
+﻿package eu.kanade.tachiyomi.ui.player.cast.components
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
@@ -35,6 +35,9 @@ import tachiyomi.presentation.core.i18n.stringResource
 
 @SuppressLint("StateFlowValueCalledInComposition")
 @Composable
+/**
+ * Core component for CastDialogs within the Animetail presentation and UI layer.
+ */
 fun CastQualityDialog(
     viewModel: PlayerViewModel,
     castManager: CastManager,

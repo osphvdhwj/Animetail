@@ -446,4 +446,87 @@
     <!-- Top align cover -->
     <string name="pref_top_align_cover">Align cover to top</string>
     <string name="pref_top_align_cover_summary">Align the cover image to the top instead of center</string>
+
+    <!-- Home feed -->
+    <string name="home_feed_airing_today">Airing Today</string>
+
+    <!-- Airing notifications & schedule -->
+    <string name="airing_notif_channel">Airing episodes</string>
+    <string name="airing_notification_text">Episode %1$d is airing now</string>
+    <string name="airing_notifications_title">Airing notifications</string>
+    <string name="airing_notifications_summary">Notify when an episode of a library anime starts airing</string>
+    <string name="airing_filter_my_library">My library</string>
+
+    <!-- Tracked rail -->
+    <string name="tracked_rail_title">Continue from your list</string>
+
+    <!-- Global search -->
+    <string name="recent_searches">Recent searches</string>
+
+    <!-- Updates -->
+    <string name="updates_mark_all_seen">Mark all as seen</string>
+    <string name="updates_mark_all_read">Mark all as read</string>
+
+    <!-- More page groups -->
+    <string name="more_group_library_data">Library &amp; Data</string>
+    <string name="more_group_preferences">Preferences</string>
+    <string name="more_group_settings">Settings &amp; Support</string>
+
+    <!-- Download queue -->
+    <string name="download_queue_clear_completed">Clear completed</string>
+    <string name="download_queue_clear_errors">Clear errors</string>
+    <string name="download_queue_device_storage">Device Storage</string>
+    <string name="download_queue_active_downloads">Active Downloads</string>
+    <string name="download_queue_status_downloading">Downloading</string>
+    <string name="download_queue_status_paused">Paused</string>
+    <string name="download_queue_items_count">%1$d items (%2$s)</string>
+    <string name="download_queue_free_space">%1$s free</string>
+    <string name="download_queue_free_space_unknown">Free space unknown</string>
+
+    <!-- Statistics -->
+    <string name="stats_top_genres_themes">Top Genres &amp; Themes</string>
+    <string name="stats_top_studios">Top Animation Studios</string>
+    <string name="stats_top_studios_short">Top Studios</string>
+    <string name="stats_score_distribution">Score Distribution (1–10 ★)</string>
+    <string name="stats_status_distribution">Status Distribution</string>
+
+    <!-- Local video screen -->
+    <string name="local_video_title">Play Video File</string>
+    <string name="local_video_summary">Browse and play video files stored on this device</string>
+    <string name="local_video_empty">No videos found on this device</string>
+    <string name="local_video_permission_required">Storage permission is required to browse your videos</string>
+    <string name="local_video_grant_permission">Grant permission</string>
+    <string name="local_video_pick_file">Pick a file…</string>
+    <string name="local_video_refresh">Refresh</string>
+
+    <!-- Categories -->
+    <string name="action_sort_alphabetically">Sort alphabetically</string>
+
+    <!-- Discover cache -->
+    <string name="pref_discover_cache_size">Discover caches: %1$s</string>
+    <string name="pref_discover_cache_clear">Clear Discover caches</string>
+    <string name="pref_discover_cache_clear_confirmation">Delete all downloaded Discover tracker caches? They will be re-downloaded on next use.</string>
+
+    <!-- Discover settings -->
+    <string name="pref_category_discover">Discover</string>
+    <string name="pref_discover_summary">Discovery feed, swipe deck and cache refresh</string>
+    <string name="pref_discover_auto_refresh">Background cache refresh</string>
+    <string name="pref_discover_auto_refresh_summary">How often Discover preloads tracker feeds in the background. Disable to only refresh manually</string>
+    <string name="pref_discover_auto_refresh_off">Off</string>
+    <string name="pref_discover_auto_refresh_hours">%1$d hours</string>
+    <string name="pref_discover_swipe_deck">Tinder-style swipe deck</string>
+    <string name="pref_discover_swipe_deck_summary">Discover titles by swiping through a card deck</string>
+    <string name="pref_discover_swipe_both_sides">Both swipe sides dismiss</string>
+    <string name="pref_discover_swipe_both_sides_summary">Swiping left or right saves or dismisses; when disabled only swiping right saves</string>
+    <string name="pref_discover_shorts">Shorts feed (experimental)</string>
+    <string name="pref_discover_shorts_summary">Show the experimental Shorts section in Discover</string>
+    <string name="pref_discover_backup">Include Discover caches in backups</string>
+    <string name="pref_discover_backup_summary">Back up and restore the tracker feed caches used by Discover</string>
+
+    <!-- Player A-B loop -->
+    <string name="player_sheet_ab_loop_title">A-B Loop</string>
+    <string name="player_sheet_ab_loop_set_a">Set start (A)</string>
+    <string name="player_sheet_ab_loop_set_b">Set end (B)</string>
+    <string name="player_sheet_ab_loop_active">Looping A–B</string>
+    <string name="player_sheet_ab_loop_clear">Clear loop</string>
 </resources>

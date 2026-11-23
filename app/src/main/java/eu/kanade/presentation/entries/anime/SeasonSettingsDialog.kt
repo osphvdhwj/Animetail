@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime
+﻿package eu.kanade.presentation.entries.anime
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -39,6 +39,12 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Composable
+/**
+ * UI presentation composable for SeasonSettingsDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun SeasonSettingsDialog(
     onDismissRequest: () -> Unit,
     anime: Anime? = null,

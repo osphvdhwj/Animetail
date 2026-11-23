@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.about
+﻿package eu.kanade.presentation.more.settings.screen.about
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -18,6 +18,12 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Screen-level composable hierarchy for OpenSourceLicensesScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class OpenSourceLicensesScreen : Screen() {
     @Composable
     override fun Content() {

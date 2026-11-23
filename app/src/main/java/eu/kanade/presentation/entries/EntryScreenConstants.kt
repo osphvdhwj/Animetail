@@ -1,5 +1,8 @@
-package eu.kanade.presentation.entries
+﻿package eu.kanade.presentation.entries
 
+/**
+ * Core component for EntryScreenConstants within the Animetail presentation and UI layer.
+ */
 enum class DownloadAction {
     NEXT_1_ITEM,
     NEXT_5_ITEMS,

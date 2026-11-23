@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.manga.notes
+﻿package eu.kanade.tachiyomi.ui.entries.manga.notes
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -24,6 +24,12 @@ import kotlinx.coroutines.flow.update
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.domain.entries.manga.interactor.UpdateMangaNotes
 
+/**
+ * Screen-level composable hierarchy for MangaNotesScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class MangaNotesScreen(
     private val mangaId: Long,
     private val mangaTitle: String,

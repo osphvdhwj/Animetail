@@ -1,11 +1,13 @@
-package eu.kanade.presentation.player.components
+﻿package eu.kanade.presentation.player.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import eu.kanade.presentation.design.DS
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +35,12 @@ import androidx.compose.ui.unit.sp
 import eu.kanade.tachiyomi.animesource.model.TimeStamp
 
 @Composable
+/**
+ * UI presentation composable for AniSkipOverlayPill.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AniSkipOverlayPill(
     visible: Boolean,
     timeStamp: TimeStamp?,
@@ -47,9 +55,11 @@ fun AniSkipOverlayPill(
     ) {
         Surface(
             modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
+                .clip(DS.radiusPill)
                 .clickable(onClick = onSkipClick),
-            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.92f),
+            shape = DS.radiusPill,
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.90f),
+            border = BorderStroke(DS.strokeHairline, MaterialTheme.colorScheme.primary.copy(alpha = 0.40f)),
             tonalElevation = 6.dp,
             shadowElevation = 8.dp,
         ) {

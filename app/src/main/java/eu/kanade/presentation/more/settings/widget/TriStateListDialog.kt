@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.widget
+﻿package eu.kanade.presentation.more.settings.widget
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
@@ -41,6 +41,11 @@ private enum class State {
 @SuppressLint("ComposeParameterOrder")
 @Composable
 @Suppress("LongMethod", "CyclomaticComplexMethod")
+/**
+ * Modal dialog / bottom sheet surface for TriStateListDialog.
+ *
+ * Encapsulates modal options, user selections, and dismissible lifecycle state.
+ */
 fun <T> TriStateListDialog(
     title: String,
     message: String? = null,

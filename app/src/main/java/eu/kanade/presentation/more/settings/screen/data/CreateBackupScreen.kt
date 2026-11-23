@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.data
+﻿package eu.kanade.presentation.more.settings.screen.data
 
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -39,6 +39,12 @@ import tachiyomi.presentation.core.components.SectionCard
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Screen-level composable hierarchy for CreateBackupScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class CreateBackupScreen : Screen() {
 
     @Composable

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.source.browse
+﻿package eu.kanade.tachiyomi.ui.browse.anime.source.browse
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +41,12 @@ import tachiyomi.presentation.core.components.SettingsItemsPaddings
 import tachiyomi.presentation.core.util.runOnEnterKeyPressed
 
 @Composable
+/**
+ * UI presentation composable for AutoCompleteItem.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AutoCompleteItem(
     name: String,
     state: ImmutableList<String>,

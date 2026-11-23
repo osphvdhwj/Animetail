@@ -1,6 +1,8 @@
-package eu.kanade.presentation.reader.appbars
+﻿package eu.kanade.presentation.reader.appbars
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import eu.kanade.presentation.design.DS
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +28,9 @@ import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
 @Suppress("LongMethod")
+/**
+ * Core component for BottomReaderBar within the Animetail presentation and UI layer.
+ */
 fun BottomReaderBar(
     // SY -->
     enabledButtons: Set<String>,
@@ -51,6 +56,10 @@ fun BottomReaderBar(
         modifier = Modifier
             .fillMaxWidth()
             .background(backgroundColor)
+            .border(
+                width = DS.strokeHairline,
+                color = DS.Glass.borderColor(0.30f),
+            )
             .padding(8.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,

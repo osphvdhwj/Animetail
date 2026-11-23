@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen
+﻿package eu.kanade.presentation.more.settings.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -54,6 +54,12 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 import cafe.adriel.voyager.core.screen.Screen as VoyagerScreen
 
+/**
+ * Screen-level composable hierarchy for SettingsMainScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object SettingsMainScreen : Screen() {
     @Composable
     override fun Content() {
@@ -212,6 +218,12 @@ object SettingsMainScreen : Screen() {
             subtitleRes = MR.strings.pref_tracking_summary,
             icon = Icons.Outlined.Sync,
             screen = SettingsTrackingScreen,
+        ),
+        Item(
+            titleRes = TLMR.strings.pref_category_discover,
+            subtitleRes = TLMR.strings.pref_discover_summary,
+            icon = Icons.Outlined.Explore,
+            screen = SettingsDiscoverScreen,
         ),
         // AM (CONNECTIONS) -->
         Item(

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.cast
+﻿package eu.kanade.tachiyomi.ui.player.cast
 
 import android.content.Context
 import android.os.Bundle
@@ -10,6 +10,9 @@ import androidx.mediarouter.app.MediaRouteControllerDialogFragment
 import androidx.mediarouter.app.MediaRouteDialogFactory
 import eu.kanade.tachiyomi.R
 
+/**
+ * Core component for CustomCastThemeFactory within the Animetail presentation and UI layer.
+ */
 class CustomCastProvider(context: Context) : MediaRouteActionProvider(context) {
     init {
         dialogFactory = CustomCastThemeFactory()

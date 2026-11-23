@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.source
+﻿package eu.kanade.tachiyomi.ui.browse.anime.source
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -43,6 +43,12 @@ import kotlin.time.Duration.Companion.seconds
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+/**
+ * State and business logic coordinator for AnimeSourcesViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class AnimeSourcesViewModel(
     private val preferences: BasePreferences,
     private val sourcePreferences: SourcePreferences,

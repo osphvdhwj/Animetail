@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.more
+﻿package eu.kanade.tachiyomi.ui.more
 
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
@@ -38,6 +38,7 @@ import eu.kanade.tachiyomi.ui.entries.anime.AnimeScreen
 import eu.kanade.tachiyomi.ui.entries.manga.MangaScreen
 import eu.kanade.tachiyomi.ui.main.MainActivity
 import eu.kanade.tachiyomi.ui.player.PlayerActivity
+import eu.kanade.tachiyomi.ui.more.LocalVideoScreen
 import eu.kanade.tachiyomi.ui.setting.PlayerSettingsScreen
 import eu.kanade.tachiyomi.ui.setting.SettingsScreen
 import eu.kanade.tachiyomi.ui.stats.StatsTab
@@ -54,6 +55,11 @@ import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Navigation tab descriptor for MoreTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 data object MoreTab : Tab {
 
     override val options: TabOptions
@@ -80,6 +86,7 @@ data object MoreTab : Tab {
         val downloadQueueState by viewModel.downloadQueueState.collectAsState()
         val recentHistory by viewModel.recentHistory.collectAsState()
         val navStyle = currentNavigationStyle()
+
         MoreScreen(
             downloadQueueStateProvider = { downloadQueueState },
             downloadedOnly = viewModel.downloadedOnly,
@@ -103,9 +110,9 @@ data object MoreTab : Tab {
                         },
                         onResumeClick = {
                             if (entry.isAnime) {
-                                context.startActivity(PlayerActivity.newIntent(context, entry.id, entry.id))
+                                context.startActivity(PlayerActivity.newIntent(context, entry.id, null))
                             } else {
-                                context.startActivity(eu.kanade.tachiyomi.ui.reader.ReaderActivity.newIntent(context, entry.id, entry.id))
+                                context.startActivity(eu.kanade.tachiyomi.ui.reader.ReaderActivity.newIntent(context, entry.id, null))
                             }
                         },
                     )
@@ -116,6 +123,7 @@ data object MoreTab : Tab {
             onClickDownloadQueue = { navigator.push(DownloadsTab) },
             onClickCategories = { navigator.push(CategoriesTab) },
             onClickStats = { navigator.push(StatsTab) },
+            onClickPlayLocalVideo = { navigator.push(LocalVideoScreen) },
             onClickNetworkStream = { navigator.push(NetworkStreamScreen) },
             onClickStorage = { navigator.push(StorageTab) },
             onClickDataAndStorage = { navigator.push(SettingsScreen(SettingsScreen.Destination.DataAndStorage)) },
@@ -161,8 +169,8 @@ class MoreViewModel(
     )
     val downloadQueueState: StateFlow<DownloadQueueState> = _downloadQueueState.asStateFlow()
 
-    private val _recentHistory = MutableStateFlow<List<eu.kanade.presentation.history.components.RecentHistoryEntry>>(emptyList())
-    val recentHistory: StateFlow<List<eu.kanade.presentation.history.components.RecentHistoryEntry>> = _recentHistory.asStateFlow()
+    private val _recentHistory = MutableStateFlow<List<eu.kanade.presentation.more.RecentHistoryEntry>>(emptyList())
+    val recentHistory: StateFlow<List<eu.kanade.presentation.more.RecentHistoryEntry>> = _recentHistory.asStateFlow()
 
     init {
         // Load YouTube-style recent history shelf
@@ -173,7 +181,7 @@ class MoreViewModel(
                     getMangaHistory.subscribe(""),
                 ) { animeList: List<AnimeHistoryWithRelations>, mangaList: List<MangaHistoryWithRelations> ->
                     val animeEntries = animeList.take(8).map { anime ->
-                        eu.kanade.presentation.history.components.RecentHistoryEntry(
+                        eu.kanade.presentation.more.RecentHistoryEntry(
                             id = anime.animeId,
                             title = anime.title,
                             subtitle = "Ep. ${anime.episodeNumber.toInt()}",
@@ -185,7 +193,7 @@ class MoreViewModel(
                         )
                     }
                     val mangaEntries = mangaList.take(8).map { manga ->
-                        eu.kanade.presentation.history.components.RecentHistoryEntry(
+                        eu.kanade.presentation.more.RecentHistoryEntry(
                             id = manga.mangaId,
                             title = manga.title,
                             subtitle = "Ch. ${manga.chapterNumber.toInt()}",

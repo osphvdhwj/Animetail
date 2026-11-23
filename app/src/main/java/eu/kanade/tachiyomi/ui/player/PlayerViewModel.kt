@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -158,6 +158,12 @@ private const val NETWORK_STREAM_ANIME_ID = Long.MIN_VALUE + 101
 private const val NETWORK_STREAM_EPISODE_ID = Long.MIN_VALUE + 102
 
 @AssistedInject
+/**
+ * State and business logic coordinator for PlayerViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class PlayerViewModel(
     @Assisted private val savedState: SavedStateHandle,
     private val context: Context,
@@ -363,6 +369,9 @@ class PlayerViewModel(
     private val _remainingTime = MutableStateFlow(0)
     val remainingTime = _remainingTime.asStateFlow()
 
+    private val _abLoopState = MutableStateFlow(ABLoopState())
+    val abLoopState = _abLoopState.asStateFlow()
+
     private val _customButtons = MutableStateFlow<CustomButtonFetchState>(CustomButtonFetchState.Loading)
     val customButtons = _customButtons.asStateFlow()
 
@@ -399,6 +408,39 @@ class PlayerViewModel(
             pause()
             withUIContext { context.toast(AYMR.strings.toast_sleep_timer_ended) }
         }
+    }
+
+    /**
+     * Cycles the MPV A-B loop: first call marks the loop start (A) at the current
+     * position, second call marks the end (B) and starts looping, third call clears it.
+     */
+    fun toggleABLoop() {
+        val current = _abLoopState.value
+        val position = runCatching { mpv.getPropertyDouble("time-pos") }.getOrNull() ?: return
+        when {
+            current.pointA == null -> {
+                runCatching { mpv.setPropertyDouble("ab-loop-a", position) }
+                    .onSuccess { _abLoopState.value = ABLoopState(pointA = position) }
+            }
+            current.pointB == null -> {
+                if (position <= current.pointA) return
+                runCatching {
+                    mpv.setPropertyDouble("ab-loop-b", position)
+                    // Loop indefinitely once both points are set
+                    mpv.setPropertyString("ab-loop-count", "inf")
+                }.onSuccess { _abLoopState.value = current.copy(pointB = position) }
+            }
+            else -> clearABLoop()
+        }
+    }
+
+    fun clearABLoop() {
+        runCatching {
+            mpv.setPropertyString("ab-loop-a", "no")
+            mpv.setPropertyString("ab-loop-b", "no")
+            mpv.setPropertyString("ab-loop-count", "0")
+        }
+        _abLoopState.value = ABLoopState()
     }
 
     fun isEpisodeOnline(): Boolean? {
@@ -1430,6 +1472,7 @@ class PlayerViewModel(
     suspend fun prepareNetworkStream(request: NetworkStreamRequest) {
         cancelHosterVideoLinksJob()
         isNetworkStreamSession = true
+        clearABLoop()
         isLoading.update { false }
         updateIsLoadingEpisode(false)
         updateIsLoadingHosters(false)
@@ -1466,8 +1509,8 @@ class PlayerViewModel(
         _currentAnime.update { anime }
         _currentEpisode.update { episode }
         _currentPlaylist.update { listOf(episode) }
-        _currentSource.update { NetworkStreamSource }
-        _isEpisodeOnline.update { true }
+        val isOnline = request.url.startsWith("http://", ignoreCase = true) || request.url.startsWith("https://", ignoreCase = true)
+        _isEpisodeOnline.update { isOnline }
         updateHasNextEpisode(false)
         updateHasPreviousEpisode(false)
 
@@ -1822,6 +1865,7 @@ class PlayerViewModel(
 
         val chosenEpisode = currentPlaylist.value.firstOrNull { ep -> ep.id == episodeId } ?: return null
 
+        clearABLoop()
         _currentEpisode.update { _ -> chosenEpisode }
         updateEpisode(chosenEpisode)
 
@@ -2247,26 +2291,25 @@ class PlayerViewModel(
      */
     suspend fun aniSkipResponse(playerDuration: Int?): List<TimeStamp>? {
         val animeId = currentAnime.value?.id ?: return null
-        var malId: Long?
         val episodeNumber = currentEpisode.value?.episode_number?.toInt() ?: return null
-        if (getTracks.await(animeId).isEmpty()) {
+        val tracks = getTracks.await(animeId)
+        if (tracks.isEmpty()) {
             logcat { "AniSkip: No tracks found for anime $animeId" }
             return null
         }
+        val duration = playerDuration ?: return null
 
-        getTracks.await(animeId).map { track ->
+        return tracks.firstNotNullOfOrNull { track ->
             val tracker = trackerManager.get(track.trackerId)
-            malId = when (tracker) {
+            val malId = when (tracker) {
                 is MyAnimeList -> track.remoteId
                 is Anilist -> AniSkipApi().getMalIdFromAL(track.remoteId)
                 else -> null
             }
-            val duration = playerDuration ?: return null
-            return malId?.let {
+            malId?.let {
                 AniSkipApi().getResult(it.toInt(), episodeNumber, duration.toLong())
             }
         }
-        return null
     }
 
     val introSkipEnabled = playerPreferences.enableSkipIntro().get()
@@ -2397,3 +2440,12 @@ fun CustomButton.executeLongPress(mpv: MPV) {
 fun Float.normalize(inMin: Float, inMax: Float, outMin: Float, outMax: Float): Float {
     return (this - inMin) * (outMax - outMin) / (inMax - inMin) + outMin
 }
+
+/**
+ * MPV A-B loop state. [pointA] is the loop start in seconds, [pointB] the loop end;
+ * looping is active only when both are set. Positions are null when not yet marked.
+ */
+data class ABLoopState(
+    val pointA: Double? = null,
+    val pointB: Double? = null,
+)

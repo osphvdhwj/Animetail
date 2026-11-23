@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
+﻿package eu.kanade.tachiyomi.ui.reader.viewer.webtoon
 
 import android.graphics.PointF
 import android.view.KeyEvent
@@ -28,6 +28,11 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.time.Duration
 
+/**
+ * Media playback / reader viewer engine component for WebtoonViewer.
+ *
+ * Coordinates decoding, caching, gesture dispatch, and frame rendering.
+ */
 class WebtoonViewer(val activity: ReaderActivity, val isContinuous: Boolean = true) : Viewer {
     val graph by lazy { activity.appGraph }
     val downloadManager by lazy { graph.mangaDownloadManager }

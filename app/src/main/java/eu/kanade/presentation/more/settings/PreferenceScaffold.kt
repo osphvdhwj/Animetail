@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings
+﻿package eu.kanade.presentation.more.settings
 
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
@@ -8,6 +8,12 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for PreferenceScaffold.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun PreferenceScaffold(
     titleRes: StringResource,
     actions: @Composable RowScope.() -> Unit = {},

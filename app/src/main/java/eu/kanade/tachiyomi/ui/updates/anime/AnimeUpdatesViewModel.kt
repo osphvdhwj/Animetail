@@ -1,9 +1,10 @@
-package eu.kanade.tachiyomi.ui.updates.anime
+﻿package eu.kanade.tachiyomi.ui.updates.anime
 
 import android.app.Application
 import android.content.Context
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.util.fastFilter
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -33,7 +34,9 @@ import kotlinx.coroutines.flow.WhileSubscribed
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -43,11 +46,13 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.minus
 import logcat.LogPriority
+import tachiyomi.core.common.preference.TriState
 import tachiyomi.core.common.util.lang.launchIO
 import tachiyomi.core.common.util.lang.launchNonCancellable
 import tachiyomi.core.common.util.system.logcat
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.entries.anime.interactor.GetAnime
+import tachiyomi.domain.entries.applyFilter
 import tachiyomi.domain.items.episode.interactor.GetEpisode
 import tachiyomi.domain.items.episode.interactor.UpdateEpisode
 import tachiyomi.domain.items.episode.model.EpisodeUpdate
@@ -55,12 +60,19 @@ import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.anime.service.AnimeSourceManager
 import tachiyomi.domain.updates.anime.interactor.GetAnimeUpdates
 import tachiyomi.domain.updates.anime.model.AnimeUpdatesWithRelations
+import tachiyomi.domain.updates.service.UpdatesPreferences
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+/**
+ * State and business logic coordinator for AnimeUpdatesViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class AnimeUpdatesViewModel(
     private val context: Context,
     private val sourceManager: AnimeSourceManager,
@@ -72,6 +84,7 @@ class AnimeUpdatesViewModel(
     private val getAnime: GetAnime,
     private val getEpisode: GetEpisode,
     private val libraryPreferences: LibraryPreferences,
+    private val updatesPreferences: UpdatesPreferences,
     downloadPreferences: DownloadPreferences,
 ) : ViewModel() {
 
@@ -114,25 +127,62 @@ class AnimeUpdatesViewModel(
     }
 
     private val updateItems = combine(
-        getUpdates.subscribe(
-            Clock.System.now().minus(3, DateTimeUnit.MONTH, TimeZone.currentSystemDefault()),
-        ).distinctUntilChanged(),
+        // needed for SQL filters (unseen, started, bookmarked, scanlators, categories)
+        getUpdatesItemPreferenceFlow()
+            .distinctUntilChanged()
+            .flatMapLatest {
+                getUpdates.subscribe(
+                    Clock.System.now().minus(3, DateTimeUnit.MONTH, TimeZone.currentSystemDefault()),
+                    unread = it.filterUnseen.toBooleanOrNull(),
+                    started = it.filterStarted.toBooleanOrNull(),
+                    bookmarked = it.filterBookmarked.toBooleanOrNull(),
+                    hideExcludedScanlators = it.filterExcludedScanlators,
+                    includedCategories = it.filterIncludedCategories,
+                    excludedCategories = it.filterExcludedCategories,
+                ).distinctUntilChanged()
+            },
         downloadCache.changes,
         downloadManager.queueState,
-    ) { updates, _, _ ->
-        updates.toUpdateItems()
+        // needed for Kotlin filters (downloaded)
+        getUpdatesItemPreferenceFlow().distinctUntilChanged { old, new ->
+            old.filterDownloaded == new.filterDownloaded
+        },
+    ) { updates, _, _, itemPreferences ->
+        updates
+            .toUpdateItems()
+            .applyFilters(itemPreferences)
     }
         .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), null)
+
+    private val hasActiveFilters = getUpdatesItemPreferenceFlow()
+        .map { prefs ->
+            listOf(
+                prefs.filterUnseen,
+                prefs.filterDownloaded,
+                prefs.filterStarted,
+                prefs.filterBookmarked,
+            )
+                .any { it != TriState.DISABLED } ||
+                prefs.filterExcludedScanlators ||
+                listOf(
+                    prefs.filterIncludedCategories,
+                    prefs.filterExcludedCategories,
+                )
+                    .any { it.isNotEmpty() }
+        }
+        .distinctUntilChanged()
 
     val state: StateFlow<State> = combine(
         updateItems,
         selectedEpisodeIds,
         downloadStates,
         dialog,
-    ) { items, selectedIds, downloads, dialog ->
+        hasActiveFilters,
+    ) { items, selectedIds, downloads, dialog, hasActiveFilters ->
         State(
             isLoading = items == null,
+            hasActiveFilters = hasActiveFilters,
             items = items.orEmpty().map { item ->
                 val download = downloads[item.update.episodeId]
                 item.copy(
@@ -249,6 +299,15 @@ class AnimeUpdatesViewModel(
             )
         }
         toggleAllSelection(false)
+    }
+
+    /**
+     * Marks every episode currently in the Updates list as seen in one batch.
+     */
+    fun markAllUpdatesSeen() {
+        val items = state.value.items
+        if (items.isEmpty()) return
+        markUpdatesSeen(items, seen = true)
     }
 
     /**
@@ -410,15 +469,78 @@ class AnimeUpdatesViewModel(
         this.dialog.update { dialog }
     }
 
+    fun showFilterDialog() {
+        dialog.update { Dialog.FilterSheet }
+    }
+
     fun resetNewUpdatesCount() {
         libraryPreferences.newAnimeUpdatesCount.set(0)
     }
 
     private data class DownloadProgress(val status: AnimeDownload.State, val progress: Int)
 
+    private fun List<AnimeUpdatesItem>.applyFilters(
+        preferences: ItemPreferences,
+    ): List<AnimeUpdatesItem> {
+        val filterDownloaded = preferences.filterDownloaded
+
+        val filterFnDownloaded: (AnimeUpdatesItem) -> Boolean = {
+            applyFilter(filterDownloaded) {
+                it.downloadStateProvider() == AnimeDownload.State.DOWNLOADED
+            }
+        }
+
+        return fastFilter {
+            filterFnDownloaded(it)
+        }
+    }
+
+    private fun getUpdatesItemPreferenceFlow(): Flow<ItemPreferences> {
+        return combine(
+            updatesPreferences.filterDownloaded.changes(),
+            updatesPreferences.filterUnread.changes(),
+            updatesPreferences.filterStarted.changes(),
+            updatesPreferences.filterBookmarked.changes(),
+            updatesPreferences.filterExcludedScanlators.changes(),
+            updatesPreferences.filterIncludedCategories.changes(),
+            updatesPreferences.filterExcludedCategories.changes(),
+        ) {
+            @Suppress("UNCHECKED_CAST")
+            ItemPreferences(
+                filterDownloaded = it[0] as TriState,
+                filterUnseen = it[1] as TriState,
+                filterStarted = it[2] as TriState,
+                filterBookmarked = it[3] as TriState,
+                filterExcludedScanlators = it[4] as Boolean,
+                filterIncludedCategories = it[5] as List<Long>,
+                filterExcludedCategories = it[6] as List<Long>,
+            )
+        }
+    }
+
+    private fun TriState.toBooleanOrNull(): Boolean? {
+        return when (this) {
+            TriState.DISABLED -> null
+            TriState.ENABLED_IS -> true
+            TriState.ENABLED_NOT -> false
+        }
+    }
+
+    @Immutable
+    private data class ItemPreferences(
+        val filterDownloaded: TriState,
+        val filterUnseen: TriState,
+        val filterStarted: TriState,
+        val filterBookmarked: TriState,
+        val filterExcludedScanlators: Boolean,
+        val filterIncludedCategories: List<Long>,
+        val filterExcludedCategories: List<Long>,
+    )
+
     @Immutable
     data class State(
         val isLoading: Boolean = true,
+        val hasActiveFilters: Boolean = false,
         val items: List<AnimeUpdatesItem> = listOf(),
         val dialog: Dialog? = null,
     ) {
@@ -443,6 +565,7 @@ class AnimeUpdatesViewModel(
 
     sealed interface Dialog {
         data class DeleteConfirmation(val toDelete: List<AnimeUpdatesItem>) : Dialog
+        data object FilterSheet : Dialog
         data class ShowQualities(
             val episodeTitle: String,
             val episodeId: Long,

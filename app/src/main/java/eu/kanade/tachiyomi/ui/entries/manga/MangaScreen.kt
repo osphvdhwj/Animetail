@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.entries.manga
+﻿package eu.kanade.tachiyomi.ui.entries.manga
 
 import android.content.Context
 import androidx.activity.compose.BackHandler
@@ -72,6 +72,12 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * Screen-level composable hierarchy for MangaScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class MangaScreen(
     private val mangaId: Long,
     val fromSource: Boolean = false,

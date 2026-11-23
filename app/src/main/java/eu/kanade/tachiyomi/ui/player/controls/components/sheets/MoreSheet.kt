@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import eu.kanade.presentation.player.components.PlayerSheet
+import eu.kanade.tachiyomi.ui.player.ABLoopState
 import eu.kanade.tachiyomi.ui.player.Decoder
 import eu.kanade.tachiyomi.ui.player.execute
 import eu.kanade.tachiyomi.ui.player.executeLongPress
@@ -75,6 +76,7 @@ import kotlinx.collections.immutable.ImmutableList
 import tachiyomi.domain.custombuttons.model.CustomButton
 import tachiyomi.i18n.MR
 import tachiyomi.i18n.aniyomi.AYMR
+import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
@@ -82,12 +84,21 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Composable
+/**
+ * UI presentation composable for MoreSheet.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun MoreSheet(
     mpv: MPV,
     selectedDecoder: Decoder,
     onSelectDecoder: (Decoder) -> Unit,
     remainingTime: Int,
     onStartTimer: (Int) -> Unit,
+    abLoopState: ABLoopState,
+    onToggleABLoop: () -> Unit,
+    onClearABLoop: () -> Unit,
     onDismissRequest: () -> Unit,
     onEnterFiltersPanel: () -> Unit,
     customButtons: ImmutableList<CustomButton>,
@@ -204,6 +215,38 @@ fun MoreSheet(
                         },
                         selected = statisticsPage == page,
                     )
+                }
+            }
+
+            Text(text = stringResource(TLMR.strings.player_sheet_ab_loop_title))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
+            ) {
+                item {
+                    FilterChip(
+                        selected = abLoopState.pointB != null,
+                        onClick = onToggleABLoop,
+                        label = {
+                            Text(
+                                text = stringResource(
+                                    when {
+                                        abLoopState.pointB != null -> TLMR.strings.player_sheet_ab_loop_active
+                                        abLoopState.pointA != null -> TLMR.strings.player_sheet_ab_loop_set_b
+                                        else -> TLMR.strings.player_sheet_ab_loop_set_a
+                                    },
+                                ),
+                            )
+                        },
+                    )
+                }
+                if (abLoopState.pointA != null || abLoopState.pointB != null) {
+                    item {
+                        FilterChip(
+                            selected = false,
+                            onClick = onClearABLoop,
+                            label = { Text(text = stringResource(TLMR.strings.player_sheet_ab_loop_clear)) },
+                        )
+                    }
                 }
             }
 

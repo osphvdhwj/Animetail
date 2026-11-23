@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.browse
+﻿package eu.kanade.presentation.more.settings.screen.browse
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,6 +19,12 @@ import eu.kanade.tachiyomi.util.system.toast
 import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * Screen-level composable hierarchy for ExtensionStoresScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class ExtensionStoresScreen(
     val isManga: Boolean,
     private val url: String? = null,

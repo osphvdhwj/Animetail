@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime.components
+﻿package eu.kanade.presentation.entries.anime.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -23,6 +23,11 @@ import androidx.compose.ui.unit.dp
 import tachiyomi.presentation.core.components.material.padding
 
 @Composable
+/**
+ * Presentation card/item component for OutlineButtonWithArrow.
+ *
+ * Handles compact data display, visual badges, and click/long-press actions.
+ */
 fun OutlinedButtonWithArrow(
     text: String,
     onClick: () -> Unit,

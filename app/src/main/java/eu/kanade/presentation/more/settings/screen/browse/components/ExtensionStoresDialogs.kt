@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.browse.components
+﻿package eu.kanade.presentation.more.settings.screen.browse.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +24,9 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Core component for ExtensionStoresDialogs within the Animetail presentation and UI layer.
+ */
 fun ExtensionStoreCreateDialog(
     onDismissRequest: () -> Unit,
     onCreate: (String) -> Unit,

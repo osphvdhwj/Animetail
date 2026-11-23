@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.extension.details
+﻿package eu.kanade.tachiyomi.ui.browse.anime.extension.details
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
@@ -43,6 +43,12 @@ import tachiyomi.core.common.util.system.logcat
 import kotlin.time.Duration.Companion.seconds
 
 @AssistedInject
+/**
+ * State and business logic coordinator for AnimeExtensionDetailsViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class AnimeExtensionDetailsViewModel(
     @Assisted private val pkgName: String,
     private val context: Context,

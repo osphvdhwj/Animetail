@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse
+﻿package eu.kanade.presentation.browse
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +28,9 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Core component for GlobalSearchResultItems within the Animetail presentation and UI layer.
+ */
 fun GlobalSearchResultItem(
     title: String,
     // SY -->

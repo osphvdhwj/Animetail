@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.extension.details
+﻿package eu.kanade.tachiyomi.ui.browse.manga.extension.details
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -13,6 +13,12 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.screens.EmptyScreen
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * Screen-level composable hierarchy for MangaExtensionDetailsScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 data class MangaExtensionDetailsScreen(
     private val pkgName: String,
 ) : Screen() {

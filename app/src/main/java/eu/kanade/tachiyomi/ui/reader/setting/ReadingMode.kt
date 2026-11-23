@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader.setting
+﻿package eu.kanade.tachiyomi.ui.reader.setting
 
 import androidx.annotation.DrawableRes
 import dev.icerock.moko.resources.StringResource
@@ -14,6 +14,9 @@ import eu.kanade.tachiyomi.ui.reader.viewer.webtoon.WebtoonViewer
 import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 
+/**
+ * Core component for ReadingMode within the Animetail presentation and UI layer.
+ */
 enum class ReadingMode(
     val stringRes: StringResource,
     @DrawableRes val iconRes: Int,

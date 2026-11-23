@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.controls.components.sheets
+﻿package eu.kanade.tachiyomi.ui.player.controls.components.sheets
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -48,6 +48,12 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * UI presentation composable for QualitySheet.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 sealed class HosterState(open val name: String) {
     data class Idle(override val name: String) : HosterState(name)
     data class Loading(override val name: String) : HosterState(name)

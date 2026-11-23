@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.about
+﻿package eu.kanade.presentation.more.settings.screen.about
 
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
@@ -58,6 +58,12 @@ import tachiyomi.presentation.core.icons.Discord
 import tachiyomi.presentation.core.icons.Github
 import kotlin.time.Instant
 
+/**
+ * Screen-level composable hierarchy for AboutScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object AboutScreen : Screen() {
 
     @Composable

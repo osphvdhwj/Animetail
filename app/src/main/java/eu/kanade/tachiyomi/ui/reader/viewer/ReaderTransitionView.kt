@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader.viewer
+﻿package eu.kanade.tachiyomi.ui.reader.viewer
 
 import android.content.Context
 import android.util.AttributeSet
@@ -18,6 +18,9 @@ import eu.kanade.tachiyomi.ui.reader.model.ChapterTransition
 import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.source.local.entries.manga.isLocal
 
+/**
+ * Core component for ReaderTransitionView within the Animetail presentation and UI layer.
+ */
 class ReaderTransitionView @JvmOverloads constructor(context: Context, attrs: AttributeSet? = null) :
     AbstractComposeView(context, attrs) {
 

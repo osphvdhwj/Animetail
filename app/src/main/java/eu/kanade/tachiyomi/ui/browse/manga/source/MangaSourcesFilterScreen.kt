@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.source
+﻿package eu.kanade.tachiyomi.ui.browse.manga.source
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,6 +15,12 @@ import eu.kanade.tachiyomi.util.system.toast
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.screens.LoadingScreen
 
+/**
+ * Screen-level composable hierarchy for MangaSourcesFilterScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class MangaSourcesFilterScreen : Screen() {
 
     @Composable

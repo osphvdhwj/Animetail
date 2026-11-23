@@ -1,5 +1,6 @@
 package eu.kanade.presentation.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import eu.kanade.presentation.design.DS
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
@@ -51,10 +53,12 @@ fun MediaFormatBadge(
 ) {
     val badgeLabel = extraText ?: mediaType.getLabel().uppercase()
     Surface(
-        modifier = modifier.clip(RoundedCornerShape(8.dp)),
+        modifier = modifier.clip(DS.radiusSmall),
+        shape = DS.radiusSmall,
         color = mediaType.color.copy(alpha = 0.95f),
         contentColor = Color.White,
         shadowElevation = 2.dp,
+        border = BorderStroke(DS.strokeHairline, Color.White.copy(alpha = 0.25f)),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
@@ -90,9 +94,10 @@ fun RatingBadge(
 ) {
     Surface(
         modifier = modifier,
-        shape = RoundedCornerShape(6.dp),
+        shape = DS.radiusSmall,
         color = Color(0xCC1A1A1A), // Fondo oscuro semitransparente
         contentColor = Color.White,
+        border = BorderStroke(DS.strokeHairline, Color.White.copy(alpha = 0.20f)),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
@@ -126,7 +131,7 @@ fun MediaPosterCard(
     Column(
         modifier = modifier
             .width(110.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(DS.radiusCard)
             .clickable(onClick = onClick)
             .padding(bottom = 4.dp),
     ) {
@@ -134,8 +139,10 @@ fun MediaPosterCard(
             modifier = Modifier
                 .width(110.dp)
                 .height(160.dp)
-                .clip(RoundedCornerShape(12.dp)),
-            shadowElevation = 4.dp,
+                .clip(DS.radiusCard),
+            shape = DS.radiusCard,
+            shadowElevation = 2.dp,
+            border = BorderStroke(DS.strokeHairline, DS.Glass.borderColor(0.25f)),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 eu.kanade.presentation.entries.components.ItemCover.Book(
@@ -203,18 +210,19 @@ fun ContinueWatchingReadingCard(
         modifier = modifier
             .width(220.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
+        shape = DS.radiusCard,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(DS.strokeHairline, DS.Glass.borderColor(0.30f)),
     ) {
         Column {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(124.dp)
-                    .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp)),
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
             ) {
                 eu.kanade.presentation.entries.components.ItemCover.Book(
                     data = coverData ?: coverUrl,

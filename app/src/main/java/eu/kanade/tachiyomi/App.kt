@@ -392,6 +392,9 @@ class App : Application(), DefaultLifecycleObserver, SingletonImageLoader.Factor
         if (syncPreferences.isSyncEnabled() && syncTriggerOpt.syncOnAppStart) {
             SyncDataJob.startNow(this@App)
         }
+
+        // Keep the airing-episode check scheduled (worker no-ops when disabled)
+        eu.kanade.tachiyomi.data.airing.AiringNotificationJob.setupTask(this)
     }
 
     private fun setupInjekt(graph: AppGraph) {

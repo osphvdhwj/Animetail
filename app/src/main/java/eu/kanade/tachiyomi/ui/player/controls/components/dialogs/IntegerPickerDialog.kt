@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.controls.components.dialogs
+﻿package eu.kanade.tachiyomi.ui.player.controls.components.dialogs
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,6 +9,12 @@ import kotlinx.collections.immutable.toImmutableList
 import tachiyomi.presentation.core.components.WheelTextPicker
 
 @Composable
+/**
+ * UI presentation composable for IntegerPickerDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun IntegerPickerDialog(
     defaultValue: Int,
     minValue: Int,

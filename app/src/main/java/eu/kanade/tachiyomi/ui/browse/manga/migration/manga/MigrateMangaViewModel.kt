@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.migration.manga
+﻿package eu.kanade.tachiyomi.ui.browse.manga.migration.manga
 
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
@@ -33,6 +33,12 @@ import tachiyomi.domain.source.manga.service.MangaSourceManager
 import kotlin.time.Duration.Companion.seconds
 
 @AssistedInject
+/**
+ * State and business logic coordinator for MigrateMangaViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MigrateMangaViewModel(
     @Assisted private val sourceId: Long,
     private val sourceManager: MangaSourceManager,

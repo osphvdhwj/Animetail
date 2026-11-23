@@ -52,7 +52,7 @@ internal fun Uri.resolveUri(context: Context): String? {
 internal fun Uri.getFileName(context: Context): String? {
     return context.contentResolver.query(this, null, null, null, null)?.use { cursor ->
         val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-        cursor.moveToFirst()
+        if (nameIndex == -1 || !cursor.moveToFirst()) return null
         cursor.getString(nameIndex)
     }
 }

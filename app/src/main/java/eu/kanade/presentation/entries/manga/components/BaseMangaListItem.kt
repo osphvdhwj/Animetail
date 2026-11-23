@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.manga.components
+﻿package eu.kanade.presentation.entries.manga.components
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -19,6 +19,12 @@ import tachiyomi.domain.entries.manga.model.Manga
 import tachiyomi.presentation.core.components.material.padding
 
 @Composable
+/**
+ * UI presentation composable for BaseMangaListItem.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun BaseMangaListItem(
     manga: Manga,
     modifier: Modifier = Modifier,

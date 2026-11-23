@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <plurals name="updates_summary_episodes">
+        <item quantity="one">%1$d new episode</item>
+        <item quantity="other">%1$d new episodes</item>
+    </plurals>
+    <plurals name="updates_summary_chapters">
+        <item quantity="one">%1$d new chapter</item>
+        <item quantity="other">%1$d new chapters</item>
+    </plurals>
     <plurals name="eh_retry_toast">
         <item quantity="zero">Retrying 0 failed pages…</item>
         <item quantity="one">Retrying %1$d failed page…</item>

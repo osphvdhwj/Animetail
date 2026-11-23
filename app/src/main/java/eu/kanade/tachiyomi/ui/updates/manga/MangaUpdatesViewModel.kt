@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.updates.manga
+﻿package eu.kanade.tachiyomi.ui.updates.manga
 
 import android.content.Context
 import androidx.compose.material3.SnackbarHostState
@@ -66,6 +66,12 @@ import kotlin.time.Duration.Companion.seconds
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+/**
+ * State and business logic coordinator for MangaUpdatesViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MangaUpdatesViewModel(
     private val context: Context,
     private val sourceManager: MangaSourceManager,
@@ -298,6 +304,15 @@ class MangaUpdatesViewModel(
             )
         }
         toggleAllSelection(false)
+    }
+
+    /**
+     * Marks every chapter currently in the Updates list as read in one batch.
+     */
+    fun markAllUpdatesRead() {
+        val items = state.value.items
+        if (items.isEmpty()) return
+        markUpdatesRead(items, read = true)
     }
 
     /**

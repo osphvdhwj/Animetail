@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player.editor.codeeditor
+﻿package eu.kanade.presentation.more.settings.screen.player.editor.codeeditor
 
 import android.content.Context
 import androidx.compose.runtime.Immutable
@@ -22,6 +22,12 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.io.FileOutputStream
 
+/**
+ * State and business logic coordinator for CodeEditScreenModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class CodeEditScreenModel(
     private val context: Context,
     private val filePath: String,

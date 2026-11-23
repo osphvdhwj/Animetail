@@ -1,4 +1,4 @@
-package eu.kanade.presentation.components
+﻿package eu.kanade.presentation.components
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
@@ -12,6 +12,10 @@ import tachiyomi.presentation.core.components.material.ExtendedFloatingActionBut
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.shouldExpandFAB
 
+/**
+ * Composable UI component rendering the $name interface in Material 3.
+ * Handles UI rendering, user interaction callbacks, and state presentation.
+ */
 @Composable
 fun FloatingActionAddButton(
     lazyListState: LazyListState,

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.appearance
+﻿package eu.kanade.presentation.more.settings.screen.appearance
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
@@ -33,6 +33,12 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Screen-level composable hierarchy for AppLanguageScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class AppLanguageScreen : Screen() {
 
     @Composable

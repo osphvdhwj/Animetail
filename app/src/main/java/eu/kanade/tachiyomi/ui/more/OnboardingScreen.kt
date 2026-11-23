@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.more
+﻿package eu.kanade.tachiyomi.ui.more
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
@@ -16,6 +16,12 @@ import mihon.app.di.appGraph
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
 
+/**
+ * Screen-level composable hierarchy for OnboardingScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class OnboardingScreen : Screen() {
 
     @Composable

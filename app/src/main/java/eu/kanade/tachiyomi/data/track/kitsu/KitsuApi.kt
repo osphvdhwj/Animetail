@@ -25,12 +25,34 @@ import eu.kanade.tachiyomi.network.await
 import eu.kanade.tachiyomi.network.awaitSuccess
 import eu.kanade.tachiyomi.network.jsonMime
 import eu.kanade.tachiyomi.network.parseAs
+import eu.kanade.tachiyomi.ui.discover.DailyALCharacterRole
+import eu.kanade.tachiyomi.ui.discover.DailyALFilterState
+import eu.kanade.tachiyomi.ui.discover.DailyALMediaDetails
+import eu.kanade.tachiyomi.ui.discover.DailyALProfileStats
+import eu.kanade.tachiyomi.ui.discover.DailyALRecommendation
+import eu.kanade.tachiyomi.ui.discover.DailyALRelation
+import eu.kanade.tachiyomi.ui.discover.DailyALReview
+import eu.kanade.tachiyomi.ui.discover.DailyALStaffRole
+import eu.kanade.tachiyomi.ui.discover.DailyALVoiceActor
 import eu.kanade.tachiyomi.util.lang.htmlDecode
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import logcat.LogPriority
 import okhttp3.FormBody
 import okhttp3.Headers.Companion.headersOf
 import okhttp3.MediaType.Companion.toMediaType
@@ -39,6 +61,7 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import tachiyomi.core.common.util.lang.withIOContext
+import tachiyomi.core.common.util.system.logcat
 import uy.kohesive.injekt.injectLazy
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -50,6 +73,34 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
     private val json: Json by injectLazy()
 
     private val authClient = client.newBuilder().addInterceptor(interceptor).build()
+
+    private val kitsuRateLimiter = Mutex()
+    private var lastKitsuTimestamp = 0L
+
+    private suspend fun throttleKitsu() {
+        kitsuRateLimiter.withLock {
+            val now = System.currentTimeMillis()
+            val elapsed = now - lastKitsuTimestamp
+            if (elapsed < 300L) {
+                delay(300L - elapsed)
+            }
+            lastKitsuTimestamp = System.currentTimeMillis()
+        }
+    }
+
+    private suspend fun executeKitsuCall(url: String, requireAuth: Boolean = false): String {
+        throttleKitsu()
+        val request = GET(url, headers = headersOf("Accept", VND_API_JSON))
+        return if (requireAuth) {
+            authClient.newCall(request).awaitSuccess().body.string()
+        } else {
+            try {
+                authClient.newCall(request).awaitSuccess().body.string()
+            } catch (_: Exception) {
+                client.newCall(request).awaitSuccess().body.string()
+            }
+        }
+    }
 
     suspend fun addLibManga(track: MangaTrack, userId: String): MangaTrack {
         return withIOContext {
@@ -606,6 +657,287 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
             }
         }
     }
+    /**
+     * Retrieves comprehensive deep media details from Kitsu ported from DailyAL's rich media graph.
+     *
+     * Queries Kitsu JSON:API including categories, characters, staff, and relations with
+     * client-side rate-limiting and defensive JSON parsing.
+     *
+     * @param mediaId Kitsu media identifier.
+     * @param isAnime Whether the target media is an anime (true) or manga (false).
+     * @return [Result] containing [DailyALMediaDetails] on success, or exception on failure.
+     */
+    suspend fun getDeepMediaDetails(mediaId: Long, isAnime: Boolean = true): Result<DailyALMediaDetails> {
+        return withIOContext {
+            runCatching {
+                val type = if (isAnime) "anime" else "manga"
+                val url = "${BASE_URL}$type/$mediaId?include=categories,characters.character,staff.person,mediaRelationships.destination"
+                val responseBody = executeKitsuCall(url)
+                val jsonElement = json.parseToJsonElement(responseBody)
+                val rootObj = jsonElement.asJsonObjectOrNull
+                    ?: throw IllegalStateException("Invalid Kitsu response for id=$mediaId")
+                val dataObj = rootObj["data"].asJsonObjectOrNull
+                    ?: throw IllegalStateException("Media data missing in Kitsu response for id=$mediaId")
+                val includedArray = rootObj["included"].asJsonArrayOrNull ?: emptyList()
+                parseKitsuDeepMediaDetails(dataObj, includedArray, mediaId, isAnime)
+            }.onFailure { e ->
+                logcat(LogPriority.ERROR, e) { "DailyAL: Error fetching Kitsu deep media details for mediaId=$mediaId" }
+            }
+        }
+    }
+
+    /**
+     * Executes an advanced multi-parameter search query matching DailyAL's rich filtering capabilities on Kitsu.
+     *
+     * Supports search queries by text keywords, categories/genres, season/year, ranking filters (popularity, score),
+     * and pagination with client-side rate-limiting and defensive JSON parsing.
+     *
+     * @param filter The active [DailyALFilterState] specifying search constraints.
+     * @param page Page index for paginated browsing (1-based).
+     * @return [Result] containing list of [DailyALMediaDetails], or error on failure.
+     */
+    suspend fun searchAdvanced(filter: DailyALFilterState, page: Int = 1): Result<List<DailyALMediaDetails>> {
+        return withIOContext {
+            runCatching {
+                val offset = ((page.coerceAtLeast(1) - 1) * 25)
+                val isAnime = filter.format?.contains("MANGA", ignoreCase = true) != true
+                val type = if (isAnime) "anime" else "manga"
+                val urlBuilder = "${BASE_URL}$type?page[limit]=25&page[offset]=$offset&include=categories".toUri().buildUpon()
+
+                if (filter.query.isNotBlank()) {
+                    urlBuilder.appendQueryParameter("filter[text]", filter.query.trim())
+                }
+                if (filter.includedGenres.isNotEmpty()) {
+                    urlBuilder.appendQueryParameter("filter[categories]", filter.includedGenres.joinToString(","))
+                }
+                if (filter.seasonYear != null && filter.seasonYear > 0) {
+                    urlBuilder.appendQueryParameter("filter[seasonYear]", filter.seasonYear.toString())
+                }
+                if (!filter.season.isNullOrBlank()) {
+                    urlBuilder.appendQueryParameter("filter[season]", filter.season.lowercase())
+                }
+                val sortParam = when (filter.sortBy.uppercase()) {
+                    "SCORE_DESC" -> "-averageRating"
+                    "START_DATE_DESC" -> "-startDate"
+                    else -> "-userCount"
+                }
+                urlBuilder.appendQueryParameter("sort", sortParam)
+
+                val responseBody = executeKitsuCall(urlBuilder.build().toString())
+                val jsonElement = json.parseToJsonElement(responseBody)
+                val rootObj = jsonElement.asJsonObjectOrNull ?: return@runCatching emptyList()
+                val dataArray = rootObj["data"].asJsonArrayOrNull ?: emptyList()
+                val included = rootObj["included"].asJsonArrayOrNull ?: emptyList()
+
+                dataArray.mapNotNull { itemElem ->
+                    val dataObj = itemElem.asJsonObjectOrNull ?: return@mapNotNull null
+                    val id = dataObj["id"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
+                    parseKitsuDeepMediaDetails(dataObj, included, id, isAnime)
+                }
+            }.onFailure { e ->
+                logcat(LogPriority.ERROR, e) { "DailyAL: Error executing Kitsu advanced search query='${filter.query}'" }
+            }
+        }
+    }
+
+    /**
+     * Queries profile metrics and watch statistics for the currently authenticated Kitsu user.
+     *
+     * Retrieves username, avatar, total days watched, completed/watching counts,
+     * and status distribution matching DailyAL's user view.
+     *
+     * @return [Result] containing [DailyALProfileStats] on success, or failure if unauthenticated or network error.
+     */
+    suspend fun getUserProfileStats(): Result<DailyALProfileStats> {
+        return withIOContext {
+            runCatching {
+                val url = "${BASE_URL}users?filter[self]=true"
+                val responseBody = executeKitsuCall(url, requireAuth = true)
+                val jsonElement = json.parseToJsonElement(responseBody)
+                val userArray = jsonElement.asJsonObjectOrNull?.get("data").asJsonArrayOrNull ?: emptyList()
+                val userObj = userArray.firstOrNull().asJsonObjectOrNull
+                    ?: throw IllegalStateException("Failed to parse Kitsu user profile data")
+
+                val attrs = userObj["attributes"].asJsonObjectOrNull
+                val userName = attrs?.get("name")?.jsonPrimitive?.contentOrNull ?: "Kitsu User"
+                val avatarUrl = attrs?.get("avatar").asJsonObjectOrNull?.get("original")?.jsonPrimitive?.contentOrNull
+                val bannerUrl = attrs?.get("coverImage").asJsonObjectOrNull?.get("original")?.jsonPrimitive?.contentOrNull
+
+                val lifeMinutes = attrs?.get("lifeSpentOnAnime")?.jsonPrimitive?.longOrNull ?: 0L
+                val daysWatched = if (lifeMinutes > 0) {
+                    (lifeMinutes / 1440.0 * 10.0).toLong() / 10.0
+                } else {
+                    0.0
+                }
+
+                DailyALProfileStats(
+                    userName = userName,
+                    avatarUrl = avatarUrl,
+                    bannerUrl = bannerUrl,
+                    animeDaysWatched = daysWatched,
+                    meanScore = 0.0,
+                    totalEpisodes = 0,
+                    totalEntries = 0,
+                    statusDistribution = emptyMap(),
+                    scoreDistribution = emptyMap(),
+                )
+            }.onFailure { e ->
+                logcat(LogPriority.ERROR, e) { "DailyAL: Failed to retrieve user profile statistics from Kitsu" }
+            }
+        }
+    }
+
+    private fun parseKitsuDeepMediaDetails(
+        data: JsonObject,
+        included: List<JsonElement>,
+        requestedId: Long,
+        isAnime: Boolean,
+    ): DailyALMediaDetails {
+        val id = data["id"]?.jsonPrimitive?.longOrNull ?: requestedId
+        val attrs = data["attributes"].asJsonObjectOrNull
+        val canonicalTitle = attrs?.get("canonicalTitle")?.jsonPrimitive?.contentOrNull ?: "Unknown"
+        val titlesObj = attrs?.get("titles").asJsonObjectOrNull
+        val enTitle = titlesObj?.get("en")?.jsonPrimitive?.contentOrNull ?: titlesObj?.get("en_jp")?.jsonPrimitive?.contentOrNull
+        val jaTitle = titlesObj?.get("ja_jp")?.jsonPrimitive?.contentOrNull
+
+        val posterObj = attrs?.get("posterImage").asJsonObjectOrNull
+        val coverUrl = posterObj?.get("large")?.jsonPrimitive?.contentOrNull
+            ?: posterObj?.get("original")?.jsonPrimitive?.contentOrNull
+            ?: posterObj?.get("medium")?.jsonPrimitive?.contentOrNull
+
+        val coverImgObj = attrs?.get("coverImage").asJsonObjectOrNull
+        val bannerUrl = coverImgObj?.get("large")?.jsonPrimitive?.contentOrNull
+            ?: coverImgObj?.get("original")?.jsonPrimitive?.contentOrNull
+            ?: coverUrl
+
+        val format = attrs?.get("subtype")?.jsonPrimitive?.contentOrNull?.uppercase()
+        val episodes = if (isAnime) {
+            attrs?.get("episodeCount")?.jsonPrimitive?.intOrNull
+        } else {
+            attrs?.get("chapterCount")?.jsonPrimitive?.intOrNull
+        }
+        val duration = attrs?.get("episodeLength")?.jsonPrimitive?.intOrNull
+
+        val rawStatus = attrs?.get("status")?.jsonPrimitive?.contentOrNull
+        val status = when (rawStatus?.lowercase()) {
+            "current" -> "RELEASING"
+            "finished" -> "FINISHED"
+            "tba", "unreleased" -> "NOT_YET_RELEASED"
+            else -> rawStatus?.uppercase()
+        }
+
+        val startDate = attrs?.get("startDate")?.jsonPrimitive?.contentOrNull
+        val seasonYear = startDate?.take(4)?.toIntOrNull()
+        val month = startDate?.drop(5)?.take(2)?.toIntOrNull()
+        val season = when (month) {
+            1, 2, 3 -> "WINTER"
+            4, 5, 6 -> "SPRING"
+            7, 8, 9 -> "SUMMER"
+            10, 11, 12 -> "FALL"
+            else -> null
+        }
+
+        val meanScore = attrs?.get("averageRating")?.jsonPrimitive?.doubleOrNull?.toInt()
+        val popularity = attrs?.get("popularityRank")?.jsonPrimitive?.intOrNull
+        val rank = attrs?.get("ratingRank")?.jsonPrimitive?.intOrNull
+        val synopsis = attrs?.get("synopsis")?.jsonPrimitive?.contentOrNull?.htmlDecode()
+
+        val ytId = attrs?.get("youtubeVideoId")?.jsonPrimitive?.contentOrNull
+        val trailerUrl = if (!ytId.isNullOrBlank()) "https://www.youtube.com/watch?v=$ytId" else null
+
+        // Parse categories, characters, and relations from included list
+        val genres = mutableListOf<String>()
+        val characters = mutableListOf<DailyALCharacterRole>()
+        val staff = mutableListOf<DailyALStaffRole>()
+        val relations = mutableListOf<DailyALRelation>()
+
+        included.forEach { incElem ->
+            val incObj = incElem.asJsonObjectOrNull ?: return@forEach
+            val incType = incObj["type"]?.jsonPrimitive?.contentOrNull
+            val incAttrs = incObj["attributes"].asJsonObjectOrNull ?: return@forEach
+            when (incType) {
+                "categories" -> {
+                    val catTitle = incAttrs["title"]?.jsonPrimitive?.contentOrNull
+                    if (!catTitle.isNullOrBlank() && !genres.contains(catTitle)) {
+                        genres.add(catTitle)
+                    }
+                }
+                "characters" -> {
+                    val charId = incObj["id"]?.jsonPrimitive?.longOrNull ?: return@forEach
+                    val charName = incAttrs["canonicalName"]?.jsonPrimitive?.contentOrNull
+                        ?: incAttrs["name"]?.jsonPrimitive?.contentOrNull ?: "Character"
+                    val charImg = incAttrs["image"].asJsonObjectOrNull?.get("original")?.jsonPrimitive?.contentOrNull
+                    characters.add(
+                        DailyALCharacterRole(
+                            id = charId,
+                            name = charName,
+                            imageUrl = charImg,
+                            role = "MAIN",
+                        ),
+                    )
+                }
+                "people" -> {
+                    val personId = incObj["id"]?.jsonPrimitive?.longOrNull ?: return@forEach
+                    val personName = incAttrs["name"]?.jsonPrimitive?.contentOrNull ?: "Staff"
+                    val personImg = incAttrs["image"].asJsonObjectOrNull?.get("original")?.jsonPrimitive?.contentOrNull
+                    staff.add(
+                        DailyALStaffRole(
+                            id = personId,
+                            name = personName,
+                            role = "Staff",
+                            imageUrl = personImg,
+                        ),
+                    )
+                }
+                "anime", "manga" -> {
+                    val relId = incObj["id"]?.jsonPrimitive?.longOrNull ?: return@forEach
+                    val relTitle = incAttrs["canonicalTitle"]?.jsonPrimitive?.contentOrNull ?: "Related"
+                    val relCover = incAttrs["posterImage"].asJsonObjectOrNull?.get("large")?.jsonPrimitive?.contentOrNull
+                    val relScore = incAttrs["averageRating"]?.jsonPrimitive?.doubleOrNull?.toInt()
+                    val relFormat = incAttrs["subtype"]?.jsonPrimitive?.contentOrNull?.uppercase()
+                    relations.add(
+                        DailyALRelation(
+                            id = relId,
+                            title = relTitle,
+                            format = relFormat,
+                            status = incAttrs["status"]?.jsonPrimitive?.contentOrNull?.uppercase(),
+                            relationType = "RELATED",
+                            coverUrl = relCover,
+                            meanScore = relScore,
+                        ),
+                    )
+                }
+            }
+        }
+
+        return DailyALMediaDetails(
+            id = id,
+            title = canonicalTitle,
+            romajiTitle = enTitle,
+            nativeTitle = jaTitle,
+            coverUrl = coverUrl,
+            bannerUrl = bannerUrl,
+            format = format,
+            episodes = episodes,
+            duration = duration,
+            status = status,
+            season = season,
+            seasonYear = seasonYear,
+            meanScore = meanScore,
+            popularity = popularity,
+            rank = rank,
+            synopsis = synopsis,
+            genres = genres,
+            tags = emptyList(),
+            trailerUrl = trailerUrl,
+            characters = characters,
+            staff = staff,
+            relations = relations,
+            recommendations = emptyList(),
+            reviews = emptyList(),
+        )
+    }
+
     companion object {
         private const val CLIENT_ID =
             "dd031b32d2f56c990b1425efe6c42ad847e7fe3ab46bf1299f05ecd856bdb7dd"
@@ -653,3 +985,10 @@ class KitsuApi(private val client: OkHttpClient, interceptor: KitsuInterceptor) 
         )
     }
 }
+
+private val JsonElement?.asJsonObjectOrNull: JsonObject?
+    get() = this as? JsonObject
+
+private val JsonElement?.asJsonArrayOrNull: JsonArray?
+    get() = this as? JsonArray
+

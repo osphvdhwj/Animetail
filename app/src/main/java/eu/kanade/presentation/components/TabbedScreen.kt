@@ -1,4 +1,4 @@
-package eu.kanade.presentation.components
+﻿package eu.kanade.presentation.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -16,8 +16,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -32,6 +30,10 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.TabText
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Composable UI component rendering the $name interface in Material 3.
+ * Handles UI rendering, user interaction callbacks, and state presentation.
+ */
 @Composable
 fun TabbedScreen(
     titleRes: StringResource?,
@@ -46,15 +48,11 @@ fun TabbedScreen(
     animeExtensionsTabIndex: Int = -1,
     mangaExtensionsTabIndex: Int = -1,
     // KMK -->
-    feedScreenModel: FeedScreenModel,
+    feedScreenModel: FeedScreenModel? = null,
     // KMK <--
-
 ) {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    // KMK -->
-    val feedState by feedScreenModel.state.collectAsState()
-    // KMK <--
 
     Scaffold(
         topBar = {

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -64,6 +64,9 @@ private fun percentage(value: Int, range: ClosedRange<Int>): Float {
 }
 
 @Composable
+/**
+ * Core component for VerticalSliders within the Animetail presentation and UI layer.
+ */
 fun VerticalSlider(
     value: Float,
     range: ClosedFloatingPointRange<Float>,

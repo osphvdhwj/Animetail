@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season
+﻿package eu.kanade.tachiyomi.ui.browse.anime.migration.anime.season
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -26,6 +26,12 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.source.local.entries.anime.LocalAnimeSource
 
+/**
+ * Screen-level composable hierarchy for MigrateSeasonSelectScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 data class MigrateSeasonSelectScreen(
     private val oldAnime: Anime,
     private val anime: Anime,

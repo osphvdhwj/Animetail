@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player.settings
+﻿package eu.kanade.tachiyomi.ui.player.settings
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.FormatAlignLeft
@@ -19,6 +19,9 @@ import tachiyomi.i18n.tail.TLMR
 
 @Inject
 @SingleIn(AppScope::class)
+/**
+ * Core component for SubtitlePreferences within the Animetail presentation and UI layer.
+ */
 class SubtitlePreferences(
     private val preferenceStore: PreferenceStore,
 ) {

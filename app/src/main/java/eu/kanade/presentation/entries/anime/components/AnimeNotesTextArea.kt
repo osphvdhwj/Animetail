@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime.components
+﻿package eu.kanade.presentation.entries.anime.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -59,6 +59,12 @@ private const val MAX_LENGTH_WARN = MAX_LENGTH * 0.9
 private val NotesToolbarHeight = 56.dp
 
 @Composable
+/**
+ * UI presentation composable for AnimeNotesTextArea.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AnimeNotesTextArea(
     state: AnimeNotesScreen.State,
     onUpdate: (String) -> Unit,

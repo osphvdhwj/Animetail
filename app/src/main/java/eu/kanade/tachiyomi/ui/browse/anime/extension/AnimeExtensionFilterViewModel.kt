@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.anime.extension
+﻿package eu.kanade.tachiyomi.ui.browse.anime.extension
 
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
@@ -32,6 +32,12 @@ import kotlin.time.Duration.Companion.seconds
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+/**
+ * State and business logic coordinator for AnimeExtensionFilterViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class AnimeExtensionFilterViewModel(
     private val preferences: SourcePreferences,
     private val getExtensionLanguages: GetAnimeExtensionLanguages,

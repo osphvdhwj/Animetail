@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.download.manga
+﻿package eu.kanade.tachiyomi.ui.download.manga
 
 import android.view.LayoutInflater
 import androidx.compose.foundation.layout.Box
@@ -26,6 +26,12 @@ import tachiyomi.presentation.core.screens.EmptyScreen
 import kotlin.math.roundToInt
 
 @Composable
+/**
+ * Screen-level composable hierarchy for MangaDownloadQueueScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 fun DownloadQueueScreen(
     contentPadding: PaddingValues,
     scope: CoroutineScope,

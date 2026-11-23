@@ -1,8 +1,11 @@
-package eu.kanade.tachiyomi.ui.player.cast
+﻿package eu.kanade.tachiyomi.ui.player.cast
 import com.google.android.gms.cast.framework.CastSession
 import com.google.android.gms.cast.framework.SessionManagerListener
 import eu.kanade.tachiyomi.ui.player.CastManager
 
+/**
+ * Core component for CastSessionListener within the Animetail presentation and UI layer.
+ */
 class CastSessionListener(
     private val castManager: CastManager,
 ) : SessionManagerListener<CastSession> {

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader.viewer.webgpu
+﻿package eu.kanade.tachiyomi.ui.reader.viewer.webgpu
 
 import android.graphics.Canvas
 import android.graphics.Color
@@ -61,6 +61,11 @@ import kotlin.math.min
 import kotlin.time.Duration.Companion.milliseconds
 
 open class WebGpuViewer(
+/**
+ * Media playback / reader viewer engine component for WebGpuViewer.
+ *
+ * Coordinates decoding, caching, gesture dispatch, and frame rendering.
+ */
     val activity: ReaderActivity,
     val isReversed: Boolean,
     val isVertical: Boolean,

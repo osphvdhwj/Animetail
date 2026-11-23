@@ -1,4 +1,4 @@
-package eu.kanade.presentation.library.manga
+﻿package eu.kanade.presentation.library.manga
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,6 +40,9 @@ internal fun MangaLibraryCompactGrid(
             items = items,
             contentType = { "manga_library_compact_grid_item" },
         ) { libraryItem ->
+/**
+ * Core component for MangaLibraryCompactGrid within the Animetail presentation and UI layer.
+ */
             val manga = libraryItem.libraryManga.manga
             EntryCompactGridItem(
                 isSelected = selection.fastAny { it.id == libraryItem.libraryManga.id },

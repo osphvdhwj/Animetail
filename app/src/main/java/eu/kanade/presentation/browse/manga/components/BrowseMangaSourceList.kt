@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse.manga.components
+﻿package eu.kanade.presentation.browse.manga.components
 
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,6 +21,12 @@ import tachiyomi.domain.entries.manga.model.MangaCover
 import tachiyomi.presentation.core.util.plus
 
 @Composable
+/**
+ * UI presentation composable for BrowseMangaSourceList.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun BrowseMangaSourceList(
     mangaList: LazyPagingItems<StateFlow<Manga>>,
     entries: Int,

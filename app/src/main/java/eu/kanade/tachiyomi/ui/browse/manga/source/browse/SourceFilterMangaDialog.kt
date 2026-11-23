@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.manga.source.browse
+﻿package eu.kanade.tachiyomi.ui.browse.manga.source.browse
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -31,6 +31,12 @@ import tachiyomi.presentation.core.components.material.Button
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for SourceFilterMangaDialog.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun SourceFilterMangaDialog(
     onDismissRequest: () -> Unit,
     filters: FilterList,

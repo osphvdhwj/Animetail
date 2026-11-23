@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.player
+﻿package eu.kanade.presentation.more.settings.screen.player
 
 import android.os.Build
 import androidx.compose.runtime.Composable
@@ -42,6 +42,12 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 import java.text.NumberFormat
 
+/**
+ * Screen-level composable hierarchy for PlayerSettingsPlayerScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 object PlayerSettingsPlayerScreen : Screen(), SearchableSettings {
 
     @ReadOnlyComposable

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.category
+﻿package eu.kanade.presentation.category
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,7 +25,16 @@ import tachiyomi.presentation.core.components.material.Scaffold
 import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.screens.EmptyScreen
 
+import eu.kanade.presentation.category.components.CategoryHeaderCard
+import eu.kanade.presentation.category.components.EmptyCategoryCard
+
 @Composable
+/**
+ * UI presentation composable for AnimeCategoryScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun AnimeCategoryScreen(
     state: AnimeCategoryScreenState.Success,
     onClickCreate: () -> Unit,
@@ -44,8 +53,8 @@ fun AnimeCategoryScreen(
         },
     ) { paddingValues ->
         if (state.isEmpty) {
-            EmptyScreen(
-                stringRes = MR.strings.information_empty_category,
+            EmptyCategoryCard(
+                onCreateClick = onClickCreate,
                 modifier = Modifier.padding(paddingValues),
             )
             return@Scaffold
@@ -87,12 +96,23 @@ private fun CategoryContent(
         }
     }
 
+    val activeCount = remember(categories) { categories.count { !it.hidden } }
+    val hiddenCount = remember(categories) { categories.count { it.hidden } }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = lazyListState,
         contentPadding = PaddingValues(MaterialTheme.padding.medium),
         verticalArrangement = Arrangement.spacedBy(MaterialTheme.padding.small),
     ) {
+        item(key = "category_header_banner") {
+            CategoryHeaderCard(
+                totalCount = categories.size,
+                activeCount = activeCount,
+                hiddenCount = hiddenCount,
+            )
+        }
+
         items(
             items = categoriesState,
             key = { category -> category.key },

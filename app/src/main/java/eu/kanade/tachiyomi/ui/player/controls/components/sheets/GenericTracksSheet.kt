@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -46,6 +46,11 @@ import tachiyomi.presentation.core.components.material.padding
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Modal dialog / bottom sheet surface for GenericTracksSheet.
+ *
+ * Encapsulates modal options, user selections, and dismissible lifecycle state.
+ */
 fun <T> GenericTracksSheet(
     tracks: ImmutableList<T>,
     onDismissRequest: () -> Unit,

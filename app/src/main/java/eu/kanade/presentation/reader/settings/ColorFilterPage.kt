@@ -1,4 +1,4 @@
-package eu.kanade.presentation.reader.settings
+﻿package eu.kanade.presentation.reader.settings
 
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.material3.FilterChip
@@ -22,6 +22,9 @@ import tachiyomi.presentation.core.util.collectAsState
 
 @Composable
 internal fun ColumnScope.ColorFilterPage(viewModel: ReaderSettingsViewModel) {
+/**
+ * Core component for ColorFilterPage within the Animetail presentation and UI layer.
+ */
     val customBrightness by viewModel.preferences.customBrightness.collectAsState()
     CheckboxItem(
         label = stringResource(MR.strings.pref_custom_brightness),

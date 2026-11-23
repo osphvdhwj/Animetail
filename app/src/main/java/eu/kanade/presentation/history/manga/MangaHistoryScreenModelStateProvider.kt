@@ -1,4 +1,4 @@
-package eu.kanade.presentation.history.manga
+﻿package eu.kanade.presentation.history.manga
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import eu.kanade.tachiyomi.ui.history.manga.MangaHistoryViewModel
@@ -14,6 +14,9 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 import kotlin.time.toJavaInstant
 
+/**
+ * Core component for MangaHistoryScreenModelStateProvider within the Animetail presentation and UI layer.
+ */
 class MangaHistoryScreenModelStateProvider : PreviewParameterProvider<MangaHistoryViewModel.State> {
 
     private val multiPage = MangaHistoryViewModel.State(

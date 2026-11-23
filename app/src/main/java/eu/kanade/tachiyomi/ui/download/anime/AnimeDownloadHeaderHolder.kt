@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.download.anime
+﻿package eu.kanade.tachiyomi.ui.download.anime
 
 import android.annotation.SuppressLint
 import android.view.View
@@ -7,6 +7,9 @@ import eu.davidea.flexibleadapter.FlexibleAdapter
 import eu.davidea.viewholders.ExpandableViewHolder
 import eu.kanade.tachiyomi.databinding.DownloadHeaderBinding
 
+/**
+ * Core component for AnimeDownloadHeaderHolder within the Animetail presentation and UI layer.
+ */
 class AnimeDownloadHeaderHolder(view: View, adapter: FlexibleAdapter<*>) : ExpandableViewHolder(
     view,
     adapter,

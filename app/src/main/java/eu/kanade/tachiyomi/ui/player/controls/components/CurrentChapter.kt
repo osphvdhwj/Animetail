@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -50,6 +50,12 @@ import `is`.xyz.mpv.Utils
 import tachiyomi.presentation.core.components.material.padding
 
 @Composable
+/**
+ * UI presentation composable for CurrentChapter.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun CurrentChapter(
     chapter: Segment,
     modifier: Modifier = Modifier,

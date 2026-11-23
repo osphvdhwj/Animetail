@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime.components
+﻿package eu.kanade.presentation.entries.anime.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Box
@@ -43,6 +43,12 @@ import tachiyomi.presentation.core.util.secondaryItemAlpha
 import java.math.BigDecimal
 import java.math.RoundingMode
 
+/**
+ * UI presentation composable for EpisodeDownloadIndicator.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 enum class EpisodeDownloadAction {
     START,
     START_NOW,

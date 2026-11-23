@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.widget
+﻿package eu.kanade.presentation.more.settings.widget
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -28,6 +28,9 @@ import tachiyomi.presentation.core.components.ScrollbarLazyColumn
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Core component for ListPreferenceWidget within the Animetail presentation and UI layer.
+ */
 fun <T> ListPreferenceWidget(
     value: T,
     title: String,

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.reader.viewer.pager
+﻿package eu.kanade.tachiyomi.ui.reader.viewer.pager
 
 import android.graphics.PointF
 import android.view.InputDevice
@@ -28,6 +28,11 @@ import tachiyomi.core.common.util.system.logcat
 import kotlin.math.min
 
 abstract class PagerViewer(val activity: ReaderActivity) : Viewer {
+/**
+ * Media playback / reader viewer engine component for PagerViewer.
+ *
+ * Coordinates decoding, caching, gesture dispatch, and frame rendering.
+ */
     val graph by lazy { activity.appGraph }
     val downloadManager by lazy { graph.mangaDownloadManager }
     val readerPreferences by lazy { graph.readerPreferences }

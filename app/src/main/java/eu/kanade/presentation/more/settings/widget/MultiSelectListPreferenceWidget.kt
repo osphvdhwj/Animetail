@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.widget
+﻿package eu.kanade.presentation.more.settings.widget
 
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AlertDialog
@@ -17,6 +17,9 @@ import tachiyomi.presentation.core.components.LabeledCheckbox
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * Core component for MultiSelectListPreferenceWidget within the Animetail presentation and UI layer.
+ */
 fun <T> MultiSelectListPreferenceWidget(
     values: Set<T>,
     title: String,

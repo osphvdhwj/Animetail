@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.history.manga
+﻿package eu.kanade.tachiyomi.ui.history.manga
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
@@ -11,7 +11,9 @@ import dev.zacsweers.metro.binding
 import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.entries.manga.interactor.UpdateManga
+import eu.kanade.domain.items.chapter.interactor.SetReadStatus
 import eu.kanade.domain.track.manga.interactor.AddMangaTracks
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.history.manga.MangaHistoryUiModel
 import eu.kanade.tachiyomi.util.lang.toLocalDate
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +49,7 @@ import tachiyomi.domain.history.manga.interactor.GetMangaHistory
 import tachiyomi.domain.history.manga.interactor.GetNextChapters
 import tachiyomi.domain.history.manga.interactor.RemoveMangaHistory
 import tachiyomi.domain.history.manga.model.MangaHistoryWithRelations
+import tachiyomi.domain.items.chapter.interactor.GetChapter
 import tachiyomi.domain.items.chapter.model.Chapter
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.source.manga.service.MangaSourceManager
@@ -55,6 +58,12 @@ import kotlin.time.Duration.Companion.seconds
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+/**
+ * State and business logic coordinator for MangaHistoryViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class MangaHistoryViewModel(
     private val addTracks: AddMangaTracks,
     private val getCategories: GetMangaCategories,
@@ -64,6 +73,9 @@ class MangaHistoryViewModel(
     private val getNextChapters: GetNextChapters,
     private val libraryPreferences: LibraryPreferences,
     private val removeHistory: RemoveMangaHistory,
+    private val getChapter: GetChapter,
+    private val setReadStatus: SetReadStatus,
+    private val uiPreferences: UiPreferences,
     private val setMangaCategories: SetMangaCategories,
     private val updateManga: UpdateManga,
     private val sourceManager: MangaSourceManager,
@@ -78,15 +90,18 @@ class MangaHistoryViewModel(
 
     private val dialog = MutableStateFlow<Dialog?>(null)
 
-    private val history = searchQuery
-        .flatMapLatest { query ->
+    /** 0 = newest, 1 = oldest, 2 = title A–Z. */
+    private val sortMode = MutableStateFlow(uiPreferences.historySortMode.get())
+
+    private val history = combine(searchQuery, sortMode) { query, sort -> query to sort }
+        .flatMapLatest { (query, sort) ->
             getHistory.subscribe(query ?: "")
                 .distinctUntilChanged()
                 .catch { error ->
                     logcat(LogPriority.ERROR, error)
                     _events.send(Event.InternalError)
                 }
-                .map { it.toHistoryUiModels() }
+                .map { it.toHistoryUiModels(sort) }
                 .flowOn(Dispatchers.IO)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), emptyList())
@@ -95,13 +110,31 @@ class MangaHistoryViewModel(
         searchQuery,
         history,
         dialog,
-    ) { searchQuery, history, dialog ->
-        State(searchQuery = searchQuery, list = history, dialog = dialog)
+        sortMode,
+    ) { searchQuery, history, dialog, sortMode ->
+        State(searchQuery = searchQuery, list = history, dialog = dialog, sortMode = sortMode)
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
 
-    private fun List<MangaHistoryWithRelations>.toHistoryUiModels(): List<MangaHistoryUiModel> {
-        return map { MangaHistoryUiModel.Item(it) }
+    fun setSortMode(mode: Int) {
+        val coerced = mode.coerceIn(0, 2)
+        uiPreferences.historySortMode.set(coerced)
+        sortMode.update { coerced }
+    }
+
+    private fun List<MangaHistoryWithRelations>.toHistoryUiModels(sortMode: Int): List<MangaHistoryUiModel> {
+        val sorted = when (sortMode) {
+            1 -> sortedBy { it.readAt?.time ?: Long.MIN_VALUE }
+            2 -> sortedWith(
+                compareBy({ it.title.lowercase() }, { it.chapterNumber }),
+            )
+
+            else -> this // SQL already returns newest-first
+        }
+        if (sortMode == 2) {
+            return sorted.map { MangaHistoryUiModel.Item(it) }
+        }
+        return sorted.map { MangaHistoryUiModel.Item(it) }
             .insertSeparators { before, after ->
                 val beforeDate = before?.item?.readAt?.time?.toLocalDate()
                 val afterDate = after?.item?.readAt?.time?.toLocalDate()
@@ -112,6 +145,17 @@ class MangaHistoryViewModel(
                     else -> null
                 }
             }
+    }
+
+    /**
+     * Marks the given history entry's chapter read/unread; the library update
+     * pipeline runs as usual via [SetReadStatus].
+     */
+    fun markChapterRead(history: MangaHistoryWithRelations, read: Boolean) {
+        viewModelScope.launchIO {
+            val chapter = getChapter.await(history.chapterId) ?: return@launchIO
+            setReadStatus.await(read = read, chapter)
+        }
     }
 
     suspend fun getNextChapter(): Chapter? {
@@ -259,6 +303,7 @@ class MangaHistoryViewModel(
         val searchQuery: String? = null,
         val list: List<MangaHistoryUiModel>? = null,
         val dialog: Dialog? = null,
+        val sortMode: Int = 0,
     )
 
     sealed interface Dialog {

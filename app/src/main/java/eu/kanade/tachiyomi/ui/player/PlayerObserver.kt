@@ -1,9 +1,12 @@
-package eu.kanade.tachiyomi.ui.player
+﻿package eu.kanade.tachiyomi.ui.player
 
 import `is`.xyz.mpv.MPV
 import `is`.xyz.mpv.MPVNode
 import logcat.LogPriority
 
+/**
+ * Core component for PlayerObserver within the Animetail presentation and UI layer.
+ */
 class PlayerObserver(val activity: PlayerActivity) :
     MPV.EventObserver,
     MPV.LogObserver {

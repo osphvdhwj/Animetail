@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.screen.debug
+﻿package eu.kanade.presentation.more.settings.screen.debug
 
 import android.content.Context
 import androidx.compose.foundation.horizontalScroll
@@ -49,6 +49,12 @@ import tachiyomi.presentation.core.util.plus
 import uy.kohesive.injekt.api.get
 import kotlin.time.Instant
 
+/**
+ * Screen-level composable hierarchy for WorkerInfoScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 class WorkerInfoScreen : Screen() {
 
     companion object {

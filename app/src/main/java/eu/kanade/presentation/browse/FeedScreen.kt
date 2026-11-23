@@ -1,4 +1,4 @@
-package eu.kanade.presentation.browse
+﻿package eu.kanade.presentation.browse
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -55,6 +55,12 @@ import tachiyomi.presentation.core.screens.LoadingScreen
 import tachiyomi.presentation.core.util.plus
 import kotlin.time.Duration.Companion.seconds
 
+/**
+ * UI presentation composable for FeedScreen.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 data class FeedItemUI(
     val feed: FeedSavedSearch,
     val savedSearch: SavedSearch?,

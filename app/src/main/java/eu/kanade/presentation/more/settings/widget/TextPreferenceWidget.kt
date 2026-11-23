@@ -1,4 +1,4 @@
-package eu.kanade.presentation.more.settings.widget
+﻿package eu.kanade.presentation.more.settings.widget
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -17,6 +17,12 @@ import eu.kanade.presentation.theme.TachiyomiPreviewTheme
 import tachiyomi.presentation.core.util.secondaryItemAlpha
 
 @Composable
+/**
+ * UI presentation composable for TextPreferenceWidget.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun TextPreferenceWidget(
     modifier: Modifier = Modifier,
     title: String? = null,

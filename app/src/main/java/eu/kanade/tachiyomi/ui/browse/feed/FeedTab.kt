@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.browse.feed
+﻿package eu.kanade.tachiyomi.ui.browse.feed
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
@@ -15,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalHapticFeedback
 import cafe.adriel.voyager.core.stack.StackEvent
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
@@ -40,6 +39,12 @@ import tachiyomi.i18n.tail.TLMR
 import tachiyomi.presentation.core.i18n.stringResource
 
 @Composable
+/**
+ * UI presentation composable for FeedTab.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun feedTab(
     // KMK -->
     screenModel: FeedScreenModel,
@@ -52,12 +57,8 @@ fun feedTab(
     val scope = rememberCoroutineScope()
     val showingFeedOrderScreen = rememberSaveable { mutableStateOf(false) }
 
-    val haptic = LocalHapticFeedback.current
-
     BackHandler(enabled = showingFeedOrderScreen.value) {
-        when {
-            showingFeedOrderScreen.value -> showingFeedOrderScreen.value = false
-        }
+        showingFeedOrderScreen.value = false
     }
     // KMK <--
 

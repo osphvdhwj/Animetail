@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.updates
+﻿package eu.kanade.tachiyomi.ui.updates
 
 import androidx.compose.animation.graphics.res.animatedVectorResource
 import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
@@ -28,6 +28,11 @@ import mihon.app.di.appGraph
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.stringResource
 
+/**
+ * Navigation tab descriptor for UpdatesTab.
+ *
+ * Implements Voyager Tab navigation, defining icon, title, and routed content.
+ */
 data object UpdatesTab : Tab {
 
     override val options: TabOptions

@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.player
+﻿package eu.kanade.tachiyomi.ui.player
 
 import android.app.Application
 import android.content.ComponentName
@@ -62,6 +62,9 @@ import uy.kohesive.injekt.api.get
 import java.io.File
 import java.util.Date
 
+/**
+ * Core component for ExternalIntents within the Animetail presentation and UI layer.
+ */
 class ExternalIntents {
 
     private val appGraph by lazy { Injekt.get<Application>().appGraph }

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -61,6 +61,11 @@ import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
 
 @Composable
+/**
+ * Presentation card/item component for SubtitleSettingsMiscellaneousCard.
+ *
+ * Handles compact data display, visual badges, and click/long-press actions.
+ */
 fun SubtitlesMiscellaneousCard(mpv: MPV, modifier: Modifier = Modifier) {
     val preferences = remember { Injekt.get<SubtitlePreferences>() }
     var isExpanded by remember { mutableStateOf(true) }

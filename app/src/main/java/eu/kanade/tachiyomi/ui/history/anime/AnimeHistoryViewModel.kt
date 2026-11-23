@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.ui.history.anime
+﻿package eu.kanade.tachiyomi.ui.history.anime
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Immutable
@@ -12,6 +12,7 @@ import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.entries.anime.interactor.UpdateAnime
 import eu.kanade.domain.track.anime.interactor.AddAnimeTracks
+import eu.kanade.domain.ui.UiPreferences
 import eu.kanade.presentation.history.anime.AnimeHistoryUiModel
 import eu.kanade.tachiyomi.util.lang.toLocalDate
 import kotlinx.collections.immutable.ImmutableList
@@ -43,6 +44,8 @@ import tachiyomi.domain.category.anime.interactor.GetAnimeCategories
 import tachiyomi.domain.category.anime.interactor.SetAnimeCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.entries.anime.interactor.GetAnime
+import tachiyomi.domain.items.episode.interactor.GetEpisode
+import eu.kanade.domain.items.episode.interactor.SetSeenStatus
 import tachiyomi.domain.entries.anime.interactor.GetDuplicateLibraryAnime
 import tachiyomi.domain.entries.anime.model.Anime
 import tachiyomi.domain.history.anime.interactor.GetAnimeHistory
@@ -57,6 +60,12 @@ import kotlin.time.Duration.Companion.seconds
 @Inject
 @ViewModelKey
 @ContributesIntoMap(AppScope::class, binding = binding<ViewModel>())
+/**
+ * State and business logic coordinator for AnimeHistoryViewModel.
+ *
+ * Manages reactive UI state flows, coroutine lifecycle scopes,
+ * and interactions with domain repositories and preferences.
+ */
 class AnimeHistoryViewModel(
     private val addTracks: AddAnimeTracks,
     private val getCategories: GetAnimeCategories,
@@ -66,6 +75,9 @@ class AnimeHistoryViewModel(
     private val getNextEpisodes: GetNextEpisodes,
     private val libraryPreferences: LibraryPreferences,
     private val removeHistory: RemoveAnimeHistory,
+    private val getEpisode: GetEpisode,
+    private val setSeenStatus: SetSeenStatus,
+    private val uiPreferences: UiPreferences,
     private val setAnimeCategories: SetAnimeCategories,
     private val updateAnime: UpdateAnime,
     private val sourceManager: AnimeSourceManager,
@@ -80,15 +92,18 @@ class AnimeHistoryViewModel(
 
     private val dialog = MutableStateFlow<Dialog?>(null)
 
-    private val history = searchQuery
-        .flatMapLatest { query ->
+    /** 0 = newest, 1 = oldest, 2 = title A–Z. */
+    private val sortMode = MutableStateFlow(uiPreferences.historySortMode.get())
+
+    private val history = combine(searchQuery, sortMode) { query, sort -> query to sort }
+        .flatMapLatest { (query, sort) ->
             getHistory.subscribe(query ?: "")
                 .distinctUntilChanged()
                 .catch { error ->
                     logcat(LogPriority.ERROR, error)
                     _events.send(Event.InternalError)
                 }
-                .map { it.toAnimeHistoryUiModels() }
+                .map { it.toAnimeHistoryUiModels(sort) }
                 .flowOn(Dispatchers.IO)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), emptyList())
@@ -97,8 +112,9 @@ class AnimeHistoryViewModel(
         searchQuery,
         history,
         dialog,
-    ) { searchQuery, history, dialog ->
-        State(searchQuery = searchQuery, list = history, dialog = dialog)
+        sortMode,
+    ) { searchQuery, history, dialog, sortMode ->
+        State(searchQuery = searchQuery, list = history, dialog = dialog, sortMode = sortMode)
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5.seconds), State())
 
@@ -110,8 +126,25 @@ class AnimeHistoryViewModel(
         searchQuery.update { query }
     }
 
-    private fun List<AnimeHistoryWithRelations>.toAnimeHistoryUiModels(): List<AnimeHistoryUiModel> {
-        return map { AnimeHistoryUiModel.Item(it) }
+    fun setSortMode(mode: Int) {
+        val coerced = mode.coerceIn(0, 2)
+        uiPreferences.historySortMode.set(coerced)
+        sortMode.update { coerced }
+    }
+
+    private fun List<AnimeHistoryWithRelations>.toAnimeHistoryUiModels(sortMode: Int): List<AnimeHistoryUiModel> {
+        val sorted = when (sortMode) {
+            1 -> sortedBy { it.seenAt?.time ?: Long.MIN_VALUE }
+            2 -> sortedWith(
+                compareBy({ it.title.lowercase() }, { it.episodeNumber }),
+            )
+
+            else -> this // SQL already returns newest-first
+        }
+        if (sortMode == 2) {
+            return sorted.map { AnimeHistoryUiModel.Item(it) }
+        }
+        return sorted.map { AnimeHistoryUiModel.Item(it) }
             .insertSeparators { before, after ->
                 val beforeDate = before?.item?.seenAt?.time?.toLocalDate()
                 val afterDate = after?.item?.seenAt?.time?.toLocalDate()
@@ -122,6 +155,17 @@ class AnimeHistoryViewModel(
                     else -> null
                 }
             }
+    }
+
+    /**
+     * Marks the given history entry's episode seen/unseen; the library update
+     * pipeline runs as usual via [SetSeenStatus].
+     */
+    fun markEpisodeSeen(history: AnimeHistoryWithRelations, seen: Boolean) {
+        viewModelScope.launchIO {
+            val episode = getEpisode.await(history.episodeId) ?: return@launchIO
+            setSeenStatus.await(seen = seen, episode)
+        }
     }
 
     suspend fun getNextEpisode(): Episode? {
@@ -264,6 +308,7 @@ class AnimeHistoryViewModel(
         val searchQuery: String? = null,
         val list: List<AnimeHistoryUiModel>? = null,
         val dialog: Dialog? = null,
+        val sortMode: Int = 0,
     )
 
     sealed interface Dialog {

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.entries.anime
+﻿package eu.kanade.presentation.entries.anime
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -127,6 +127,12 @@ import kotlin.time.Instant
 
 @Composable
 @Suppress("ParameterNaming", "LongMethod")
+/**
+ * Screen-level composable hierarchy for AnimeScreen.
+ *
+ * Configures the scaffold, top app bars, scroll behavior,
+ * and responsive content layout for this screen.
+ */
 fun AnimeScreen(
     state: AnimeViewModel.State.Success,
     snackbarHostState: SnackbarHostState,

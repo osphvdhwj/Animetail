@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2024 Abdallah Mehiz
  * https://github.com/abdallahmehiz/mpvKt
  *
@@ -21,7 +21,9 @@ import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import eu.kanade.presentation.design.DS
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
@@ -73,6 +75,12 @@ import kotlin.math.roundToInt
 private val sheetAnimationSpec = tween<Float>(350)
 
 @Composable
+/**
+ * UI presentation composable for PlayerSheet.
+ *
+ * Renders the interface in Material 3 design, binding reactive state
+ * and dispatching user interactions to parent handlers.
+ */
 fun PlayerSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
@@ -170,7 +178,9 @@ fun PlayerSheet(
                     WindowInsets.systemBars
                         .only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal),
                 ),
-            shape = MaterialTheme.shapes.extraLarge.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize),
+            shape = DS.radiusBento.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.94f),
+            border = BorderStroke(DS.strokeHairline, DS.Glass.borderColor(0.35f)),
             tonalElevation = tonalElevation,
             content = {
                 BackHandler(

@@ -1,4 +1,4 @@
-package eu.kanade.presentation.library.components
+﻿package eu.kanade.presentation.library.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -46,6 +46,11 @@ import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.selectedBackground
 import tachiyomi.domain.entries.EntryCover as EntryCoverModel
 
+/**
+ * Presentation card/item component for CommonEntryItem.
+ *
+ * Handles compact data display, visual badges, and click/long-press actions.
+ */
 object CommonEntryItemDefaults {
     val GridHorizontalSpacer = 4.dp
     val GridVerticalSpacer = 4.dp

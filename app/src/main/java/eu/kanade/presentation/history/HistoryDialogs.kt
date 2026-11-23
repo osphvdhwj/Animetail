@@ -1,4 +1,4 @@
-package eu.kanade.presentation.history
+﻿package eu.kanade.presentation.history
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -21,6 +21,9 @@ import tachiyomi.presentation.core.i18n.stringResource
 import kotlin.random.Random
 
 @Composable
+/**
+ * Core component for HistoryDialogs within the Animetail presentation and UI layer.
+ */
 fun HistoryDeleteDialog(
     onDismissRequest: () -> Unit,
     onDelete: (Boolean) -> Unit,
